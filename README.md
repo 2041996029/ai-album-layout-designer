@@ -11,5 +11,6 @@
 - [阅读指南与已确认决策](docs/ai-album-v0.1/00-阅读指南与决策记录.md)
 - [产品需求文档](docs/ai-album-v0.1/02-产品需求文档.md)
 - [原型与交互说明](docs/ai-album-v0.1/06-原型与交互说明.md)
+- [相册成品设计样片：婚礼双页](docs/export-samples/README.md)（AI 设计示意，非程序实际导出）
 
 目录包含 8 份 Markdown、可编辑 Word、产品技术 PDF、8 页原型 PDF、8 张原创 SVG 和 33 项滤镜配方 CSV。PDF 与原型为评审稿，数值预算不代表实测成绩。
