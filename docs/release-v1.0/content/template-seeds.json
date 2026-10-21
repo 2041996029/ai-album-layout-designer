@@ -1,0 +1,404 @@
+{
+  "status": "original editable slot design; instantiate and license/register fonts before publishing",
+  "templates": [
+    {
+      "id": "tpl_wedding",
+      "version": 1,
+      "category": "wedding",
+      "name": "婚礼 · 原创留白",
+      "unit": "px96",
+      "pageSize": {
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "view": "spread",
+      "background": "#FFFFFF",
+      "origin": "project-original-design",
+      "state": "draft",
+      "slots": [
+        {
+          "slotId": "photo_1",
+          "kind": "image",
+          "frame": {
+            "x": 60,
+            "y": 70,
+            "width": 1000,
+            "height": 750
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "photo_2",
+          "kind": "image",
+          "frame": {
+            "x": 1200,
+            "y": 70,
+            "width": 1000,
+            "height": 750
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "title",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 940,
+            "width": 2100,
+            "height": 85
+          },
+          "defaultText": "婚礼相册",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 48,
+          "editableFields": [
+            "text"
+          ]
+        },
+        {
+          "slotId": "date",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 1040,
+            "width": 2100,
+            "height": 40
+          },
+          "defaultText": "日期",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 24,
+          "editableFields": [
+            "text"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tpl_travel",
+      "version": 1,
+      "category": "travel",
+      "name": "旅行 · 原创留白",
+      "unit": "px96",
+      "pageSize": {
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "view": "spread",
+      "background": "#FFFFFF",
+      "origin": "project-original-design",
+      "state": "draft",
+      "slots": [
+        {
+          "slotId": "photo_1",
+          "kind": "image",
+          "frame": {
+            "x": 60,
+            "y": 70,
+            "width": 680,
+            "height": 750
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "photo_2",
+          "kind": "image",
+          "frame": {
+            "x": 780,
+            "y": 70,
+            "width": 680,
+            "height": 750
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "photo_3",
+          "kind": "image",
+          "frame": {
+            "x": 1500,
+            "y": 70,
+            "width": 680,
+            "height": 750
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "title",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 940,
+            "width": 2100,
+            "height": 85
+          },
+          "defaultText": "旅行相册",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 48,
+          "editableFields": [
+            "text"
+          ]
+        },
+        {
+          "slotId": "date",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 1040,
+            "width": 2100,
+            "height": 40
+          },
+          "defaultText": "日期",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 24,
+          "editableFields": [
+            "text"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tpl_family",
+      "version": 1,
+      "category": "family",
+      "name": "亲子 · 原创留白",
+      "unit": "px96",
+      "pageSize": {
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "view": "spread",
+      "background": "#FFFFFF",
+      "origin": "project-original-design",
+      "state": "draft",
+      "slots": [
+        {
+          "slotId": "photo_1",
+          "kind": "image",
+          "frame": {
+            "x": 60,
+            "y": 60,
+            "width": 1000,
+            "height": 380
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "photo_2",
+          "kind": "image",
+          "frame": {
+            "x": 1130,
+            "y": 60,
+            "width": 1000,
+            "height": 380
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "photo_3",
+          "kind": "image",
+          "frame": {
+            "x": 60,
+            "y": 480,
+            "width": 1000,
+            "height": 380
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "photo_4",
+          "kind": "image",
+          "frame": {
+            "x": 1130,
+            "y": 480,
+            "width": 1000,
+            "height": 380
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "title",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 940,
+            "width": 2100,
+            "height": 85
+          },
+          "defaultText": "亲子相册",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 48,
+          "editableFields": [
+            "text"
+          ]
+        },
+        {
+          "slotId": "date",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 1040,
+            "width": 2100,
+            "height": 40
+          },
+          "defaultText": "日期",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 24,
+          "editableFields": [
+            "text"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tpl_portrait",
+      "version": 1,
+      "category": "portrait",
+      "name": "写真 · 原创留白",
+      "unit": "px96",
+      "pageSize": {
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "view": "spread",
+      "background": "#FFFFFF",
+      "origin": "project-original-design",
+      "state": "draft",
+      "slots": [
+        {
+          "slotId": "photo_1",
+          "kind": "image",
+          "frame": {
+            "x": 280,
+            "y": 70,
+            "width": 1700,
+            "height": 750
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "title",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 940,
+            "width": 2100,
+            "height": 85
+          },
+          "defaultText": "写真相册",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 48,
+          "editableFields": [
+            "text"
+          ]
+        },
+        {
+          "slotId": "date",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 1040,
+            "width": 2100,
+            "height": 40
+          },
+          "defaultText": "日期",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 24,
+          "editableFields": [
+            "text"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tpl_ink",
+      "version": 1,
+      "category": "ink",
+      "name": "国风 · 原创留白",
+      "unit": "px96",
+      "pageSize": {
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "view": "spread",
+      "background": "#FFFFFF",
+      "origin": "project-original-design",
+      "state": "draft",
+      "slots": [
+        {
+          "slotId": "photo_1",
+          "kind": "image",
+          "frame": {
+            "x": 60,
+            "y": 70,
+            "width": 1000,
+            "height": 750
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "photo_2",
+          "kind": "image",
+          "frame": {
+            "x": 1200,
+            "y": 70,
+            "width": 1000,
+            "height": 750
+          },
+          "fitMode": "cover",
+          "bindingRequired": true
+        },
+        {
+          "slotId": "title",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 940,
+            "width": 2100,
+            "height": 85
+          },
+          "defaultText": "国风相册",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 48,
+          "editableFields": [
+            "text"
+          ]
+        },
+        {
+          "slotId": "date",
+          "kind": "text",
+          "frame": {
+            "x": 60,
+            "y": 1040,
+            "width": 2100,
+            "height": 40
+          },
+          "defaultText": "日期",
+          "fontCatalogName": "Noto Sans SC",
+          "fontWeight": 400,
+          "fontSize": 24,
+          "editableFields": [
+            "text"
+          ]
+        }
+      ]
+    }
+  ]
+}

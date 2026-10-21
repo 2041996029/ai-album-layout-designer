@@ -1,0 +1,11 @@
+{
+  "artifactValidation": "passed",
+  "scope": "Design documents and original static prototypes only",
+  "specPdfPages": 5,
+  "prototypePdfPages": 4,
+  "svgScreens": 4,
+  "requirementsTracked": 11,
+  "localHtmlReferencesChecked": 25,
+  "visualReview": "All 4 PNGs and the specification PDF cover were inspected",
+  "implementationApproved": false
+}

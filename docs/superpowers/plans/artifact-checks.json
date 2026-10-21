@@ -1,0 +1,12 @@
+{
+  "artifactValidation": "passed",
+  "scope": "C1 planning document integrity only; full cross-module checks in release-v1.0/verification/artifact-checks.json",
+  "planTasks": 10,
+  "uncheckedExecutionSteps": 50,
+  "pdfPages": 13,
+  "wordTaskHeadings": 10,
+  "userDevelopmentPreference": "All development by AI",
+  "productImplementationStarted": false,
+  "supersededBy": "../../release-v1.0/verification/artifact-checks.json",
+  "executedAtUtc": "2026-10-21T15:35:22.997512+00:00"
+}

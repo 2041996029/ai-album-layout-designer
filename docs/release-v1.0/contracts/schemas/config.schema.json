@@ -1,0 +1,2163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Typed configuration values, secret references only",
+  "x-contract-version": "1.0.0",
+  "$defs": {
+    "secretBinding": {
+      "type": "object",
+      "properties": {
+        "secretRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "secretVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        }
+      },
+      "required": [
+        "secretRef",
+        "secretVersion"
+      ],
+      "additionalProperties": false
+    },
+    "versionRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "storage"
+        },
+        "provider": {
+          "enum": [
+            "oss",
+            "cos",
+            "s3"
+          ]
+        },
+        "adapterVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "region": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "endpoint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "bucket": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "credential": {
+          "type": "object",
+          "properties": {
+            "secretRef": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "secretVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          "required": [
+            "secretRef",
+            "secretVersion"
+          ],
+          "additionalProperties": false
+        },
+        "basePrefix": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^/\\\\\\x00-\\x1f\\x7f]+(?:/[^/\\\\\\x00-\\x1f\\x7f]+)*$",
+          "not": {
+            "anyOf": [
+              {
+                "pattern": "(^|/)\\.\\.?(/|$)"
+              },
+              {
+                "pattern": "^[A-Za-z]:"
+              }
+            ]
+          }
+        },
+        "keyPatternVersion": {
+          "const": "v1"
+        },
+        "publicAccess": {
+          "const": false
+        },
+        "allowedOrigins": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^https://"
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "downloadTtlSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "uploadTtlSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "encryptionMode": {
+          "enum": [
+            "providerManaged",
+            "kms"
+          ]
+        },
+        "kmsKeyRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "cdnMode": {
+          "enum": [
+            "disabled",
+            "signed"
+          ]
+        },
+        "downloadDomain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^https://"
+        },
+        "retentionPolicyRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "quotaPolicyRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "provider",
+        "adapterVersion",
+        "region",
+        "endpoint",
+        "bucket",
+        "credential",
+        "basePrefix",
+        "keyPatternVersion",
+        "publicAccess",
+        "allowedOrigins",
+        "downloadTtlSeconds",
+        "uploadTtlSeconds",
+        "encryptionMode",
+        "cdnMode",
+        "retentionPolicyRef",
+        "quotaPolicyRef"
+      ],
+      "additionalProperties": false
+    },
+    "aiConnection": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "aiConnection"
+        },
+        "adapterId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "adapterVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "baseUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "credential": {
+          "type": "object",
+          "properties": {
+            "secretRef": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "secretVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          "required": [
+            "secretRef",
+            "secretVersion"
+          ],
+          "additionalProperties": false
+        },
+        "accountBillingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "region": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "connectTimeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 60000
+        },
+        "requestTimeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 300000
+        },
+        "maxConcurrent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "requestsPerMinute": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "dailyBudgetFen": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "budgetTimezone": {
+          "const": "Asia/Shanghai"
+        },
+        "dataUsePolicyRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "adapterId",
+        "adapterVersion",
+        "name",
+        "baseUrl",
+        "credential",
+        "accountBillingId",
+        "connectTimeoutMs",
+        "requestTimeoutMs",
+        "maxConcurrent",
+        "requestsPerMinute",
+        "dailyBudgetFen",
+        "budgetTimezone",
+        "dataUsePolicyRef",
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "auth"
+        },
+        "webAppId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "miniAppId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "webCredential": {
+          "type": "object",
+          "properties": {
+            "secretRef": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "secretVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          "required": [
+            "secretRef",
+            "secretVersion"
+          ],
+          "additionalProperties": false
+        },
+        "miniCredential": {
+          "type": "object",
+          "properties": {
+            "secretRef": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "secretVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          "required": [
+            "secretRef",
+            "secretVersion"
+          ],
+          "additionalProperties": false
+        },
+        "callbackOrigins": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^https://"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "accessTtlSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 86400
+        },
+        "refreshTtlSeconds": {
+          "type": "integer",
+          "minimum": 300,
+          "maximum": 2592000
+        },
+        "smsEnabled": {
+          "type": "boolean"
+        },
+        "smsConnectionRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "registrationEnabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "webAppId",
+        "miniAppId",
+        "webCredential",
+        "miniCredential",
+        "callbackOrigins",
+        "accessTtlSeconds",
+        "refreshTtlSeconds",
+        "smsEnabled",
+        "registrationEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "payment": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "payment"
+        },
+        "channel": {
+          "enum": [
+            "wechat_pay",
+            "wechat_virtual"
+          ]
+        },
+        "appId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "merchantId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "credential": {
+          "type": "object",
+          "properties": {
+            "secretRef": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "secretVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          "required": [
+            "secretRef",
+            "secretVersion"
+          ],
+          "additionalProperties": false
+        },
+        "verificationKeyRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "callbackUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^https://"
+        },
+        "refundEnabled": {
+          "type": "boolean"
+        },
+        "platformCapabilityRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "channel",
+        "appId",
+        "merchantId",
+        "credential",
+        "verificationKeyRef",
+        "callbackUrl",
+        "refundEnabled",
+        "platformCapabilityRef",
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "sku": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "sku"
+        },
+        "skuId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "skuKind": {
+          "enum": [
+            "membership",
+            "credits"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "priceFen": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "durationDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3660
+        },
+        "credits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "creditValidityDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3660
+        },
+        "features": {
+          "type": "object",
+          "properties": {
+            "storageBytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxProjectPhotos": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "maxSpreads": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "exportDpis": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  72,
+                  150,
+                  300
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 3,
+              "uniqueItems": true
+            },
+            "exportConcurrency": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "aiConcurrency": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "seatLimit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "commercialTemplateSetIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 500
+            }
+          },
+          "required": [
+            "storageBytes",
+            "maxProjectPhotos",
+            "maxSpreads",
+            "exportDpis",
+            "exportConcurrency",
+            "aiConcurrency",
+            "seatLimit",
+            "commercialTemplateSetIds"
+          ],
+          "additionalProperties": false
+        },
+        "refundPolicyRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "skuId",
+        "skuKind",
+        "name",
+        "priceFen",
+        "currency",
+        "durationDays",
+        "credits",
+        "creditValidityDays",
+        "features",
+        "refundPolicyRef",
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "editor": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "editor"
+        },
+        "filterManifestVersion": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "fontCatalogVersion": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "templateCatalogVersion": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "undoLimit": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 1000
+        },
+        "autosaveIdleMs": {
+          "type": "integer",
+          "minimum": 2000,
+          "maximum": 10000
+        },
+        "autosaveMaxMs": {
+          "type": "integer",
+          "minimum": 10000,
+          "maximum": 60000
+        },
+        "maxLayersPerSpread": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "maxGroupDepth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "snapScreenPixels": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20
+        }
+      },
+      "required": [
+        "kind",
+        "filterManifestVersion",
+        "fontCatalogVersion",
+        "templateCatalogVersion",
+        "undoLimit",
+        "autosaveIdleMs",
+        "autosaveMaxMs",
+        "maxLayersPerSpread",
+        "maxGroupDepth",
+        "snapScreenPixels"
+      ],
+      "additionalProperties": false
+    },
+    "layout": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "layout"
+        },
+        "algorithmVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "candidateCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "minPhotosPerSpread": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "maxPhotosPerSpread": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "selectionPolicy": {
+          "enum": [
+            "all",
+            "allowSelection"
+          ]
+        },
+        "duplicatePolicy": {
+          "enum": [
+            "forbid",
+            "allowExplicit"
+          ]
+        },
+        "weights": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "timeline": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "whitespace": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "variety": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "color": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "subject",
+            "timeline",
+            "whitespace",
+            "variety",
+            "color"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "algorithmVersion",
+        "candidateCount",
+        "minPhotosPerSpread",
+        "maxPhotosPerSpread",
+        "selectionPolicy",
+        "duplicatePolicy",
+        "weights"
+      ],
+      "additionalProperties": false
+    },
+    "export": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "export"
+        },
+        "allowedFormats": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "png",
+              "jpeg",
+              "pdf"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "allowedDpis": {
+          "type": "array",
+          "items": {
+            "enum": [
+              72,
+              150,
+              300
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "maxSurfacePixels": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50000000
+        },
+        "browserBudgetMiB": {
+          "type": "integer",
+          "minimum": 128,
+          "maximum": 768
+        },
+        "workerBudgetMiB": {
+          "type": "integer",
+          "minimum": 256,
+          "maximum": 2048
+        },
+        "ppiWarning": {
+          "const": 200
+        },
+        "ppiStrongWarning": {
+          "const": 100
+        },
+        "outputRetentionDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
+        },
+        "jpegQuality": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 1
+        },
+        "jpegMatte": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^#[A-Fa-f0-9]{6}$"
+        }
+      },
+      "required": [
+        "kind",
+        "allowedFormats",
+        "allowedDpis",
+        "maxSurfacePixels",
+        "browserBudgetMiB",
+        "workerBudgetMiB",
+        "ppiWarning",
+        "ppiStrongWarning",
+        "outputRetentionDays",
+        "jpegQuality",
+        "jpegMatte"
+      ],
+      "additionalProperties": false
+    },
+    "queue": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "queue"
+        },
+        "workerKind": {
+          "enum": [
+            "export",
+            "generation",
+            "layout",
+            "storageMigration"
+          ]
+        },
+        "maxGlobalConcurrency": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "maxWorkspaceConcurrency": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "leaseSeconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 3600
+        },
+        "heartbeatSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300
+        },
+        "retryLimit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "retryBackoffSeconds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600
+          },
+          "minItems": 0,
+          "maxItems": 3
+        },
+        "maxWaitingSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        },
+        "maxAttemptsPerTask": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        }
+      },
+      "required": [
+        "kind",
+        "workerKind",
+        "maxGlobalConcurrency",
+        "maxWorkspaceConcurrency",
+        "leaseSeconds",
+        "heartbeatSeconds",
+        "retryLimit",
+        "retryBackoffSeconds",
+        "maxWaitingSeconds",
+        "maxAttemptsPerTask"
+      ],
+      "additionalProperties": false
+    },
+    "content": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "content"
+        },
+        "moderationRouteRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "labelPolicyRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "licensePolicyVersion": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "allowedOrigins": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "uploaded",
+              "generated",
+              "platform"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "referenceConsentRequired": {
+          "const": true
+        },
+        "quarantineOnUnverified": {
+          "const": true
+        }
+      },
+      "required": [
+        "kind",
+        "moderationRouteRef",
+        "labelPolicyRef",
+        "licensePolicyVersion",
+        "allowedOrigins",
+        "referenceConsentRequired",
+        "quarantineOnUnverified"
+      ],
+      "additionalProperties": false
+    },
+    "share": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "share"
+        },
+        "defaultPrivate": {
+          "const": true
+        },
+        "sharingEnabled": {
+          "type": "boolean"
+        },
+        "maxShareTtlSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 2592000
+        },
+        "downloadTtlSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "revokeMode": {
+          "enum": [
+            "shortLivedUrl",
+            "gateway"
+          ]
+        },
+        "allowOriginalDownload": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "defaultPrivate",
+        "sharingEnabled",
+        "maxShareTtlSeconds",
+        "downloadTtlSeconds",
+        "revokeMode",
+        "allowOriginalDownload"
+      ],
+      "additionalProperties": false
+    },
+    "notification": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "notification"
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "inApp",
+              "wechatSubscription",
+              "sms"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "credential": {
+          "type": "object",
+          "properties": {
+            "secretRef": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "secretVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          "required": [
+            "secretRef",
+            "secretVersion"
+          ],
+          "additionalProperties": false
+        },
+        "templateRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "version"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "userConsentRequired": {
+          "const": true
+        },
+        "enabledEvents": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "exportSucceeded",
+              "exportFailed",
+              "generationSucceeded",
+              "generationFailed",
+              "paymentFulfilled",
+              "refundCompleted",
+              "storageWarning",
+              "membershipExpiring"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 8,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "channels",
+        "templateRefs",
+        "userConsentRequired",
+        "enabledEvents"
+      ],
+      "additionalProperties": false
+    },
+    "retention": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "retention"
+        },
+        "trashDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
+        },
+        "outputDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
+        },
+        "temporaryHours": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168
+        },
+        "revisionKeepCount": {
+          "type": "integer",
+          "minimum": 20,
+          "maximum": 1000
+        },
+        "backupRetentionDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "auditRetentionDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "honorPins": {
+          "const": true
+        },
+        "replayDeletionTombstones": {
+          "const": true
+        }
+      },
+      "required": [
+        "kind",
+        "trashDays",
+        "outputDays",
+        "temporaryHours",
+        "revisionKeepCount",
+        "backupRetentionDays",
+        "auditRetentionDays",
+        "honorPins",
+        "replayDeletionTombstones"
+      ],
+      "additionalProperties": false
+    },
+    "monitor": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "monitor"
+        },
+        "dailyBudgetWarnRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "dailyBudgetStopRatio": {
+          "const": 1
+        },
+        "storageWarnRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "apiErrorRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "queueOldestSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        },
+        "alertSinkRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "redactPersonalData": {
+          "const": true
+        }
+      },
+      "required": [
+        "kind",
+        "dailyBudgetWarnRatio",
+        "dailyBudgetStopRatio",
+        "storageWarnRatio",
+        "apiErrorRatio",
+        "queueOldestSeconds",
+        "alertSinkRefs",
+        "redactPersonalData"
+      ],
+      "additionalProperties": false
+    },
+    "workspace": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "workspace"
+        },
+        "defaultFeatures": {
+          "type": "object",
+          "properties": {
+            "storageBytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxProjectPhotos": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "maxSpreads": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "exportDpis": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  72,
+                  150,
+                  300
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 3,
+              "uniqueItems": true
+            },
+            "exportConcurrency": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "aiConcurrency": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "seatLimit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "commercialTemplateSetIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 500
+            }
+          },
+          "required": [
+            "storageBytes",
+            "maxProjectPhotos",
+            "maxSpreads",
+            "exportDpis",
+            "exportConcurrency",
+            "aiConcurrency",
+            "seatLimit",
+            "commercialTemplateSetIds"
+          ],
+          "additionalProperties": false
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "owner",
+              "admin",
+              "designer",
+              "viewer"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true
+        },
+        "designerCanDeleteUnusedAssets": {
+          "type": "boolean"
+        },
+        "seatInvitationEnabled": {
+          "const": false
+        },
+        "byosEnabled": {
+          "const": false
+        },
+        "byokEnabled": {
+          "const": false
+        }
+      },
+      "required": [
+        "kind",
+        "defaultFeatures",
+        "roles",
+        "designerCanDeleteUnusedAssets",
+        "seatInvitationEnabled",
+        "byosEnabled",
+        "byokEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "account": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "account"
+        },
+        "deletionGraceDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90
+        },
+        "requireReauthentication": {
+          "const": true
+        },
+        "sessionRevokeOnDeletion": {
+          "const": true
+        },
+        "defaultDisplayTimezone": {
+          "const": "Asia/Shanghai"
+        },
+        "privacyPolicyVersion": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "termsVersion": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "deletionGraceDays",
+        "requireReauthentication",
+        "sessionRevokeOnDeletion",
+        "defaultDisplayTimezone",
+        "privacyPolicyVersion",
+        "termsVersion"
+      ],
+      "additionalProperties": false
+    },
+    "site": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "site"
+        },
+        "productName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "publicOrigin": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^https://"
+        },
+        "miniAppId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "supportContact": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "maintenanceMode": {
+          "type": "boolean"
+        },
+        "webEnabled": {
+          "type": "boolean"
+        },
+        "miniEnabled": {
+          "type": "boolean"
+        },
+        "privacyPolicyVersion": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "termsVersion": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "productName",
+        "publicOrigin",
+        "miniAppId",
+        "supportContact",
+        "maintenanceMode",
+        "webEnabled",
+        "miniEnabled",
+        "privacyPolicyVersion",
+        "termsVersion"
+      ],
+      "additionalProperties": false
+    },
+    "upload": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "upload"
+        },
+        "allowedMimeTypes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "image/jpeg",
+              "image/png"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true
+        },
+        "maxFileBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 25000000
+        },
+        "maxSourcePixels": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 80000000
+        },
+        "maxProjectPhotos": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "previewLongEdge": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 1600
+        },
+        "maxFolderDepth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "maxFolderNameChars": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 80
+        },
+        "multipartEnabled": {
+          "type": "boolean"
+        },
+        "multipartThresholdBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 25000000
+        },
+        "multipartPartBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 25000000
+        },
+        "activeStorageProfileRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "allowedMimeTypes",
+        "maxFileBytes",
+        "maxSourcePixels",
+        "maxProjectPhotos",
+        "previewLongEdge",
+        "maxFolderDepth",
+        "maxFolderNameChars",
+        "multipartEnabled",
+        "activeStorageProfileRef"
+      ],
+      "additionalProperties": false
+    },
+    "aiRoute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "aiRoute"
+        },
+        "capability": {
+          "enum": [
+            "textToImage",
+            "imageToImage",
+            "textSuggestion",
+            "moderation"
+          ]
+        },
+        "primaryModelRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "fallbackModelRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "version"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 10
+        },
+        "fallbackPolicy": {
+          "const": "beforeAcceptanceOnly"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "capability",
+        "primaryModelRef",
+        "fallbackModelRefs",
+        "fallbackPolicy",
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "aiPricing": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "aiPricing"
+        },
+        "costRuleId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "modelRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "presetRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "creditsPerImage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "estimatedProviderCostFen": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "quoteTtlSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 300
+        },
+        "unknownFinalTimeoutSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 1800
+        },
+        "countPerChildTask": {
+          "const": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "costRuleId",
+        "modelRef",
+        "presetRef",
+        "creditsPerImage",
+        "estimatedProviderCostFen",
+        "quoteTtlSeconds",
+        "unknownFinalTimeoutSeconds",
+        "countPerChildTask",
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "albumDefaults": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "albumDefaults"
+        },
+        "pageWidthMm": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 1000
+        },
+        "pageHeightMm": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 1000
+        },
+        "interiorSpreadCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "bleedMm": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "safeMm": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "templateRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "pageWidthMm",
+        "pageHeightMm",
+        "interiorSpreadCount",
+        "bleedMm",
+        "safeMm",
+        "templateRef"
+      ],
+      "additionalProperties": false
+    },
+    "root": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/storage"
+        },
+        {
+          "$ref": "#/$defs/aiConnection"
+        },
+        {
+          "$ref": "#/$defs/auth"
+        },
+        {
+          "$ref": "#/$defs/payment"
+        },
+        {
+          "$ref": "#/$defs/sku"
+        },
+        {
+          "$ref": "#/$defs/editor"
+        },
+        {
+          "$ref": "#/$defs/layout"
+        },
+        {
+          "$ref": "#/$defs/export"
+        },
+        {
+          "$ref": "#/$defs/queue"
+        },
+        {
+          "$ref": "#/$defs/content"
+        },
+        {
+          "$ref": "#/$defs/share"
+        },
+        {
+          "$ref": "#/$defs/notification"
+        },
+        {
+          "$ref": "#/$defs/retention"
+        },
+        {
+          "$ref": "#/$defs/monitor"
+        },
+        {
+          "$ref": "#/$defs/workspace"
+        },
+        {
+          "$ref": "#/$defs/account"
+        },
+        {
+          "$ref": "#/$defs/site"
+        },
+        {
+          "$ref": "#/$defs/upload"
+        },
+        {
+          "$ref": "#/$defs/aiRoute"
+        },
+        {
+          "$ref": "#/$defs/aiPricing"
+        },
+        {
+          "$ref": "#/$defs/albumDefaults"
+        }
+      ]
+    }
+  },
+  "$ref": "#/$defs/root",
+  "x-semantic-invariants": [
+    "kind equals admin configuration namespace; no arbitrary credentials, header maps, scripts or raw SQL.",
+    "Endpoint host allowlist, DNS/rebinding/redirect rules are runtime validation; schema HTTPS alone is insufficient.",
+    "Config release validates full dependency set, secrets authorization and test freshness/hash before atomic pointer switch.",
+    "Storage KMS/CDN, optional SMS/payment/notification/multipart fields must match implemented adapter capability.",
+    "Workspace/queue/export limits cannot exceed deployment hard caps or bought entitlements; budget zero disables new paid generation.",
+    "Cross-field: autosaveIdleMs<=autosaveMaxMs; minPhotos<=maxPhotos; heartbeatSeconds<leaseSeconds; retry backoffs align to retryLimit; weights sum to1.",
+    "textSuggestion is reserved/off in v1; no enabled route until a separate text DTO/provider/billing contract is implemented."
+  ]
+}

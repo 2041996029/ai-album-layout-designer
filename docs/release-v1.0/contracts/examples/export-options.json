@@ -1,0 +1,12 @@
+{
+  "format": "png",
+  "dpi": 300,
+  "view": "spread",
+  "pageIds": [
+    "spr_01",
+    "spr_02"
+  ],
+  "includeCover": false,
+  "bleedMm": 3,
+  "jpegMatte": "#FFFFFF"
+}

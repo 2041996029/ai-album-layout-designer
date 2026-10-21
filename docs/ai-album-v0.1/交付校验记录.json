@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "scope": "Document package validation only; no product services implemented or tested",
+  "markdown_documents": 8,
+  "svg_screens": 8,
+  "prototype_pdf_pages": 8,
+  "manuscript_pdf_pages": 30,
+  "word_embedded_prototypes": 8,
+  "word_tables": 23,
+  "filter_presets": 33,
+  "local_html_references_checked": 54,
+  "source_records": 12,
+  "visual_inspection": "Rendered all 8 SVGs to PNG and reviewed contact sheet; inspected manuscript PDF table page and prototype PDF page; fixed title/image pagination",
+  "open_decisions": [
+    "Technical route final approval",
+    "Team, budget and timeline",
+    "SKU prices and quotas",
+    "Cloud and AI vendors",
+    "Payment access for actual operating entity",
+    "Fonts and template licenses"
+  ]
+}

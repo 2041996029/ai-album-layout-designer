@@ -1,0 +1,844 @@
+erDiagram
+    users {
+        text id PK
+        bigint revision
+    }
+    auth_identities {
+        text id PK
+        text user_id
+        text app_id
+    }
+    users ||--o{ auth_identities : "user_id"
+    auth_sessions {
+        text id PK
+        text user_id
+        timestamptz expires_at
+        text rotated_from_id
+    }
+    users ||--o{ auth_sessions : "user_id"
+    auth_sessions |o--o{ auth_sessions : "rotated_from_id"
+    auth_challenges {
+        text id PK
+        text user_id
+        text state
+        timestamptz expires_at
+        bigint revision
+    }
+    users |o--o{ auth_challenges : "user_id"
+    binding_requests {
+        text id PK
+        text user_id
+        text challenge_id
+        text app_id
+        text state
+        timestamptz expires_at
+        bigint revision
+    }
+    users ||--o{ binding_requests : "user_id"
+    auth_challenges ||--o{ binding_requests : "challenge_id"
+    account_deletion_requests {
+        text id PK
+        text user_id
+        text state
+        bigint revision
+    }
+    users ||--o{ account_deletion_requests : "user_id"
+    workspaces {
+        text id PK
+        text owner_user_id
+        text state
+        bigint revision
+    }
+    users ||--o{ workspaces : "owner_user_id"
+    workspace_members {
+        text id PK
+        text workspace_id FK
+        text user_id
+        text state
+        bigint revision
+    }
+    workspaces ||--o{ workspace_members : "workspace_id"
+    users ||--o{ workspace_members : "user_id"
+    workspace_settings {
+        text id PK
+        text workspace_id FK
+        bigint revision
+    }
+    workspaces ||--o| workspace_settings : "workspace_id"
+    user_preferences {
+        text id PK
+        text user_id
+        bigint revision
+    }
+    users ||--o| user_preferences : "user_id"
+    secret_references {
+        text id PK
+        text state
+    }
+    admin_role_assignments {
+        text id PK
+        text user_id
+        timestamptz expires_at
+    }
+    users ||--o{ admin_role_assignments : "user_id"
+    config_drafts {
+        text id PK
+        bigint revision
+    }
+    users ||--o{ config_drafts : "updated_by"
+    config_releases {
+        text id PK
+        text previous_release_id
+    }
+    users ||--o{ config_releases : "published_by"
+    config_releases |o--o{ config_releases : "previous_release_id, environment"
+    config_active_releases {
+        text id PK
+        text release_id
+        bigint revision
+    }
+    config_releases ||--o| config_active_releases : "release_id, environment"
+    config_release_items {
+        text id PK
+        text release_id
+    }
+    config_releases ||--o{ config_release_items : "release_id"
+    config_tests {
+        text id PK
+        text draft_id
+        text release_id
+        text subject_id
+        text state
+    }
+    users ||--o{ config_tests : "executed_by"
+    config_drafts |o--o{ config_tests : "draft_id, environment"
+    config_releases |o--o{ config_tests : "release_id, environment"
+    audit_events {
+        text id PK
+        text workspace_id
+        text actor_user_id
+        text target_id
+        text request_id
+    }
+    workspaces |o--o{ audit_events : "workspace_id"
+    users |o--o{ audit_events : "actor_user_id"
+    license_versions {
+        text id PK
+        integer version
+    }
+    storage_profiles {
+        text id PK
+        text state
+        bigint revision
+    }
+    storage_profile_versions {
+        text id PK
+        text profile_id
+        integer version
+        text secret_reference_id
+    }
+    storage_profiles ||--o{ storage_profile_versions : "profile_id, environment"
+    secret_references ||--o{ storage_profile_versions : "secret_reference_id, environment"
+    storage_objects {
+        text id PK
+        text workspace_id FK
+        text profile_version_id
+        text object_version_id
+        text state
+    }
+    workspaces ||--o{ storage_objects : "workspace_id"
+    storage_profile_versions ||--o{ storage_objects : "profile_version_id"
+    asset_folders {
+        text id PK
+        text workspace_id FK
+        text parent_id
+        bigint revision
+    }
+    workspaces ||--o{ asset_folders : "workspace_id"
+    asset_folders |o--o{ asset_folders : "parent_id"
+    users ||--o{ asset_folders : "created_by"
+    assets {
+        text id PK
+        text workspace_id FK
+        text folder_id
+        text original_object_id
+        text state
+        bigint revision
+    }
+    workspaces ||--o{ assets : "workspace_id"
+    asset_folders |o--o{ assets : "folder_id"
+    storage_objects |o--o{ assets : "original_object_id"
+    asset_variants {
+        text id PK
+        text workspace_id FK
+        text asset_id
+        text storage_object_id
+    }
+    workspaces ||--o{ asset_variants : "workspace_id"
+    assets ||--o{ asset_variants : "asset_id"
+    storage_objects ||--o{ asset_variants : "storage_object_id"
+    storage_usage_accounts {
+        text id PK
+        text workspace_id FK
+        bigint revision
+    }
+    workspaces ||--o{ storage_usage_accounts : "workspace_id"
+    storage_quota_reservations {
+        text id PK
+        text workspace_id FK
+        text usage_account_id
+        text operation_id
+        text state
+        timestamptz expires_at
+    }
+    workspaces ||--o{ storage_quota_reservations : "workspace_id"
+    storage_usage_accounts ||--o{ storage_quota_reservations : "usage_account_id"
+    upload_sessions {
+        text id PK
+        text workspace_id FK
+        text asset_id
+        text quota_reservation_id
+        text profile_version_id
+        text state
+        timestamptz expires_at
+        bigint revision
+    }
+    workspaces ||--o{ upload_sessions : "workspace_id"
+    assets ||--o| upload_sessions : "asset_id"
+    storage_quota_reservations ||--o{ upload_sessions : "quota_reservation_id"
+    storage_profile_versions ||--o{ upload_sessions : "profile_version_id"
+    users ||--o{ upload_sessions : "created_by"
+    trash_operations {
+        text id PK
+        text workspace_id FK
+        text operation_id
+        text state
+        bigint revision
+    }
+    workspaces ||--o{ trash_operations : "workspace_id"
+    users ||--o{ trash_operations : "created_by"
+    trash_items {
+        text id PK
+        text workspace_id FK
+        text trash_operation_id
+        text asset_id
+        text folder_id
+        text original_parent_id
+    }
+    workspaces ||--o{ trash_items : "workspace_id"
+    trash_operations ||--o{ trash_items : "trash_operation_id"
+    assets |o--o{ trash_items : "asset_id"
+    asset_folders |o--o{ trash_items : "folder_id"
+    asset_folders |o--o{ trash_items : "original_parent_id"
+    storage_migrations {
+        text id PK
+        text workspace_id FK
+        text source_profile_version_id
+        text target_profile_version_id
+        text state
+        bigint revision
+    }
+    workspaces ||--o{ storage_migrations : "workspace_id"
+    storage_profile_versions ||--o{ storage_migrations : "source_profile_version_id"
+    storage_profile_versions ||--o{ storage_migrations : "target_profile_version_id"
+    users ||--o{ storage_migrations : "confirmed_by"
+    storage_migration_items {
+        text id PK
+        text workspace_id FK
+        text migration_id
+        text source_object_id
+        text target_object_id
+        text state
+    }
+    workspaces ||--o{ storage_migration_items : "workspace_id"
+    storage_migrations ||--o{ storage_migration_items : "migration_id"
+    storage_objects ||--o{ storage_migration_items : "source_object_id"
+    storage_objects |o--o{ storage_migration_items : "target_object_id"
+    projects {
+        text id PK
+        text workspace_id FK
+        text state
+    }
+    workspaces ||--o{ projects : "workspace_id"
+    users ||--o{ projects : "created_by"
+    project_revisions {
+        text id PK
+        text workspace_id FK
+        text project_id
+        bigint number
+        text storage_object_id
+        text command_id
+    }
+    workspaces ||--o{ project_revisions : "workspace_id"
+    projects ||--o{ project_revisions : "project_id"
+    storage_objects ||--o{ project_revisions : "storage_object_id"
+    users ||--o{ project_revisions : "created_by"
+    project_revision_assets {
+        text id PK
+        text workspace_id FK
+        text revision_id
+        text asset_id
+    }
+    workspaces ||--o{ project_revision_assets : "workspace_id"
+    project_revisions ||--o{ project_revision_assets : "revision_id"
+    assets ||--o{ project_revision_assets : "asset_id"
+    recovery_drafts {
+        text id PK
+        text workspace_id FK
+        text project_id
+        text user_id
+        text storage_object_id
+        timestamptz expires_at
+        bigint revision
+    }
+    workspaces ||--o{ recovery_drafts : "workspace_id"
+    projects ||--o{ recovery_drafts : "project_id"
+    storage_objects ||--o{ recovery_drafts : "storage_object_id"
+    users ||--o{ recovery_drafts : "user_id"
+    templates {
+        text id PK
+        text state
+        bigint revision
+    }
+    fonts {
+        text id PK
+        text state
+        bigint revision
+    }
+    filters {
+        text id PK
+        text state
+        bigint revision
+    }
+    template_versions {
+        text id PK
+        text template_id
+        integer version
+        text license_version_id
+        text storage_workspace_id
+        text storage_object_id
+    }
+    templates ||--o{ template_versions : "template_id"
+    license_versions ||--o{ template_versions : "license_version_id"
+    storage_objects ||--o{ template_versions : "storage_storage_object_id"
+    font_versions {
+        text id PK
+        text font_id
+        integer version
+        text license_version_id
+        text storage_workspace_id
+        text storage_object_id
+    }
+    fonts ||--o{ font_versions : "font_id"
+    license_versions ||--o{ font_versions : "license_version_id"
+    storage_objects ||--o{ font_versions : "storage_storage_object_id"
+    filter_versions {
+        text id PK
+        text filter_id
+        integer version
+        text license_version_id
+    }
+    filters ||--o{ filter_versions : "filter_id"
+    license_versions ||--o{ filter_versions : "license_version_id"
+    billing_skus {
+        text id PK
+        text state
+        bigint revision
+    }
+    sku_versions {
+        text id PK
+        text sku_id
+        integer version
+        text license_version_id
+    }
+    billing_skus ||--o{ sku_versions : "sku_id"
+    license_versions |o--o{ sku_versions : "license_version_id"
+    orders {
+        text id PK
+        text workspace_id FK
+        text sku_version_id
+        text buyer_user_id
+        bigint amount_fen
+        text state
+        timestamptz expires_at
+        bigint revision
+    }
+    workspaces ||--o{ orders : "workspace_id"
+    sku_versions ||--o{ orders : "sku_version_id"
+    users ||--o{ orders : "buyer_user_id"
+    payment_attempts {
+        text id PK
+        text workspace_id FK
+        text order_id
+        text provider_request_id
+        text provider_transaction_id
+        text state
+        bigint amount_fen
+        bigint revision
+    }
+    workspaces ||--o{ payment_attempts : "workspace_id"
+    orders ||--o{ payment_attempts : "order_id"
+    payment_events {
+        text id PK
+        text workspace_id FK
+        text payment_attempt_id
+        text provider_event_id
+        text provider_transaction_id
+        bigint amount_fen
+    }
+    workspaces ||--o{ payment_events : "workspace_id"
+    payment_attempts ||--o{ payment_events : "payment_attempt_id"
+    refunds {
+        text id PK
+        text workspace_id FK
+        text order_id
+        text payment_attempt_id
+        text operation_id
+        text provider_refund_id
+        bigint amount_fen
+        text state
+        bigint revision
+    }
+    workspaces ||--o{ refunds : "workspace_id"
+    orders ||--o{ refunds : "order_id"
+    payment_attempts ||--o{ refunds : "order_id, payment_attempt_id"
+    redemption_batches {
+        text id PK
+        text sku_version_id
+        timestamptz expires_at
+        text state
+    }
+    sku_versions ||--o{ redemption_batches : "sku_version_id"
+    users ||--o{ redemption_batches : "created_by"
+    redemption_codes {
+        text id PK
+        text batch_id
+        text state
+    }
+    redemption_batches ||--o{ redemption_codes : "batch_id"
+    redemptions {
+        text id PK
+        text workspace_id FK
+        text code_id
+        text user_id
+        text operation_id
+        text sku_version_id
+    }
+    workspaces ||--o{ redemptions : "workspace_id"
+    redemption_codes ||--o{ redemptions : "code_id"
+    users ||--o{ redemptions : "user_id"
+    sku_versions ||--o{ redemptions : "sku_version_id"
+    entitlement_grants {
+        text id PK
+        text workspace_id FK
+        text source_order_id
+        text source_redemption_id
+        text state
+        bigint revision
+    }
+    workspaces ||--o{ entitlement_grants : "workspace_id"
+    orders |o--o{ entitlement_grants : "source_order_id"
+    redemptions |o--o{ entitlement_grants : "source_redemption_id"
+    subscriptions {
+        text id PK
+        text workspace_id FK
+        text entitlement_grant_id
+        text source_order_id
+        text state
+    }
+    workspaces ||--o{ subscriptions : "workspace_id"
+    entitlement_grants ||--o| subscriptions : "entitlement_grant_id"
+    orders |o--o{ subscriptions : "source_order_id"
+    credit_accounts {
+        text id PK
+        text workspace_id FK
+        bigint revision
+    }
+    workspaces ||--o| credit_accounts : "workspace_id"
+    credit_lots {
+        text id PK
+        text workspace_id FK
+        text source_grant_id
+        timestamptz expires_at
+        bigint revision
+    }
+    workspaces ||--o{ credit_lots : "workspace_id"
+    entitlement_grants ||--o| credit_lots : "source_grant_id"
+    ai_billing_accounts {
+        text id PK
+        text account_billing_id
+        text state
+        bigint revision
+    }
+    ai_provider_connections {
+        text id PK
+        text billing_account_id
+        text state
+        bigint revision
+    }
+    ai_billing_accounts ||--o{ ai_provider_connections : "billing_account_id, environment"
+    ai_provider_versions {
+        text id PK
+        text connection_id
+        text billing_account_id
+        integer version
+        text adapter_id
+        text secret_reference_id
+    }
+    ai_provider_connections ||--o{ ai_provider_versions : "connection_id, billing_account_id, environment"
+    secret_references ||--o{ ai_provider_versions : "secret_reference_id, environment"
+    ai_models {
+        text id PK
+        text state
+        bigint revision
+    }
+    ai_model_versions {
+        text id PK
+        text model_id
+        integer version
+        text provider_version_id
+        text provider_model_id
+        text license_version_id
+        text test_report_id
+    }
+    ai_models ||--o{ ai_model_versions : "model_id"
+    ai_provider_versions ||--o{ ai_model_versions : "provider_version_id"
+    license_versions ||--o{ ai_model_versions : "license_version_id"
+    config_tests ||--o{ ai_model_versions : "test_report_id"
+    ai_routes {
+        text id PK
+        text state
+        bigint revision
+    }
+    ai_route_versions {
+        text id PK
+        text route_id
+        integer version
+        text primary_model_version_id
+        text fallback_model_version_id
+    }
+    ai_routes ||--o{ ai_route_versions : "route_id"
+    ai_model_versions ||--o{ ai_route_versions : "primary_model_version_id"
+    ai_model_versions |o--o{ ai_route_versions : "fallback_model_version_id"
+    ai_presets {
+        text id PK
+        text state
+        bigint revision
+    }
+    cost_rule_versions {
+        text id PK
+        integer version
+        bigint credit_cost
+    }
+    ai_preset_versions {
+        text id PK
+        text preset_id
+        integer version
+        text license_version_id
+        text cost_rule_version_id
+        text example_license_version_id
+    }
+    ai_presets ||--o{ ai_preset_versions : "preset_id"
+    license_versions ||--o{ ai_preset_versions : "license_version_id"
+    cost_rule_versions ||--o{ ai_preset_versions : "cost_rule_version_id"
+    license_versions |o--o{ ai_preset_versions : "example_license_version_id"
+    ai_preset_models {
+        text id PK
+        text preset_version_id
+        text model_version_id
+    }
+    ai_preset_versions ||--o{ ai_preset_models : "preset_version_id"
+    ai_model_versions ||--o{ ai_preset_models : "model_version_id"
+    budget_days {
+        text id PK
+        text billing_account_id
+        bigint revision
+    }
+    ai_billing_accounts ||--o{ budget_days : "billing_account_id"
+    provider_budget_days {
+        text id PK
+        text connection_id
+        text billing_account_id
+        text budget_day_id
+        bigint revision
+    }
+    budget_days ||--o{ provider_budget_days : "budget_day_id, billing_account_id"
+    ai_provider_connections ||--o{ provider_budget_days : "connection_id, billing_account_id"
+    generation_consents {
+        text id PK
+        text workspace_id FK
+        text user_id
+        text reference_asset_id
+    }
+    workspaces ||--o{ generation_consents : "workspace_id"
+    users ||--o{ generation_consents : "user_id"
+    assets |o--o{ generation_consents : "reference_asset_id"
+    generation_quotes {
+        text id PK
+        text workspace_id FK
+        text config_release_id
+        text route_version_id
+        text model_version_id
+        text provider_version_id
+        text preset_version_id
+        text cost_rule_version_id
+        text consent_id
+        text reference_asset_id
+        bigint credit_cost
+        timestamptz expires_at
+    }
+    workspaces ||--o{ generation_quotes : "workspace_id"
+    config_releases ||--o{ generation_quotes : "config_release_id"
+    ai_route_versions ||--o{ generation_quotes : "route_version_id"
+    ai_model_versions ||--o{ generation_quotes : "model_version_id, provider_version_id"
+    ai_preset_versions |o--o{ generation_quotes : "preset_version_id"
+    cost_rule_versions ||--o{ generation_quotes : "cost_rule_version_id"
+    generation_consents ||--o{ generation_quotes : "consent_id"
+    assets |o--o{ generation_quotes : "reference_asset_id"
+    export_preflights {
+        text id PK
+        text workspace_id FK
+        text project_id
+        text revision_id
+        timestamptz expires_at
+    }
+    workspaces ||--o{ export_preflights : "workspace_id"
+    project_revisions ||--o{ export_preflights : "project_id, revision_id"
+    job_snapshots {
+        text id PK
+        text workspace_id FK
+        text project_id
+        text revision_id
+        text quote_id
+        text preflight_id
+        text config_release_id
+    }
+    workspaces ||--o{ job_snapshots : "workspace_id"
+    project_revisions |o--o{ job_snapshots : "project_id, revision_id"
+    generation_quotes |o--o{ job_snapshots : "quote_id"
+    export_preflights |o--o{ job_snapshots : "project_id, revision_id, preflight_id"
+    config_releases ||--o{ job_snapshots : "config_release_id"
+    jobs {
+        text id PK
+        text workspace_id FK
+        text snapshot_id
+        text quote_id
+        text parent_job_id
+        text state
+        bigint fence
+        bigint revision
+        text provider_request_id
+    }
+    workspaces ||--o{ jobs : "workspace_id"
+    job_snapshots ||--o| jobs : "snapshot_id"
+    generation_quotes |o--o| jobs : "quote_id"
+    jobs |o--o{ jobs : "parent_job_id"
+    users ||--o{ jobs : "created_by"
+    job_attempts {
+        text id PK
+        text workspace_id FK
+        text job_id
+        bigint fence
+        text worker_id
+        text state
+        text provider_request_id
+        text provider_job_id
+    }
+    workspaces ||--o{ job_attempts : "workspace_id"
+    jobs ||--o{ job_attempts : "job_id"
+    resource_pins {
+        text id PK
+        text workspace_id FK
+        text job_id
+        text storage_workspace_id
+        text storage_object_id
+        text asset_id
+        text font_version_id
+        text template_version_id
+        text filter_version_id
+    }
+    workspaces ||--o{ resource_pins : "workspace_id"
+    jobs ||--o{ resource_pins : "job_id"
+    storage_objects ||--o{ resource_pins : "storage_storage_object_id"
+    assets |o--o{ resource_pins : "asset_id"
+    font_versions |o--o{ resource_pins : "font_version_id"
+    template_versions |o--o{ resource_pins : "template_version_id"
+    filter_versions |o--o{ resource_pins : "filter_version_id"
+    job_outputs {
+        text id PK
+        text workspace_id FK
+        text job_id
+        text storage_object_id
+        timestamptz expires_at
+    }
+    workspaces ||--o{ job_outputs : "workspace_id"
+    jobs ||--o{ job_outputs : "job_id"
+    storage_objects ||--o{ job_outputs : "storage_object_id"
+    layout_candidates {
+        text id PK
+        text workspace_id FK
+        text job_id
+        text project_id
+        text base_revision_id
+        timestamptz expires_at
+    }
+    workspaces ||--o{ layout_candidates : "workspace_id"
+    jobs ||--o{ layout_candidates : "job_id"
+    project_revisions ||--o{ layout_candidates : "project_id, base_revision_id"
+    credit_reservations {
+        text id PK
+        text workspace_id FK
+        text job_id
+        text quote_id
+        bigint amount
+        text state
+        timestamptz expires_at
+        bigint revision
+    }
+    workspaces ||--o{ credit_reservations : "workspace_id"
+    generation_quotes ||--o| credit_reservations : "quote_id"
+    jobs ||--o| credit_reservations : "job_id, quote_id"
+    credit_reservation_allocations {
+        text id PK
+        text workspace_id FK
+        text reservation_id
+        text lot_id
+        bigint amount
+    }
+    workspaces ||--o{ credit_reservation_allocations : "workspace_id"
+    credit_reservations ||--o{ credit_reservation_allocations : "reservation_id"
+    credit_lots ||--o{ credit_reservation_allocations : "lot_id"
+    credit_ledger {
+        text id PK
+        text workspace_id FK
+        text operation_id
+        text operation_group_id
+        text lot_id
+        text reservation_id
+        bigint amount
+    }
+    workspaces ||--o{ credit_ledger : "workspace_id"
+    credit_lots ||--o{ credit_ledger : "lot_id"
+    credit_reservations |o--o{ credit_ledger : "reservation_id"
+    budget_reservations {
+        text id PK
+        text workspace_id FK
+        text job_id
+        text quote_id
+        text billing_account_id
+        text connection_id
+        text provider_version_id
+        text budget_day_id
+        text provider_budget_day_id
+        text state
+        timestamptz expires_at
+        bigint revision
+    }
+    workspaces ||--o{ budget_reservations : "workspace_id"
+    jobs ||--o| budget_reservations : "job_id, quote_id"
+    ai_provider_versions ||--o{ budget_reservations : "provider_version_id, connection_id, billing_account_id"
+    budget_days ||--o{ budget_reservations : "budget_day_id, billing_account_id"
+    provider_budget_days ||--o{ budget_reservations : "provider_budget_day_id, budget_day_id, billing_account_id, connection_id"
+    provider_cost_ledger {
+        text id PK
+        text billing_account_id
+        text budget_day_id
+        text reservation_id
+        text operation_id
+        bigint amount_fen
+    }
+    budget_days ||--o{ provider_cost_ledger : "budget_day_id, billing_account_id"
+    budget_reservations |o--o{ provider_cost_ledger : "reservation_id"
+    generation_provenance {
+        text id PK
+        text workspace_id FK
+        text job_id
+        text asset_id
+        text quote_id
+        text consent_id
+        text provider_version_id
+        text model_version_id
+        text preset_version_id
+        text provider_request_id
+        text provider_job_id
+        text license_version_id
+    }
+    workspaces ||--o{ generation_provenance : "workspace_id"
+    jobs ||--o{ generation_provenance : "job_id, quote_id"
+    assets ||--o| generation_provenance : "asset_id"
+    generation_consents ||--o{ generation_provenance : "consent_id"
+    ai_model_versions ||--o{ generation_provenance : "model_version_id, provider_version_id"
+    ai_preset_versions |o--o{ generation_provenance : "preset_version_id"
+    license_versions ||--o{ generation_provenance : "license_version_id"
+    outbox {
+        text id PK
+        text workspace_id
+        text aggregate_id
+    }
+    workspaces |o--o{ outbox : "workspace_id"
+    idempotency_keys {
+        text id PK
+        text workspace_id
+        text state
+        text resource_id
+        timestamptz expires_at
+    }
+    workspaces |o--o{ idempotency_keys : "workspace_id"
+    share_links {
+        text id PK
+        text workspace_id FK
+        text project_id
+        text revision_id
+        text state
+        timestamptz expires_at
+        bigint revision
+    }
+    workspaces ||--o{ share_links : "workspace_id"
+    project_revisions ||--o{ share_links : "project_id, revision_id"
+    users ||--o{ share_links : "created_by"
+    share_access_events {
+        text id PK
+        text workspace_id FK
+        text share_link_id
+        text request_id
+    }
+    workspaces ||--o{ share_access_events : "workspace_id"
+    share_links ||--o{ share_access_events : "share_link_id"
+    notification_preferences {
+        text id PK
+        text workspace_id FK
+        text user_id
+        bigint revision
+    }
+    workspaces ||--o{ notification_preferences : "workspace_id"
+    users ||--o{ notification_preferences : "user_id"
+    notifications {
+        text id PK
+        text workspace_id FK
+        text recipient_user_id
+        timestamptz expires_at
+    }
+    workspaces ||--o{ notifications : "workspace_id"
+    users ||--o{ notifications : "recipient_user_id"
+    notification_deliveries {
+        text id PK
+        text workspace_id FK
+        text notification_id
+        text state
+        text provider_message_id
+    }
+    workspaces ||--o{ notification_deliveries : "workspace_id"
+    notifications ||--o{ notification_deliveries : "notification_id"
+    deletion_tombstones {
+        text id PK
+        text workspace_id
+        text user_id
+        text target_id
+        text operation_id
+    }
+    workspaces |o--o{ deletion_tombstones : "workspace_id"
+    users |o--o{ deletion_tombstones : "user_id"
+    backup_runs {
+        text id PK
+        text state
+    }

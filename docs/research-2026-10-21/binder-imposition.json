@@ -1,0 +1,114 @@
+{
+  "numLagen": 1,
+  "blaetter": 4,
+  "result": [
+    {
+      "slots": [
+        {
+          "x": 0,
+          "y": 0,
+          "pageIdx": 15
+        },
+        {
+          "x": 105,
+          "y": 0,
+          "pageIdx": 0
+        },
+        {
+          "x": 0,
+          "y": 148.5,
+          "pageIdx": 11
+        },
+        {
+          "x": 105,
+          "y": 148.5,
+          "pageIdx": 4
+        }
+      ],
+      "lage": 1,
+      "sheet": 1,
+      "side": "Front"
+    },
+    {
+      "slots": [
+        {
+          "x": 0,
+          "y": 0,
+          "pageIdx": 1
+        },
+        {
+          "x": 105,
+          "y": 0,
+          "pageIdx": 14
+        },
+        {
+          "x": 0,
+          "y": 148.5,
+          "pageIdx": 5
+        },
+        {
+          "x": 105,
+          "y": 148.5,
+          "pageIdx": 10
+        }
+      ],
+      "lage": 1,
+      "sheet": 1,
+      "side": "Back"
+    },
+    {
+      "slots": [
+        {
+          "x": 0,
+          "y": 0,
+          "pageIdx": 13
+        },
+        {
+          "x": 105,
+          "y": 0,
+          "pageIdx": 2
+        },
+        {
+          "x": 0,
+          "y": 148.5,
+          "pageIdx": 9
+        },
+        {
+          "x": 105,
+          "y": 148.5,
+          "pageIdx": 6
+        }
+      ],
+      "lage": 1,
+      "sheet": 2,
+      "side": "Front"
+    },
+    {
+      "slots": [
+        {
+          "x": 0,
+          "y": 0,
+          "pageIdx": 3
+        },
+        {
+          "x": 105,
+          "y": 0,
+          "pageIdx": 12
+        },
+        {
+          "x": 0,
+          "y": 148.5,
+          "pageIdx": 7
+        },
+        {
+          "x": 105,
+          "y": 148.5,
+          "pageIdx": 8
+        }
+      ],
+      "lage": 1,
+      "sheet": 2,
+      "side": "Back"
+    }
+  ]
+}

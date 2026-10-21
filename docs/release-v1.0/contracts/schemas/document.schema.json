@@ -1,0 +1,1099 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Album Document v1",
+  "x-contract-version": "1.0.0",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "rect": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false
+    },
+    "filterRef": {
+      "type": "object",
+      "properties": {
+        "presetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^F(0[1-9]|[12][0-9]|3[0-3])$"
+        },
+        "recipeVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "presetId",
+        "recipeVersion",
+        "strength",
+        "seed"
+      ],
+      "additionalProperties": false
+    },
+    "templateRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64,
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "crop": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "y": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "type": {
+          "const": "image"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "rotation": {
+          "type": "number",
+          "minimum": -360000,
+          "maximum": 360000
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "assetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "fitMode": {
+          "enum": [
+            "cover",
+            "contain"
+          ],
+          "default": "cover"
+        },
+        "crop": {
+          "$ref": "#/$defs/crop"
+        },
+        "filter": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/filterRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "role": {
+          "enum": [
+            "photo",
+            "decoration",
+            "generated"
+          ],
+          "default": "photo"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotation",
+        "opacity",
+        "visible",
+        "locked",
+        "assetId",
+        "crop"
+      ],
+      "additionalProperties": true
+    },
+    "text": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "type": {
+          "const": "text"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "rotation": {
+          "type": "number",
+          "minimum": -360000,
+          "maximum": 360000
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 20000
+        },
+        "fontAssetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "fontSize": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 10000
+        },
+        "fontWeight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 900
+        },
+        "lineHeight": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 10
+        },
+        "letterSpacing": {
+          "type": "number",
+          "minimum": -1000,
+          "maximum": 1000
+        },
+        "textAlign": {
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "default": "left"
+        },
+        "fill": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^(#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?|transparent)$"
+        },
+        "editableFields": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "text",
+              "fontSize",
+              "fill",
+              "crop"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 4,
+          "uniqueItems": true
+        },
+        "critical": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotation",
+        "opacity",
+        "visible",
+        "locked",
+        "text",
+        "fontAssetId",
+        "fontSize",
+        "fontWeight",
+        "lineHeight",
+        "letterSpacing",
+        "fill"
+      ],
+      "additionalProperties": true
+    },
+    "shape": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "type": {
+          "const": "shape"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "rotation": {
+          "type": "number",
+          "minimum": -360000,
+          "maximum": 360000
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "shapeKind": {
+          "enum": [
+            "rectangle",
+            "ellipse",
+            "line"
+          ]
+        },
+        "fill": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^(#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?|transparent)$"
+        },
+        "stroke": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^(#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?|transparent)$"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotation",
+        "opacity",
+        "visible",
+        "locked",
+        "shapeKind",
+        "fill",
+        "stroke",
+        "strokeWidth"
+      ],
+      "additionalProperties": true
+    },
+    "opaque": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "not": {
+            "enum": [
+              "image",
+              "text",
+              "shape",
+              "group"
+            ]
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": true
+    },
+    "leaf": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/image"
+        },
+        {
+          "$ref": "#/$defs/text"
+        },
+        {
+          "$ref": "#/$defs/shape"
+        },
+        {
+          "$ref": "#/$defs/opaque"
+        }
+      ]
+    },
+    "group5": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "type": {
+          "const": "group"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "rotation": {
+          "type": "number",
+          "minimum": -360000,
+          "maximum": 360000
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 10000,
+          "default": 1
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/leaf"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotation",
+        "opacity",
+        "visible",
+        "locked",
+        "children"
+      ],
+      "additionalProperties": true
+    },
+    "group4": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "type": {
+          "const": "group"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "rotation": {
+          "type": "number",
+          "minimum": -360000,
+          "maximum": 360000
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 10000,
+          "default": 1
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/leaf"
+              },
+              {
+                "$ref": "#/$defs/group5"
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotation",
+        "opacity",
+        "visible",
+        "locked",
+        "children"
+      ],
+      "additionalProperties": true
+    },
+    "group3": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "type": {
+          "const": "group"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "rotation": {
+          "type": "number",
+          "minimum": -360000,
+          "maximum": 360000
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 10000,
+          "default": 1
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/leaf"
+              },
+              {
+                "$ref": "#/$defs/group4"
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotation",
+        "opacity",
+        "visible",
+        "locked",
+        "children"
+      ],
+      "additionalProperties": true
+    },
+    "group2": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "type": {
+          "const": "group"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "rotation": {
+          "type": "number",
+          "minimum": -360000,
+          "maximum": 360000
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 10000,
+          "default": 1
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/leaf"
+              },
+              {
+                "$ref": "#/$defs/group3"
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotation",
+        "opacity",
+        "visible",
+        "locked",
+        "children"
+      ],
+      "additionalProperties": true
+    },
+    "group1": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "type": {
+          "const": "group"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 1000000
+        },
+        "rotation": {
+          "type": "number",
+          "minimum": -360000,
+          "maximum": 360000
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.000001,
+          "maximum": 10000,
+          "default": 1
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/leaf"
+              },
+              {
+                "$ref": "#/$defs/group2"
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotation",
+        "opacity",
+        "visible",
+        "locked",
+        "children"
+      ],
+      "additionalProperties": true
+    },
+    "layer": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/leaf"
+        },
+        {
+          "$ref": "#/$defs/group1"
+        }
+      ]
+    },
+    "spread": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "background": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^(#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?|transparent)$"
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layer"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "templateRef": {
+          "$ref": "#/$defs/templateRef"
+        }
+      },
+      "required": [
+        "id",
+        "background",
+        "layers"
+      ],
+      "additionalProperties": true
+    },
+    "root": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "unit": {
+          "const": "px96"
+        },
+        "colorSpace": {
+          "const": "srgb"
+        },
+        "pageSize": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "number",
+              "minimum": 0.000001,
+              "maximum": 100000
+            },
+            "height": {
+              "type": "number",
+              "minimum": 0.000001,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "width",
+            "height"
+          ],
+          "additionalProperties": false
+        },
+        "printProfile": {
+          "type": "object",
+          "properties": {
+            "bleedMm": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "safeMm": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 20
+            }
+          },
+          "required": [
+            "bleedMm",
+            "safeMm"
+          ],
+          "additionalProperties": false
+        },
+        "cover": {
+          "type": "object",
+          "properties": {
+            "front": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/layer"
+              },
+              "minItems": 0,
+              "maxItems": 100
+            },
+            "back": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/layer"
+              },
+              "minItems": 0,
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "front",
+            "back"
+          ],
+          "additionalProperties": false
+        },
+        "spreads": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spread"
+          },
+          "minItems": 1,
+          "maxItems": 50
+        },
+        "assignmentManifest": {
+          "$ref": "layout.schema.json#/$defs/assignmentManifest"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "projectId",
+        "revision",
+        "unit",
+        "colorSpace",
+        "pageSize",
+        "printProfile",
+        "cover",
+        "spreads"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "$ref": "#/$defs/root",
+  "x-semantic-invariants": [
+    "Global layer/spread IDs unique; recursive layer count <=100 per surface; crop x+width<=1 and y+height<=1.",
+    "Finite JSON numbers only; preserve unknown same-version fields; unsupported layer produces export blocker.",
+    "Only group scale is uniform; render pose is x/y/rotation/scale with local children.",
+    "Referenced asset/font/template versions must be authorized immutable resources in current workspace."
+  ]
+}

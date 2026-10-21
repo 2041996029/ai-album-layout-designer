@@ -1,0 +1,129 @@
+flowchart TD
+  %% Static design contract. IDs match pages.csv; no implemented navigation is implied.
+  subgraph WEB[网页创作与账户]
+    WEB_01["WEB-01 登录"] --> WEB_04["WEB-04 工作台与工作区"]
+    WEB_01 --> WEB_02["WEB-02 账号绑定"]
+    WEB_02 --> WEB_03["WEB-03 注销影响检查"]
+    WEB_04 --> WEB_05["WEB-05 新建与模式"]
+    WEB_04 --> WEB_22["WEB-22 偏好与通知"]
+    WEB_05 --> WEB_06["WEB-06 素材文件夹"]
+    WEB_06 --> WEB_07["WEB-07 上传验证"]
+    WEB_07 -->|ready后| WEB_10["WEB-10 模板预览"]
+    WEB_10 --> WEB_11["WEB-11 规则排版候选"]
+    WEB_11 -->|完整性通过且基线一致| WEB_08["WEB-08 完整编辑器"]
+    WEB_11 -->|无解调整页数密度或显式策略| WEB_05
+    WEB_08 --> WEB_09["WEB-09 历史与恢复"]
+    WEB_08 --> WEB_10
+    WEB_08 -->|局部重排| WEB_11
+    WEB_08 --> WEB_12["WEB-12 AI艺术与用途同意报价"]
+    WEB_05 -->|独立艺术路径| WEB_12
+    WEB_12 -->|确认报价后接受持久任务| WEB_15["WEB-15 任务中心"]
+    WEB_12 --> WEB_13["WEB-13 AI历史与合法结果"]
+    WEB_13 -->|新图片层不覆盖原片| WEB_08
+    WEB_08 --> WEB_14["WEB-14 保存后导出预检"]
+    WEB_14 -->|阻断定位修复| WEB_08
+    WEB_14 -->|警告确认并冻结快照| WEB_15
+    WEB_15 --> WEB_16["WEB-16 任务详情与产物"]
+    WEB_16 -->|生成结果检查通过| WEB_13
+    WEB_16 -->|失败修复后重新预检| WEB_14
+    WEB_16 -->|未知上游状态查询原任务| WEB_16
+    WEB_04 --> WEB_17["WEB-17 权益与点数"]
+    WEB_17 -->|仅owner且渠道允许| WEB_18["WEB-18 支付与服务端确认"]
+    WEB_18 -->|已收款但履约待确认仍查原单| WEB_18
+    WEB_18 --> WEB_19["WEB-19 订单与退款"]
+    WEB_19 -->|本单冻结与渠道结果| WEB_17
+    WEB_17 --> WEB_20["WEB-20 兑换确认"]
+    WEB_20 -->|幂等一次发放| WEB_17
+    WEB_08 --> WEB_21["WEB-21 分享授权与撤销"]
+  end
+  subgraph MINI[小程序快速成册]
+    MINI_01["MINI-01 微信登录与工作区"] --> MINI_02["MINI-02 选片目录上传"]
+    MINI_02 -->|ready后| MINI_03["MINI-03 快速设置"]
+    MINI_03 --> MINI_04["MINI-04 比较核对候选"]
+    MINI_04 -->|有效且基线一致| MINI_05["MINI-05 文字与单图裁剪"]
+    MINI_04 -->|无解| MINI_03
+    MINI_05 --> MINI_06["MINI-06 全册预览与预检"]
+    MINI_06 -->|缺字超框等阻断| MINI_05
+    MINI_06 -->|冻结快照| MINI_07["MINI-07 持久任务与产物"]
+    MINI_01 --> MINI_08["MINI-08 权益订单兑换退款"]
+    MINI_08 -->|真实数字权益准入通过| MINI_08
+    MINI_01 --> MINI_09["MINI-09 AI报价历史"]
+    MINI_09 -->|接受后可切端查看| MINI_07
+    MINI_09 -->|合法结果入素材或模板照片槽| MINI_05
+    MINI_01 --> WEB_02
+    MINI_01 --> WEB_03
+    MINI_05 -.->|电脑继续同作品同revision| WEB_08
+    MINI_07 -.->|同一任务事实| WEB_16
+    MINI_08 -.->|同区权益事实| WEB_17
+  end
+  subgraph COMMON[共同异常与公开受限入口]
+    COMMON_01["COMMON-01 无权访问"]
+    COMMON_02["COMMON-02 不可用资源"]
+    COMMON_03["COMMON-03 维护与能力降级"]
+    COMMON_04["COMMON-04 本地远端恢复冲突"]
+    COMMON_05["COMMON-05 隐私与用途同意"]
+    COMMON_06["COMMON-06 私有分享预览"]
+    COMMON_04 -->|另存恢复草稿或按最新版本重做| WEB_08
+    COMMON_06 -->|撤销到期受众不符| COMMON_02
+  end
+  WEB_08 -->|离线后恢复且409| COMMON_04
+  MINI_05 -->|revision冲突| COMMON_04
+  WEB_21 --> COMMON_06
+  WEB_12 --> COMMON_05
+  MINI_09 --> COMMON_05
+  WEB_01 -->|登录能力未配置| COMMON_03
+  WEB_06 -->|撤权| COMMON_01
+  WEB_16 -->|产物不再可访问| COMMON_02
+  subgraph ADMIN[授权后台]
+    ADMIN_01["ADMIN-01 配置概览"]
+    ADMIN_02["ADMIN-02 系统环境"]
+    ADMIN_03["ADMIN-03 云存储"]
+    ADMIN_04["ADMIN-04 目录策略"]
+    ADMIN_05["ADMIN-05 上传素材"]
+    ADMIN_06["ADMIN-06 AI供应商"]
+    ADMIN_07["ADMIN-07 模型路由"]
+    ADMIN_08["ADMIN-08 风格报价"]
+    ADMIN_09["ADMIN-09 登录账号"]
+    ADMIN_10["ADMIN-10 工作区授权"]
+    ADMIN_11["ADMIN-11 支付渠道"]
+    ADMIN_12["ADMIN-12 商品会员"]
+    ADMIN_13["ADMIN-13 相册默认"]
+    ADMIN_14["ADMIN-14 编辑器排版内容"]
+    ADMIN_15["ADMIN-15 导出"]
+    ADMIN_16["ADMIN-16 队列worker"]
+    ADMIN_17["ADMIN-17 审核标识"]
+    ADMIN_18["ADMIN-18 分享下载"]
+    ADMIN_19["ADMIN-19 通知"]
+    ADMIN_20["ADMIN-20 备份删除恢复"]
+    ADMIN_21["ADMIN-21 成本监控告警"]
+    ADMIN_22["ADMIN-22 草稿测试发布回滚"]
+    ADMIN_23["ADMIN-23 任务查询处理"]
+    ADMIN_24["ADMIN-24 订单退款对账"]
+    ADMIN_25["ADMIN-25 存储迁移"]
+    ADMIN_26["ADMIN-26 素材模型许可"]
+    ADMIN_27["ADMIN-27 审计查询"]
+    ADMIN_28["ADMIN-28 兑换批次与权益纠正"]
+    ADMIN_01 --> ADMIN_02 & ADMIN_03 & ADMIN_04 & ADMIN_05
+    ADMIN_01 --> ADMIN_06 & ADMIN_07 & ADMIN_08 & ADMIN_09
+    ADMIN_01 --> ADMIN_10 & ADMIN_11 & ADMIN_12 & ADMIN_13
+    ADMIN_01 --> ADMIN_14 & ADMIN_15 & ADMIN_16 & ADMIN_17
+    ADMIN_01 --> ADMIN_18 & ADMIN_19 & ADMIN_20 & ADMIN_21
+    ADMIN_02 & ADMIN_03 & ADMIN_04 & ADMIN_05 --> ADMIN_22
+    ADMIN_06 & ADMIN_07 & ADMIN_08 & ADMIN_09 --> ADMIN_22
+    ADMIN_10 & ADMIN_11 & ADMIN_12 & ADMIN_13 --> ADMIN_22
+    ADMIN_14 & ADMIN_15 & ADMIN_16 & ADMIN_17 --> ADMIN_22
+    ADMIN_18 & ADMIN_19 & ADMIN_20 & ADMIN_21 --> ADMIN_22
+    ADMIN_22 -->|结构依赖有效且测试绑定通过后发布| ADMIN_01
+    ADMIN_22 -->|回滚旧组合仍须复验| ADMIN_22
+    ADMIN_03 -->|新prefix不等于迁移| ADMIN_25
+    ADMIN_06 --> ADMIN_23
+    ADMIN_16 --> ADMIN_23
+    ADMIN_11 --> ADMIN_24
+    ADMIN_12 --> ADMIN_28
+    ADMIN_24 -->|异常调整按已配策略;双人控制可选| ADMIN_28
+    ADMIN_08 & ADMIN_14 & ADMIN_17 --> ADMIN_26
+    ADMIN_22 & ADMIN_23 & ADMIN_24 & ADMIN_25 & ADMIN_28 --> ADMIN_27
+    ADMIN_20 -->|隔离恢复演练真实验证| ADMIN_21
+  end
+  ADMIN_01 -->|缺专项权限| COMMON_01
+  ADMIN_22 -->|草稿版本冲突保留草稿| ADMIN_22

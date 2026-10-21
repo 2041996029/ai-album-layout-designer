@@ -1,0 +1,85 @@
+{
+  "scope": "v0.4 configuration design package",
+  "files": [
+    {
+      "path": "01-配置中心与权限.md",
+      "bytes": 6284,
+      "sha256": "54a734a0bb6dc5cd179a6e1829d8ca565c72698e97c1ed02c4a1590ded82b391"
+    },
+    {
+      "path": "02-云存储与自定义文件夹.md",
+      "bytes": 8191,
+      "sha256": "266336a08eee2ce79a640f2be03f9a9623bf5b273f3ebb4fc8066981e380322b"
+    },
+    {
+      "path": "03-AI服务与模型配置.md",
+      "bytes": 8781,
+      "sha256": "d0cc684edffdce499de9326ffdf0a72fb8550019455b4722087a0058e2c1d4b9"
+    },
+    {
+      "path": "04-配置清单与验收.md",
+      "bytes": 10705,
+      "sha256": "5a4d4b7a847e8114894ba7cdb4fc643f7948c009d852508ca23e9bb1d25a7cfe"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2897,
+      "sha256": "f669b8cbddc77b14fc10c5b1c986c4f6fd521e961c6d5b167a667d7b4add634a"
+    },
+    {
+      "path": "artifact-checks.json",
+      "bytes": 812,
+      "sha256": "06f63ac5213f88680c6154dab03c526c53dbcda6a6788f385fd68da483e0cafc"
+    },
+    {
+      "path": "prototypes/P13-configuration-storage.png",
+      "bytes": 154123,
+      "sha256": "0d200c0d1f1a015c4e98187b1c3ea4d10e5e529ebc562534d4af7c0dc35ba0a1"
+    },
+    {
+      "path": "prototypes/P13-configuration-storage.svg",
+      "bytes": 7086,
+      "sha256": "457d740062edf17cf8e56e859369bcfa5528d9d9362b3679366932db482d9b6f"
+    },
+    {
+      "path": "prototypes/P14-asset-folders.png",
+      "bytes": 130680,
+      "sha256": "fd9ae66688be09968783eaf693d46edc9351c29ceccbb409e272c9658dff107d"
+    },
+    {
+      "path": "prototypes/P14-asset-folders.svg",
+      "bytes": 9157,
+      "sha256": "4f0151459cd9dc343ec84af052898002c467495ff1308e0605c0d6bec2ebe77a"
+    },
+    {
+      "path": "prototypes/P15-ai-configuration.png",
+      "bytes": 177132,
+      "sha256": "8c0ab3c3ec6c6cf9ab4d78f60b44414c78537b1421cb89d16cd947149d083f49"
+    },
+    {
+      "path": "prototypes/P15-ai-configuration.svg",
+      "bytes": 7661,
+      "sha256": "3652443dae90ce0b9ff0c8214f1aa967cbebf9dd462b82b73e80fede81c30eda"
+    },
+    {
+      "path": "review.html",
+      "bytes": 42975,
+      "sha256": "ff6f6b7a6177b4e832c4ccc0a8e197f5a551153be5556fdb3d04c45fe63580e9"
+    },
+    {
+      "path": "配置中心与素材目录-v0.4.docx",
+      "bytes": 500630,
+      "sha256": "bdc8685c19ebfed286b0f23b2f17ed33a20e97d0bd28da07fe28828983f41bd4"
+    },
+    {
+      "path": "配置中心与素材目录-v0.4.pdf",
+      "bytes": 46025,
+      "sha256": "b999661dffb6bf2f54bce5ec6bd9ab8a5fff4cfd69aea3c264a6c4faa5c95bfe"
+    },
+    {
+      "path": "配置原型-v0.4.pdf",
+      "bytes": 469065,
+      "sha256": "9c38e20a9b35b7f79ffb316451b027d6090de23db5e0daeee8a91f287f46e5d5"
+    }
+  ]
+}

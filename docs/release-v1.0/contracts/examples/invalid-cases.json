@@ -1,0 +1,303 @@
+[
+  {
+    "id": "SCHEMA-FUTURE",
+    "base": "document.json",
+    "path": [
+      "schemaVersion"
+    ],
+    "value": 99,
+    "rejectionLevel": "schema",
+    "expected": "unsupported schema"
+  },
+  {
+    "id": "NEGATIVE-SIZE",
+    "base": "document.json",
+    "path": [
+      "spreads",
+      0,
+      "layers",
+      0,
+      "width"
+    ],
+    "value": -1,
+    "rejectionLevel": "schema",
+    "expected": "width must be positive"
+  },
+  {
+    "id": "DUPLICATE-LAYER",
+    "base": "document.json",
+    "path": [
+      "spreads",
+      1,
+      "layers",
+      0,
+      "id"
+    ],
+    "value": "image_01",
+    "rejectionLevel": "semantic",
+    "expected": "duplicate layer ID"
+  },
+  {
+    "id": "CROP-OUTSIDE",
+    "base": "document.json",
+    "path": [
+      "spreads",
+      0,
+      "layers",
+      0,
+      "crop"
+    ],
+    "value": {
+      "x": 0.9,
+      "y": 0,
+      "width": 0.2,
+      "height": 1
+    },
+    "rejectionLevel": "semantic",
+    "expected": "crop exceeds normalized source"
+  },
+  {
+    "id": "UNKNOWN-FIELD-SECRET",
+    "base": "config-values.json",
+    "path": [
+      0,
+      "apiKey"
+    ],
+    "value": "not_a_real_secret",
+    "rejectionLevel": "schema",
+    "expected": "plaintext key is not an allowed config field"
+  },
+  {
+    "id": "PREFIX-TRAVERSAL",
+    "base": "config-values.json",
+    "path": [
+      0,
+      "basePrefix"
+    ],
+    "value": "../escape",
+    "rejectionLevel": "schema",
+    "expected": "dot segments"
+  },
+  {
+    "id": "PREFIX-ENCODED",
+    "base": "config-values.json",
+    "path": [
+      0,
+      "basePrefix"
+    ],
+    "value": "album/%2e%2e/private",
+    "rejectionLevel": "semantic",
+    "expected": "decoded traversal"
+  },
+  {
+    "id": "INSECURE-ENDPOINT",
+    "base": "config-values.json",
+    "path": [
+      0,
+      "endpoint"
+    ],
+    "value": "http://169.254.169.254/",
+    "rejectionLevel": "schema",
+    "expected": "HTTPS only; runtime host check also required"
+  },
+  {
+    "id": "UNSUPPORTED-DPI",
+    "base": "export-options.json",
+    "path": [
+      "dpi"
+    ],
+    "value": 1200,
+    "rejectionLevel": "schema",
+    "expected": "DPI not supported"
+  },
+  {
+    "id": "UNKNOWN-PAGE",
+    "base": "export-options.json",
+    "path": [
+      "pageIds"
+    ],
+    "value": [
+      "missing_spread"
+    ],
+    "rejectionLevel": "semantic",
+    "expected": "page not in document"
+  },
+  {
+    "id": "FUTURE-FILTER",
+    "base": "document.json",
+    "path": [
+      "spreads",
+      0,
+      "layers",
+      0,
+      "filter",
+      "presetId"
+    ],
+    "value": "F34",
+    "rejectionLevel": "schema",
+    "expected": "unknown preset"
+  },
+  {
+    "id": "SELECTION-SILENT-OMISSION",
+    "base": "assignment-manifest.json",
+    "path": [
+      "placements"
+    ],
+    "value": [
+      {
+        "assetId": "photo_01",
+        "spreadId": "spr_01",
+        "layerId": "layer_01"
+      },
+      {
+        "assetId": "photo_02",
+        "spreadId": "spr_01",
+        "layerId": "layer_02"
+      },
+      {
+        "assetId": "photo_03",
+        "spreadId": "spr_01",
+        "layerId": "layer_03"
+      },
+      {
+        "assetId": "photo_04",
+        "spreadId": "spr_02",
+        "layerId": "layer_04"
+      },
+      {
+        "assetId": "photo_05",
+        "spreadId": "spr_02",
+        "layerId": "layer_05"
+      },
+      {
+        "assetId": "photo_06",
+        "spreadId": "spr_02",
+        "layerId": "layer_06"
+      },
+      {
+        "assetId": "photo_07",
+        "spreadId": "spr_03",
+        "layerId": "layer_07"
+      },
+      {
+        "assetId": "photo_08",
+        "spreadId": "spr_03",
+        "layerId": "layer_08"
+      },
+      {
+        "assetId": "photo_09",
+        "spreadId": "spr_03",
+        "layerId": "layer_09"
+      },
+      {
+        "assetId": "photo_10",
+        "spreadId": "spr_04",
+        "layerId": "layer_10"
+      },
+      {
+        "assetId": "photo_11",
+        "spreadId": "spr_04",
+        "layerId": "layer_11"
+      }
+    ],
+    "rejectionLevel": "semantic",
+    "expected": "all requires every asset exactly once"
+  },
+  {
+    "id": "SELECTION-DUPLICATE",
+    "base": "assignment-manifest.json",
+    "path": [
+      "placements"
+    ],
+    "value": [
+      {
+        "assetId": "photo_01",
+        "spreadId": "spr_01",
+        "layerId": "layer_01"
+      },
+      {
+        "assetId": "photo_02",
+        "spreadId": "spr_01",
+        "layerId": "layer_02"
+      },
+      {
+        "assetId": "photo_03",
+        "spreadId": "spr_01",
+        "layerId": "layer_03"
+      },
+      {
+        "assetId": "photo_04",
+        "spreadId": "spr_02",
+        "layerId": "layer_04"
+      },
+      {
+        "assetId": "photo_05",
+        "spreadId": "spr_02",
+        "layerId": "layer_05"
+      },
+      {
+        "assetId": "photo_06",
+        "spreadId": "spr_02",
+        "layerId": "layer_06"
+      },
+      {
+        "assetId": "photo_07",
+        "spreadId": "spr_03",
+        "layerId": "layer_07"
+      },
+      {
+        "assetId": "photo_08",
+        "spreadId": "spr_03",
+        "layerId": "layer_08"
+      },
+      {
+        "assetId": "photo_09",
+        "spreadId": "spr_03",
+        "layerId": "layer_09"
+      },
+      {
+        "assetId": "photo_10",
+        "spreadId": "spr_04",
+        "layerId": "layer_10"
+      },
+      {
+        "assetId": "photo_11",
+        "spreadId": "spr_04",
+        "layerId": "layer_11"
+      },
+      {
+        "assetId": "photo_12",
+        "spreadId": "spr_04",
+        "layerId": "layer_12"
+      },
+      {
+        "assetId": "photo_01",
+        "spreadId": "spr_01",
+        "layerId": "layer_01"
+      }
+    ],
+    "rejectionLevel": "semantic",
+    "expected": "forbid duplicates"
+  },
+  {
+    "id": "PROD-LOCAL-SECRETS",
+    "base": "environment.json",
+    "path": [
+      "APP_ENV"
+    ],
+    "value": "prod",
+    "rejectionLevel": "schema",
+    "expected": "production cannot use local secret provider/http origins"
+  },
+  {
+    "id": "WRONG-COST-TYPE",
+    "base": "config-values.json",
+    "path": [
+      1,
+      "dailyBudgetFen"
+    ],
+    "value": 1.5,
+    "rejectionLevel": "schema",
+    "expected": "currency integer"
+  }
+]

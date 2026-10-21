@@ -1,0 +1,609 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>C1 全程 AI 开发实施计划</title><style>body{margin:32px auto;padding:24px;max-width:1100px;background:#f5f4ef;color:#203b35;font:15px/1.9 "Microsoft YaHei",sans-serif}h1,h2{line-height:1.5}h2{margin-top:2em}table{width:100%;border-collapse:collapse;background:white}td,th{border:1px solid #dce2db;padding:10px;text-align:left;vertical-align:top}pre{background:#e8eee7;padding:16px;overflow:auto}a{color:#26614e}section{margin-bottom:48px}code{overflow-wrap:anywhere}@media print{body{margin:0;padding:0;background:white}h2{break-after:avoid}tr{break-inside:avoid}pre{white-space:pre-wrap}}</style></head><body><section id="doc0"><h1>全程 AI 开发：实施与验收入口</h1>
+<p>日期：2026-10-21。用户已明确由 AI 完成开发。本目录把 <a href="../../design-v0.3/README.md">v0.3 评审基线</a>转换为可执行任务；当前交付是实施计划，尚未实现产品功能，也未承诺上线日期。</p>
+<p>全模块统一交接以 <a href="../../release-v1.0/README.md">v1.0研发包</a>和<a href="../../release-v1.0/04-实施与交接索引.md">44项实施索引</a>为准：</p>
+<ul>
+<li><a href="2026-10-21-c2-layout.md">C2 整本排版与完整性</a>：6项。</li>
+<li><a href="2026-10-21-c3-cloud-identity-mini.md">C3 身份、云素材与小程序</a>：8项。</li>
+<li><a href="2026-10-21-c4-jobs-commerce.md">C4 配置、任务与商业</a>：8项。</li>
+<li><a href="2026-10-21-c5-ai-admin.md">C5 AI创作与后台</a>：7项。</li>
+<li><a href="2026-10-21-c6-release-operations.md">C6 集成验收与运维发布</a>：5项。</li>
+</ul>
+<p>后续规格增补：<a href="../../configuration-v0.4/README.md">v0.4 配置中心与素材目录</a>。云存储、自定义目录、AI连接／模型／预算和其他配置进入C3–C5及发布验收，未包含在C1本地闭环的实现范围中。</p>
+<ul>
+<li><a href="2026-10-21-c1-editor-render.md">C1 网页编辑与确定性导出实施计划</a>：10 项任务，包含文件职责、接口、失败用例、验证命令和逐项提交要求。</li>
+<li><a href="2026-10-21-delivery-roadmap.md">实施顺序与上线条件</a>：覆盖 C1–C5、小程序、会员支付、AI 创作和运维上线。</li>
+<li><a href="C1-网页编辑与确定性导出-实施计划.pdf">C1 计划 PDF</a>／<a href="C1-网页编辑与确定性导出-实施计划.docx">Word</a>／<a href="review.html">离线阅读</a>。Markdown 为研发修改的权威版本。</li>
+</ul>
+<h2>如何评审</h2>
+<p>先确认 C1 的交付边界和验收案例，再选择执行方式。建议本会话 AI 逐项执行：C1 的文档、字体、画布、预检接口联系紧密，顺序实施可减少上下文交接；完成后安排一次独立复核。也可选择每项任务分别由 AI 实施与复核，代价是更多独立上下文与协调。</p>
+<p>用户提供的平台、商业模式和导出范围保持原确认结果。“全程 AI 开发”表示研发执行方式，并不等于已经具备微信主体资质、商户号、AI 供应商账号或部署凭据；这些在实际接入前按清单集中确认，不在每项本地开发任务前重复询问。</p>
+<h2>可见交付</h2>
+<p>每项任务交付代码、针对性验证结果和 Git 提交。C1 完成时提供可启动网页、可编辑测试相册、由程序实际导出的 PNG／JPG／PDF 和对应快照／预检清单。现有 <a href="../../export-samples/README.md">AI 设计样片</a>继续保留原标注，两类样片有各自来源。</p>
+<p>当前 GitHub 文档在 <code>docs/ai-album-v0.1</code> 分支、草稿 PR #1 中；<code>main</code> 尚未合并这些资料。实施另建工作分支，文档 PR 不自动变成已上线产品。</p></section><section id="doc1"><h1>C1 网页编辑与确定性导出 Implementation Plan</h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> 交付可在本地启动的网页相册编辑器，从照片导入、图层编辑和保存恢复，到冻结文档、预检及实际 PNG／JPG／普通 PDF 导出。</p>
+<p><strong>Architecture:</strong> 自有文档模型是事实源，Fabric 只是画布适配器。网页与可信 headless 入口共用资源、滤镜、文字布局和渲染包；先实现本地仓库端口，后续 C3 替换为云端仓库，C4 接入持久化任务与权益。</p>
+<p><strong>Tech Stack:</strong> Node 24 LTS、npm workspaces、TypeScript、React、Vite、Fabric、IndexedDB、Vitest、Playwright 固定 Chromium、pdf-lib、fflate；精确候选版本见附录 A，实际安装后生成 lockfile。</p>
+<p><strong>Spec:</strong> <a href="../../design-v0.3/README.md">v0.3 基线</a>、<a href="../../ai-album-v0.1/02-产品需求文档.md">PRD</a>、<a href="../../ai-album-v0.1/03-开发架构与数据接口.md">架构</a>、<a href="../../ai-album-v0.1/filters.csv">33 配方</a>、<a href="../../ai-album-v0.1/05-测试与运维手册.md">测试运维</a>。其他单元归属见<a href="2026-10-21-delivery-roadmap.md">交付路线</a>。</p>
+<p>状态：待评审的实施计划；下列测试代码与命令是实施时要执行的步骤，<strong>本次没有执行产品测试，也没有产品功能通过记录</strong>。用户确认全程 AI 开发；不按人工人数估算交期。</p>
+<h2>Global Constraints</h2>
+<ul>
+<li>文档坐标 <code>px96</code>，<code>schemaVersion=1</code>，<code>colorSpace=srgb</code>；单页为 <code>pageSize</code>，跨页宽度为单页两倍；封面正背面各为单页，另计。</li>
+<li>首期草案允许 1–50 个内页跨页，即 2–100 个内页；封面正面、背面另存，不计内页数量。</li>
+<li>单项目 500 张照片、单图 25MB、100 个图层／跨页；首期单图不超过 80MP。它们是待目标设备验证的容量上限，不是已通过的性能指标。</li>
+<li>首期支持 JPEG、PNG；HEIC、RAW、PSD 暂不接受；不开放任意 SVG 上传。</li>
+<li>Group 禁止循环、重复 ID、NaN／Infinity 和超深嵌套，深度最多 5；图层数组从底到顶。</li>
+<li>图片先校正 EXIF 方向，crop 为校正后源图的归一化矩形，范围必须位于 <code>[0,1]</code>，非空；原片不覆盖。</li>
+<li>原图单列；F01–F33 稳定 ID；强度 0–100%；配方顺序固定；强度在最终效果与原图的线性光域混合；seed 固定。</li>
+<li>文档、素材、字体、模板和滤镜版本可追溯；缺原片不能回退缩略图；字体缺失／无授权、未知 schema、文字超框或不支持字符阻断成品导出。</li>
+<li>裁剪后有效 PPI 100–199 警告；小于 100 强警告，普通数字导出可明确确认继续；不能靠 DPI 标签提升细节。</li>
+<li>导出像素＝逻辑 px × DPI ÷96；600×300mm／300DPI 裁切区 7087×3543px；各边 3mm 出血后 7157×3614px。</li>
+<li>普通 PDF 为 sRGB 栅格页，不承诺 PDF/X、CMYK、可搜索矢量文字、拼版或专业印厂交付。</li>
+<li>网页完整编辑、小程序快速成册、App 预留；C1 仅交付网页与共享核心，其他首期模块仍在 C2–C5。</li>
+</ul>
+<h2>Review Focus</h2>
+<ul>
+<li>RF1：未知图层／扩展字段经过读取、局部编辑、保存后仍完整；未知层不能被静默省略导出。测试归属任务 1、8。</li>
+<li>RF2：IndexedDB 配额不足、并发标签页和保存冲突不毁坏上一版本，不把失败显示为“已保存”。测试归属任务 3。</li>
+<li>RF3：EXIF 6／8、透明 PNG、裁剪越界和极端长宽比不会误转方向、改变原片或虚报 PPI。测试归属任务 2、8。</li>
+<li>RF4：中文标点、组合字符、缺字与字体加载竞态不会以系统字体替代后悄悄导出。测试归属任务 2、5、8。</li>
+<li>RF5：React StrictMode、切换跨页、迟到图片加载和取消不会修改新页面或泄漏画布／对象 URL。测试归属任务 5、6、9。</li>
+</ul>
+<hr />
+<h2>交付边界与统一接口</h2>
+<p>C1 可在单用户本地浏览器完成完整闭环，界面显示“仅此浏览器保存”，提供可恢复的项目包。本地导出进度可取消，关闭页面不会假装仍有后台任务。正式登录、云存储、可靠导出队列和会员验证由 C3／C4 实现。C1 不调用生图、不展示虚构支付成功、不提供可绕过的假会员。</p>
+<p>以下为本计划新增、待评审的工程决定，实施后不得暗改：</p>
+<ul>
+<li><code>MAX_IMPORT_BYTES=25_000_000</code>，<code>MAX_SOURCE_PIXELS=80_000_000</code>，<code>MAX_SURFACE_PIXELS=50_000_000</code>；每跨页 100 层包含递归子层。DPI 仅接受 72、150、300。</li>
+<li>本地浏览器预计工作集上限 768MiB，headless 2GiB；保守估算 <code>12×最大源图像素＋12×输出面像素＋缓存实际字节＋128MiB</code>。超预算明确拒绝并建议拆分或降规格，不暗降清晰度；不是实测内存保证。</li>
+<li>同时解码／渲染 1 个输出面；图片缓存至多 128MiB；滤镜 tile 为 512×512，不创建整张 80MP 的浮点副本。每张 bitmap／canvas 在使用结束后释放。</li>
+<li>所有层以左上为原点，x／y／width／height 为局部坐标，rotation 单位度；group 子层使用父坐标、组只允许统一缩放，避免首版引入不可表达的剪切。图片框缩放通过 crop／fitMode 表达；不支持的画布变换不能写回模型。</li>
+<li><code>fitMode='cover'|'contain'</code>，默认 cover；cover 裁剪比例匹配图框，contain 明确留白；旋转保持源图方向归一化后的坐标。</li>
+<li>保存后的 revision 为正整数；本地新项目 revision=1。保存用 expectedRevision 原子比较，成功加一；草稿的操作不擅自修改 revision。</li>
+<li>自动保存空闲 2 秒、持续操作最多 10 秒触发；撤销至少 100 次操作，历史命令不含图片字节；本地保留最近 20 个恢复 revision，正在导出快照引用的资源不清理。</li>
+<li>C1 原创种子模板 5 个：婚礼、旅行、亲子、写真、国风各 1 个。它们是可编辑占位模板，不继承第三方图片或 Skill 输出。</li>
+<li>关闭导出时释放所有临时资源；PNG 保留透明，JPEG 使用用户显式选择的底色（默认白色），JPG 质量 0.95。多面图片打 ZIP，PDF 每面一页。</li>
+</ul>
+<p>共享类型由指定任务定义，任务外不要另起同义模型：</p>
+<table>
+<thead>
+<tr>
+<th>类型／端口</th>
+<th>定义位置与最低字段</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DocumentModel</code>, <code>Layer</code>, <code>DocumentIssue</code>, <code>FilterRef</code>, <code>TemplateRef</code></td>
+<td>任务 1；v0.1 示例为基础，known layers=image/text/shape/group；未知同版本层为 opaque 对象，保留全部 JSON；Issue 含 code、path、severity；FilterRef 含 presetId／recipeVersion／strength／seed，TemplateRef 含 id／version／sha256</td>
+</tr>
+<tr>
+<td><code>AssetRecord</code>, <code>FontRecord</code>, <code>ResourceManifest</code></td>
+<td>任务 2；资源 id/version、文件 SHA-256、尺寸、来源／授权、状态；字体 face 可含多个本地 WOFF2 子集及各自 hash／字符覆盖</td>
+</tr>
+<tr>
+<td><code>ResourcePort</code></td>
+<td>任务 2；<code>read(id: string, variant: 'original'|'normalized'|'preview'|'font'): Promise&lt;Uint8Array&gt;</code>；找不到则抛带 code 的错误，不能替代 variant</td>
+</tr>
+<tr>
+<td><code>ResourceWriter</code>, <code>AssetBytes</code></td>
+<td>任务 2 定义、任务 3 实现；<code>putAsset(record:AssetRecord,data:AssetBytes):Promise&lt;void&gt;</code>、<code>putFont(record:FontRecord,files:ReadonlyMap&lt;string,Uint8Array&gt;):Promise&lt;void&gt;</code>；AssetBytes 为 original／normalized／preview 三份字节；同 id 不同 hash 禁止覆盖</td>
+</tr>
+<tr>
+<td><code>RevisionStore</code></td>
+<td>任务 3；<code>load(projectId: string, revision?: number): Promise&lt;SavedRevision&gt;</code>；<code>save(doc: DocumentModel, expectedRevision: number, resources: ResourceManifest): Promise&lt;SaveResult&gt;</code></td>
+</tr>
+<tr>
+<td><code>SavedRevision</code>, <code>SaveResult</code></td>
+<td>任务 3；前者含 doc、docHash、resources、savedAt；后者为 <code>{ok:true,value:SavedRevision}</code> 或 <code>{ok:false,code:'REVISION_CONFLICT'|'STORAGE_FULL'|'STORAGE_FAILED',recoveryDraft:DocumentModel}</code></td>
+</tr>
+<tr>
+<td><code>PixelTile</code>, <code>FilterRecipe</code></td>
+<td>任务 4；tile 含 RGBA8 bytes、width、height、offsetX／Y、fullWidth／Height；FilterRef 从 document 导入</td>
+</tr>
+<tr>
+<td><code>RenderInput</code>, <code>RenderSurface</code>, <code>TextMetricsReport</code></td>
+<td>任务 5；RenderInput 含 doc、surface:RenderSurface、manifest、port、signal、pixelScale；RenderSurface 含稳定 id、sourceSpreadId 或 cover、clip:{x,y,width,height}、bleedPx96、background、pixelWidth／Height；文字报告含 layerId、lines:string[]、overflow、unsupportedCodePoints</td>
+</tr>
+<tr>
+<td><code>ExportOptions</code>, <code>SurfaceSpec</code>, <code>ExportSnapshot</code></td>
+<td>任务 8；options 含 format、dpi、view、pageIds、includeCover、bleedMm、jpegMatte；SurfaceSpec 扩展 RenderSurface 的物理 trim／bleed 元数据；snapshot 含已保存 revision、docHash、resources、options、optionsHash、createdAt</td>
+</tr>
+<tr>
+<td><code>PreflightReport</code></td>
+<td>任务 8；含 snapshotHash、blockers、warnings、surfaces；每个 issue 有稳定 id，确认针对这些 id 和 snapshotHash，不接受全局“忽略全部”</td>
+</tr>
+<tr>
+<td><code>Artifact</code>, <code>ArtifactManifest</code></td>
+<td>任务 9；文件名、MIME、bytes／SHA-256、surfaceId、像素／物理尺寸、DPI、revision、snapshotHash、renderBuild；不含原片 GPS</td>
+</tr>
+</tbody>
+</table>
+<h3>文件结构</h3>
+<p>所有路径相对仓库根；每项任务列出具体文件，<code>src/index.ts</code> 仅导出公开接口。</p>
+<p>workspace 包名固定为 <code>@album/document</code>、<code>@album/assets</code>、<code>@album/storage</code>、<code>@album/render</code>、<code>@album/export</code>、<code>@album/web</code>、<code>@album/render-cli</code>，依赖方向由上表决定，不跨包读取私有文件。</p>
+<pre><code class="language-text">packages/document/src/       类型、校验、哈希、命令、模板
+packages/assets/src/         导入、方向、字体、资源合同
+packages/storage/src/        IndexedDB、revision、项目包
+packages/render/src/         CPU 滤镜、字体布局、Fabric 映射
+packages/export/src/         预检、快照、几何、编码与元数据
+apps/web/src/                编辑器 UI、本地项目、导出面板
+apps/render-cli/src/         可信本地快照渲染入口
+tests/fixtures/             自制／明确授权的照片、字体、坏文档
+tests/browser/              真实 Chromium 行为与导出检查
+docs/implementation/c1/     实际环境、验收结果与导出样片
+</code></pre>
+<h2>Task 1: 可校验、无损往返的文档模型</h2>
+<p><strong>Files:</strong> Create <code>package.json</code>, <code>package-lock.json</code>, <code>.nvmrc</code>, <code>tsconfig.json</code>, <code>vitest.config.ts</code>, <code>packages/document/package.json</code>, <code>packages/document/src/{model,validate,canonical,index}.ts</code>, <code>packages/document/src/document.test.ts</code>, <code>tests/fixtures/documents/minimal.json</code>。</p>
+<p><strong>Interfaces:</strong> Consumes v0.1 JSON 字段及本计划 Global Constraints。Produces <code>parseDocument(value: unknown): DocumentModel</code>、<code>validateDocument(doc: DocumentModel): DocumentIssue[]</code>、<code>canonicalDocument(doc: DocumentModel): string</code>、<code>hashDocument(doc: DocumentModel): Promise&lt;string&gt;</code>。解析错误抛 <code>DocumentValidationError</code>，有 issues；未知同版本层不是解析错误，但返回 <code>UNSUPPORTED_LAYER</code> 导出阻断项。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写失败用例 <code>document.test.ts</code>。</strong> 复制 minimal fixture 后增加未知层和 <code>advancedBlend:{mode:'multiply'}</code>；断言 parse→canonical→parse 保留字段；相同对象不同键顺序 hash 相等，数组顺序不同 hash 不同。再断言 NaN、Infinity、负宽高、重复层 ID、6 层嵌套、循环对象、schemaVersion=99 分别产生明确错误；封面与内页 ID 全局唯一。（RF1）</li>
+</ul>
+<p><code>ts
+  expect(parseDocument(JSON.parse(canonicalDocument(doc)))).toEqual(doc);
+  expect(validateDocument(doc).map(i =&gt; i.code)).toContain('UNSUPPORTED_LAYER');
+  expect(() =&gt; parseDocument({...doc, schemaVersion: 99})).toThrow(DocumentValidationError);</code>
+- [ ] <strong>Step 2: 建立仅供测试运行的 workspace 配置，执行</strong> <code>npm run test:unit -- packages/document/src/document.test.ts</code>。预期 FAIL：缺少 parseDocument 实现；若只有依赖／配置错误，先修复测试环境，不把它算作有效失败。配置与最小可运行模型同项提交。
+- [ ] <strong>Step 3: 实现上述四个签名。</strong> 已知字段严格校验、对象扩展字段透传；仅接收 JSON 值，禁止 prototype 污染键。canonical 键按 Unicode 码点排序、数组保持顺序、几何值保存为最多 6 位小数，hash 用 SHA-256。跨页及源图上限校验分开，未知层不能变成空层。生成 <code>DocumentModel</code> 的判别联合与 opaque 类型，不使用 Fabric JSON 作源数据。
+- [ ] <strong>Step 4: 执行</strong> <code>npm run test:unit -- packages/document/src/document.test.ts</code> 和 <code>npm run typecheck</code>，预期退出码均 0；记录 Node、npm、lockfile SHA 和兼容性结果。精确版本安装不兼容时停止扩展功能，依据最小复现选择受支持版本并记决策，不强制忽略 peer 依赖。
+- [ ] <strong>Step 5: 提交</strong> <code>git add package.json package-lock.json .nvmrc tsconfig.json vitest.config.ts packages/document tests/fixtures/documents</code>；<code>git commit -m "feat(document): add lossless validated album model"</code>。</p>
+<h2>Task 2: 不可变照片、EXIF 与本地字体</h2>
+<p><strong>Files:</strong> Create <code>packages/assets/package.json</code>, <code>packages/assets/src/{types,import-image,font-catalog,resource-port,index}.ts</code>, <code>packages/assets/src/assets.test.ts</code>, <code>scripts/{build-font-catalog,build-image-fixtures}.ts</code>, <code>tests/fixtures/images/{orientation-6,orientation-8,transparent,landscape,portrait}.json</code>, <code>tests/fixtures/images/README.md</code>, <code>apps/web/public/fonts/{manifest.json,OFL.txt}</code>, <code>tests/browser/assets.spec.ts</code>, <code>tests/browser/harness/{index.html,main.ts,host.ts}</code>, <code>playwright.config.ts</code>。图像二进制由 fixture 脚本生成并加入同目录；字体子集文件由已锁依赖复制，禁止运行时下载字体。harness 只在测试启动 Vite 提供模块／fixture，后续浏览器核心测试复用；任务6开始另启动真实 web 做 UI 验证。</p>
+<p><strong>Interfaces:</strong> Consumes <code>DocumentIssue</code>。Produces资源共享类型和 ResourceWriter 接口、<code>importImage(file: File, signal: AbortSignal): Promise&lt;{record:AssetRecord,original:Uint8Array,normalized:Uint8Array,preview:Uint8Array}&gt;</code>、<code>loadFont(record: FontRecord, port: ResourcePort, signal: AbortSignal): Promise&lt;LoadedFont&gt;</code>、<code>unsupportedGlyphs(text: string, font: LoadedFont): number[]</code>。<code>LoadedFont</code> 含唯一 family、faces、codePoints、dispose()；字体集合内每个子集具有独立资源 id，可经 read(id,'font') 读取。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写 <code>assets.test.ts</code> 与 <code>assets.spec.ts</code>。</strong> 构造带四角色块的 EXIF 6／8 JPEG，断言归一化宽高交换、角块位置正确、original SHA 不变，重复加载不再次旋转；透明 PNG alpha 保留；25_000_001 字节、80_000_001 像素、伪 JPEG、坏 PNG、超长宽比但像素合法输入均有明确接受／拒绝结果。字体读失败／hash 不符／授权禁止使用必须失败；<code>我们Á🙂</code> 中缺字返回具体码点，不以系统 fallback 当成功。（RF3、RF4）</li>
+</ul>
+<p><code>ts
+  expect([result.record.width, result.record.height]).toEqual([200, 300]); // 源为300×200，EXIF6
+  expect(result.original).toEqual(originalBytes);
+  expect(unsupportedGlyphs('我们🙂', font)).toContain(0x1f642);</code>
+- [ ] <strong>Step 2: 执行</strong> <code>npm run test:unit -- packages/assets/src/assets.test.ts</code> 与 <code>npm run test:browser -- tests/browser/assets.spec.ts</code>，预期 FAIL：导入／字体入口未实现。
+- [ ] <strong>Step 3: 实现三个函数与 ResourcePort。</strong> 检查 magic bytes 与图片头后解码；浏览器解码器统一应用 EXIF 一次，不再叠加手动旋转，归一化文件清除 EXIF orientation／GPS。保留原片字节独立存储；preview 长边 1600。seed 字体 Noto Sans SC／Noto Serif SC，各400／700真实字重，精确版本及 OFL 留档；fontkit 解析实际子集 cmap，按所需字符加载对应本地 faces，等待 FontFace.load 和 document.fonts.ready；family 用版本 hash 命名，不允许合成粗体冒充已有版本。abort 时释放 bitmap 和 ObjectURL。
+- [ ] <strong>Step 4: 重跑上述两命令，预期全部 PASS。</strong> 记录 EXIF fixture 生成逻辑和颜色容差（JPEG 每通道 8）；核对 manifest 每份字体文件实际 SHA、来源与可用授权，禁止只读取 CSS unicode-range 当真实缺字证据。
+- [ ] <strong>Step 5: 提交</strong>本项明确路径及新增 fixture、根依赖／lockfile；<code>git commit -m "feat(assets): normalize imports and pin licensed fonts"</code>。</p>
+<h2>Task 3: 原子保存、命令历史和恢复项目包</h2>
+<p><strong>Files:</strong> Create <code>packages/storage/package.json</code>, <code>packages/storage/src/{indexeddb-store,project-bundle,index}.ts</code>, <code>packages/document/src/commands.ts</code>, <code>apps/web/src/state/{history,autosave}.ts</code>, <code>tests/browser/storage.spec.ts</code>。</p>
+<p><strong>Interfaces:</strong> Consumes文档哈希和 ResourceManifest。Produces <code>IndexedDbRevisionStore implements RevisionStore, ResourcePort, ResourceWriter</code>（构造参数 dbName:string）、<code>applyCommand(doc: DocumentModel, command: DocumentCommand): DocumentModel</code>、<code>History(initial:DocumentModel)</code>（execute(command:DocumentCommand)、undo()、redo() 均返回 DocumentModel）、<code>Autosave(store:RevisionStore,getDraft:()=&gt;DocumentModel,getResources:()=&gt;ResourceManifest)</code>（markDirty():void、flush():Promise<SaveResult>、dispose():void，status='dirty'|'saving'|'saved'|'conflict'|'error'）、<code>exportProject(projectId:string,store:IndexedDbRevisionStore):Promise&lt;Uint8Array&gt;</code>、<code>importProject(bytes:Uint8Array,store:IndexedDbRevisionStore):Promise&lt;SavedRevision&gt;</code>。DocumentCommand 为 insert/delete/update/reorder layer、add/delete/reorder spread、apply-template 的判别联合；update 只改已知允许字段，不替换整层对象。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写 <code>storage.spec.ts</code>。</strong> A／B 两标签页从 revision=1 保存，A 得 2，B 必须 REVISION_CONFLICT；注入事务 QuotaExceededError 后 load 仍返回 2、autosave.status='error'、恢复草稿存在，任务6再验证对应 UI 文案；用虚拟时钟验证 2 秒／10 秒；连续 100 次操作可全部撤销并重做；复制跨页后修改副本不改变原页；未知字段跨导出项目包／导入仍在。（RF1、RF2）</li>
+</ul>
+<p><code>ts
+  expect((await store.save(draftA, 1, resources)).ok).toBe(true);
+  expect(await store.save(draftB, 1, resources)).toMatchObject({ok:false,code:'REVISION_CONFLICT'});
+  expect((await store.load(projectId)).doc.revision).toBe(2);</code>
+- [ ] <strong>Step 2: 执行</strong> <code>npm run test:browser -- tests/browser/storage.spec.ts</code>，预期 FAIL：仓库和 history 未实现。
+- [ ] <strong>Step 3: 实现上述端口与类。</strong> revision 元信息、文档、资源引用与 current 指针在同一 IndexedDB 事务更新；资源 blobs 按 hash 不可变，未挂接资源可稍后回收。提供 <code>create(doc:DocumentModel,resources:ResourceManifest):Promise&lt;SavedRevision&gt;</code> 建立 revision=1，不复用 save 的冲突语义；本地类再提供 <code>pinResources(ownerId:string,manifest:ResourceManifest):Promise&lt;void&gt;</code>／<code>releaseResources(ownerId:string):Promise&lt;void&gt;</code>，清理器跳过活动导出引用。项目包 ZIP 含版本 manifest、文档、原图／归一图／字体字节、SHA 与许可证；导入逐项验证，拒绝路径穿越、重复路径、超资源上限、解压后总量超过 1GiB 的包，不从包执行脚本或解析任意 URL。导入用新 projectId，校验完成后文档与资源在同一事务落库，保留 sourceProjectId／sourceRevision 追溯；配额不足保留原库，不先清空。冲突返回可另存草稿，不自动合并；清理 20 份以外历史时保留当前和正在导出引用。
+- [ ] <strong>Step 4: 重跑命令并增加坏 ZIP／hash 错误导入断言，预期 PASS。</strong> <code>npm run typecheck</code> 退出 0。首次浏览器未授权持久存储／不支持 IndexedDB 时显示具体错误和项目包恢复建议，不声称自动云备份。
+- [ ] <strong>Step 5: 提交</strong>本项源文件、测试及依赖变更；<code>git commit -m "feat(storage): add atomic revisions and recoverable local projects"</code>。</p>
+<h2>Task 4: 33 个确定性 CPU 滤镜</h2>
+<p><strong>Files:</strong> Create <code>packages/render/package.json</code>, <code>packages/render/src/filters/{types,recipes,kernel,index}.ts</code>, <code>packages/render/src/filters/kernel.test.ts</code>, <code>scripts/build-filter-manifest.ts</code>, <code>packages/render/manifests/filters-v1.json</code>；Read <code>docs/ai-album-v0.1/filters.csv</code>，不修改历史配方状态。</p>
+<p><strong>Interfaces:</strong> Consumes CSV 的 F01–F33。Produces <code>getRecipe(ref: FilterRef): FilterRecipe</code>、<code>filterTile(tile: PixelTile, recipe: FilterRecipe, strength: number, seed: number): Uint8ClampedArray</code>；manifest 带 CSV SHA、kernelVersion='cpu-srgb-v1' 与操作版本。原图使用 null FilterRef，不能占用 F01。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写 <code>kernel.test.ts</code>。</strong> 断言 33 个唯一连续 ID、顺序／默认强度 .65／seed1729 与 CSV 一致；strength=0 完全返回原字节；单 exposure=1、strength=1 时 <code>[128,64,32,128]→[255,128,64,128]</code>；相同 seed 同字节，改 seed 的 grain 结果变化；四块 tile 拼接等于整图；12 种操作均有至少一组数值 fixture，alpha 逐像素不变。</li>
+</ul>
+<p><code>ts
+  expect([...filterTile(tile, exposureOneRecipe, 1, 1729)]).toEqual([255,128,64,128]);
+  expect(filterTile(tile, recipe, 0, 1729)).toEqual(tile.bytes);</code>
+- [ ] <strong>Step 2: 执行</strong> <code>npm run test:unit -- packages/render/src/filters/kernel.test.ts</code>，预期 FAIL：kernel／manifest 未实现。
+- [ ] <strong>Step 3: 按附录 B 实现签名。</strong> manifest 由 CSV 构建且可重复生成；CPU 为唯一标准路径，不引入 CSS／GPU 第二套效果。滤镜在归一化源图坐标上计算，再裁剪和缩放；preview 也由这一处理结果缩小。强度／参数越界拒绝，未知 recipeVersion 阻断，不自动使用最新版本。
+- [ ] <strong>Step 4: 重跑测试并执行</strong> <code>npm run build:filters -- --check</code>，预期 PASS／退出 0；生成自制色卡的 33 效果联系表供后续视觉评审。数值通过只证明确定性，不把 CSV 的 visual_review_required 自动改成视觉已验收。
+- [ ] <strong>Step 5: 提交</strong>本项路径、联系表及依赖变更；<code>git commit -m "feat(render): add versioned deterministic filter recipes"</code>。</p>
+<h2>Task 5: 共用的画布、裁剪与中文文字布局</h2>
+<p><strong>Files:</strong> Create <code>packages/render/src/{scene-adapter,text-layout,image-pipeline,index}.ts</code>, <code>packages/render/src/text-layout.test.ts</code>, <code>tests/browser/render.spec.ts</code>, <code>tests/fixtures/documents/render-contract.json</code>。</p>
+<p><strong>Interfaces:</strong> Consumes模型、资源端口、filterTile。Produces共享 RenderInput／RenderSurface／TextMetricsReport 类型、<code>layoutText(layer: TextLayer, font: LoadedFont, measure: TextMeasure): TextMetricsReport</code>、<code>createScene(canvas: HTMLCanvasElement, input: RenderInput): Promise&lt;SceneHandle&gt;</code>；handle 为 <code>{update(input:RenderInput):Promise&lt;void&gt;, render():Promise&lt;void&gt;, dispose():void}</code>。TextMeasure 为 <code>(text:string,font:LoadedFont,fontSize:number,letterSpacing:number)=&gt;number</code>；渲染与预检共用同份文字报告。RenderSurface 在此定义，不依赖后续 export 包，编辑器预览构造同型 surface。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写 <code>text-layout.test.ts</code> 和 <code>render.spec.ts</code>。</strong> 连续中文、中文标点、中英混排、换行符、A＋组合重音和 emoji grapheme 不被拆坏；行首不出现 <code>，。！？、）》】</code>，行尾不出现 <code>（《【</code>，放不下时报告 overflow；100px 高框、fontSize40／lineHeight1.4 的三行判为溢出。验证 cover／contain、组旋转、透明度和层序；并发 update 后迟到解码不能覆盖新页面；dispose 两次安全，ObjectURL／bitmap 创建释放计数平衡。（RF4、RF5）</li>
+</ul>
+<p><code>ts
+  expect(layoutText(threeLineLayer, font, measure).overflow).toBe(true);
+  expect(layoutText(chineseLayer, font, measure).lines.every(s =&gt; !/^[，。！？、）》】]/u.test(s))).toBe(true);</code>
+- [ ] <strong>Step 2: 执行</strong> <code>npm run test:unit -- packages/render/src/text-layout.test.ts</code> 和 <code>npm run test:browser -- tests/browser/render.spec.ts</code>，预期 FAIL：共享 scene／布局未实现。
+- [ ] <strong>Step 3: 实现三个入口。</strong> Intl.Segmenter 按 grapheme 分段、显式标点禁则、Canvas measureText 使用已加载精确字体；lineHeight 为 fontSize 倍数、letterSpacing 为 px96。将已确定的文字行分别映射 FabricText，不让交互 Textbox 和导出再各自换行。框为布局边界，报告实际字形墨迹及逻辑行框越界，文字编辑用 HTML textarea overlay 后提交模型。图片先共享 CPU pipeline 再交由 Fabric；禁止 SVG 外链／可执行对象。update 采用代次令牌＋AbortSignal，旧异步结果必须丢弃并释放。
+- [ ] <strong>Step 4: 重跑两命令，预期 PASS。</strong> render-contract 使用相同输入重复渲染像素 hash 相等；不同输出倍率的几何比例相符；缺字体时 FAIL FONT_UNAVAILABLE，不截图系统字体作为预期。
+- [ ] <strong>Step 5: 提交</strong>本项路径与依赖；<code>git commit -m "feat(render): share crop and CJK scene rendering"</code>。</p>
+<h2>Task 6: 可操作的网页图层与跨页编辑器</h2>
+<p><strong>Files:</strong> Create <code>apps/web/{package.json,index.html,vite.config.ts}</code>, <code>apps/web/src/{main,App}.tsx</code>, <code>apps/web/src/editor/{Editor,CanvasView,LayerPanel,PropertiesPanel,SpreadStrip,AssetPanel}.tsx</code>, <code>apps/web/src/styles.css</code>, <code>tests/browser/editor.spec.ts</code>；Modify <code>packages/document/src/commands.ts</code>。</p>
+<p><strong>Interfaces:</strong> Consumes RevisionStore、History、Autosave、createScene。Produces <code>Editor({initial,store,resources,port}:EditorProps):React.JSX.Element</code>；editor 只经 DocumentCommand 更新模型，Fabric selection／拖动反馈转换成同一命令。应用层创建 store／端口，不在共享渲染中引用 React 状态。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写 <code>editor.spec.ts</code>。</strong> 导入两张照片→拖入跨页→移动、裁剪、对齐、旋转→添加文字与矩形／圆／线→改变层序／显隐／锁定→组合与取消组合→撤销重做→保存刷新，断言模型与画面一致。两种字体及400／700粗细、字号／颜色／对齐／字距／行距可改；画框边界和中心吸附按6屏幕像素阈值工作；换图保持图框几何；删除使用中素材显示引用数量并阻止直接破坏引用。删除跨页前确认数量；新增／复制／排序后封面不计入内页。StrictMode 双挂载后仍只有一个活跃画布监听器，切页无迟到图片污染。（RF5）</li>
+</ul>
+<p><code>ts
+  await page.getByRole('button', {name:'保存'}).click();
+  await expect(page.getByRole('status')).toHaveText('已保存至此浏览器');
+  await page.reload();
+  await expect(page.getByRole('button', {name:'跨页 1'})).toBeVisible();</code>
+- [ ] <strong>Step 2: 执行</strong> <code>npm run test:browser -- tests/browser/editor.spec.ts</code>，预期 FAIL：编辑页与操作不存在。
+- [ ] <strong>Step 3: 实现上述组件与命令。</strong> 页面三区为素材／画布／属性，底部跨页；1280px 完整布局，1024px 折叠侧栏。支持多选、复制、删除、上下层、6 个对齐方向、均匀分布、锁定、显隐；group 统一缩放和旋转，取消组合后绝对几何保持。吸附阈值为6屏幕像素、随缩放换算为逻辑距离，Alt 暂停吸附。双击裁剪，cover／contain 可切；换图保留框并重新计算合法 crop；导入逐项进度、失败重试、同 hash 重复提示，默认不新增重复素材。透明度 [0,1]，rotation 可规范化；命令校验失败不污染历史。离页有未保存提示，Ctrl/Cmd+Z 在输入框内优先原生文字撤销；空项目和资源错误显示操作路径。
+- [ ] <strong>Step 4: 重跑测试及</strong> <code>npm run build</code>、<code>npm run typecheck</code>，预期全部退出 0；实测键盘操作、1024／1280／1920 截图。没有可用真实浏览器时记录阻塞，不用静态 HTML 校验冒充交互通过。
+- [ ] <strong>Step 5: 提交</strong>本项路径与依赖；<code>git commit -m "feat(web): add editable multi-spread album workspace"</code>。</p>
+<h2>Task 7: 原创模板与滤镜面板</h2>
+<p><strong>Files:</strong> Create <code>packages/document/src/{template,template.test}.ts</code>, <code>packages/document/templates/{wedding,travel,family,portrait,ink}-v1.json</code>, <code>apps/web/src/editor/{TemplatePanel,FilterPanel}.tsx</code>, <code>tests/browser/presets.spec.ts</code>。</p>
+<p><strong>Interfaces:</strong> Consumes commands、filter manifest。Produces <code>instantiateTemplate(template: TemplateVersion, bindings: Record&lt;string,string&gt;, idFactory:()=&gt;string): Layer[]</code>、<code>applyTemplateCommand(spreadId:string,layers:Layer[],templateRef:TemplateRef):DocumentCommand</code>；TemplateVersion 含 id／version、尺寸、slots／editableFields、licenseRef、原创来源；替换不删除素材仓库原片。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写 <code>template.test.ts</code> 和 <code>presets.spec.ts</code>。</strong> 五类模板可筛选，预览不改文档；确认应用仅修改目标跨页，一次撤销恢复原层及引用；slot 不足／绑定素材不存在则明确失败，不截断照片。选中两张图片应用 F07、调整强度后一次撤销恢复两张；文字层不受滤镜影响；原图入口与 33 预设分开。模板复制层 ID 不冲突。</li>
+</ul>
+<p><code>ts
+  expect(history.undo()).toEqual(beforeTemplate);
+  const ids = instantiateTemplate(template, bindings, idFactory).map(l =&gt; l.id);
+  expect(new Set(ids).size).toBe(ids.length);</code>
+- [ ] <strong>Step 2: 执行</strong> <code>npm run test:unit -- packages/document/src/template.test.ts</code> 和 <code>npm run test:browser -- tests/browser/presets.spec.ts</code>，预期 FAIL。
+- [ ] <strong>Step 3: 实现签名与面板。</strong> seed 模板只含原创几何、独立标题／日期字段、带 hash 的模板版本；不含购买的假授权标识或受限示例。模板单次作用于当前跨页，整本智能分配留在 C2；待选照片保持可见清单，不声称已自动全部入册。配方参数直接引用 manifest，不复制成 UI 私有值。
+- [ ] <strong>Step 4: 重跑两命令，预期 PASS；</strong>核对 5 模板来源记录及 33 项原图／强度界面，联系表保留“待视觉确认”标记。
+- [ ] <strong>Step 5: 提交</strong>本项路径；<code>git commit -m "feat(editor): add original templates and filter controls"</code>。</p>
+<h2>Task 8: 冻结快照、导出几何与阻断预检</h2>
+<p><strong>Files:</strong> Create <code>packages/export/package.json</code>, <code>packages/export/src/{types,geometry,snapshot,preflight,index}.ts</code>, <code>packages/export/src/preflight.test.ts</code>, <code>tests/browser/preflight.spec.ts</code>, <code>apps/web/src/export/PreflightPanel.tsx</code>。</p>
+<p><strong>Interfaces:</strong> Consumes SavedRevision、ResourcePort、layoutText。Produces <code>freezeSnapshot(saved:SavedRevision,options:ExportOptions,createdAt:string):Promise&lt;ExportSnapshot&gt;</code>、<code>planSurfaces(snapshot:ExportSnapshot):SurfaceSpec[]</code>、<code>preflight(snapshot:ExportSnapshot,port:ResourcePort,signal:AbortSignal):Promise&lt;PreflightReport&gt;</code>、<code>authorizeExport(snapshot:ExportSnapshot,report:PreflightReport,acknowledgedWarningIds:string[]):void</code>。冻结后深拷贝且只读；snapshotHash 绑定 docHash、资源 manifest、optionsHash 和创建时间。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写 <code>preflight.test.ts</code> 与 <code>preflight.spec.ts</code>。</strong> 原图 read 失败但 preview 存在仍 ASSET_MISSING；未知层、字体／授权失败、缺字、文字溢出、超像素预算各阻断；EXIF 后裁剪有效 PPI 与预期一致，199／100 警告、99 强警告，未确认不得导出。600×300mm、300DPI、0／3mm、view=spread／includeCover=false 分别断言 7087×3543／7157×3614。另用带封面的 fixture 验证单页导出顺序 front→内页1…N→back，spread 模式 front→跨页1…N→back；cover 各只占单页。snapshot=12 后保存13，快照仍12；修改 DPI 后旧报告无效。（RF1、RF3、RF4）</li>
+</ul>
+<p><code>ts
+  expect(planSurfaces(snapshotWith3mm)[0]).toMatchObject({pixelWidth:7157,pixelHeight:3614});
+  expect(report.blockers.map(i =&gt; i.code)).toContain('ASSET_MISSING');
+  expect(() =&gt; authorizeExport(snapshot, warningReport, [])).toThrow('WARNINGS_UNACKNOWLEDGED');</code>
+- [ ] <strong>Step 2: 执行</strong> <code>npm run test:unit -- packages/export/src/preflight.test.ts</code> 和 <code>npm run test:browser -- tests/browser/preflight.spec.ts</code>，预期 FAIL。
+- [ ] <strong>Step 3: 实现四个入口。</strong> 从已保存记录构造快照，源图／字体读取核对 SHA；图片以 min(可用裁剪源宽÷绘制宽英寸,可用裁剪源高÷绘制高英寸) 算 PPI，contain 使用实际绘制区域，group 缩放纳入。旋转图片按未旋转框对应源尺寸算，不用旋转后外接框夸大 PPI。PNG／PDF 像素预算独立检查；几何只最终输出 round，出血扩展输出面，超出裁切区的图像原样延展、没有内容处用背景，不拉伸整幅页面冒充出血。资源预计超内存亦阻断。pageIds 取稳定逻辑页 ID（如 spr_01:left／right），spread 视图使用 spr_01；先按文档顺序生成输出面，再筛选所选 ID，拒绝与 view 不匹配或不存在的 ID。
+- [ ] <strong>Step 4: 重跑两命令，预期 PASS。</strong> 预检面板逐项显示阻断／警告、实际像素和快照 revision；安全区 5mm／中缝关键文字警告。C1 输入若带尚未实现的 assignmentManifest 校验版本则阻断 UNSUPPORTED_LAYOUT_MANIFEST，C2 再接入重新派生照片清单的验证器；不把未知 manifest 当通过。含未支持的 AI 来源／标识要求时明确 UNSUPPORTED_PROVENANCE，C5 接入前不能忽略。为这两个拒绝行为各增加一条断言。
+- [ ] <strong>Step 5: 提交</strong>本项路径与依赖；<code>git commit -m "feat(export): freeze revisions and enforce preflight"</code>。</p>
+<h2>Task 9: 实际 PNG／JPEG／PDF 编码与下载</h2>
+<p><strong>Files:</strong> Create <code>packages/export/src/{encode-png,encode-jpeg,encode-pdf,artifact-manifest,run-export}.ts</code>, <code>packages/export/src/metadata.test.ts</code>, <code>apps/web/src/export/ExportPanel.tsx</code>, <code>tests/browser/export.spec.ts</code>。</p>
+<p><strong>Interfaces:</strong> Consumes ExportSnapshot、PreflightReport、authorizeExport、createScene。Produces <code>runExport(snapshot:ExportSnapshot,report:PreflightReport,ack:string[],port:ResourcePort,signal:AbortSignal,onProgress:(done:number,total:number)=&gt;void):AsyncGenerator&lt;Artifact&gt;</code>、<code>encodePng(canvas:HTMLCanvasElement,dpi:number):Promise&lt;Uint8Array&gt;</code>、<code>encodeJpeg(canvas:HTMLCanvasElement,dpi:number,matte:string):Promise&lt;Uint8Array&gt;</code>、<code>encodePdf(pages:EncodedPage[],snapshot:ExportSnapshot):Promise&lt;Uint8Array&gt;</code>；EncodedPage 含 surface、mime、bytes。PDF 首期页面逐面渲染，累计编码数据达到 256MiB 时显式拒绝并建议拆分，不无界保留原始像素。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写 <code>metadata.test.ts</code> 和 <code>export.spec.ts</code>。</strong> 校验 PNG pHYs、JPEG JFIF densityUnits=1／Xdensity=Ydensity=300；分辨率取 pHYs 反算容差 .02DPI，不能只读文件名。PDF pageCount、MediaBox、TrimBox／BleedBox 与物理尺寸一致；多面 ZIP 名称顺序 <code>0001-front</code>、<code>0002-spread-01</code> 等由 SurfaceSpec 固定；透明 PNG alpha 保留，JPEG 透明区用指定白色。编辑到13后导出快照12，标题和像素仍12；中途 cancel 不提供完整成功下载，资源计数归零。（RF5）</li>
+</ul>
+<p><code>ts
+  expect(decodedPng.width).toBe(7157);
+  expect(jfif).toMatchObject({densityUnits:1,xDensity:300,yDensity:300});
+  expect(pdf.getPageCount()).toBe(6); // 4个内页＋封面正背面</code>
+- [ ] <strong>Step 2: 执行</strong> <code>npm run test:unit -- packages/export/src/metadata.test.ts</code> 和 <code>npm run test:browser -- tests/browser/export.spec.ts</code>，预期 FAIL。
+- [ ] <strong>Step 3: 实现编码与生成器。</strong> PNG 插入／替换 pHYs 并重算 CRC；JPEG 写入／规范 JFIF 密度，不保留源 EXIF；PDF 使用 pdf-lib，MediaBox 包含出血、TrimBox 为裁切范围、BleedBox=MediaBox，宽高用 mm×72/25.4，按用户视图逐面一页。先 authorizeExport，再依序渲染／编码；每面完成释放 canvas。网页在调用前以 snapshotHash 执行 store.pinResources，finally 执行 releaseResources；CLI 的只读包天然冻结。ArtifactManifest 含实际文件 SHA、revision、资源 hash、renderBuild，不写用户位置／GPS。ZIP 使用 fflate 流式条目，累积下载超过 256MiB 提示拆分；浏览器不伪装持久后台队列。
+- [ ] <strong>Step 4: 重跑两命令，预期 PASS；</strong>从导出字节重新解码检验尺寸、色块／文字截图和元数据，不只检验 mock。下载 PNG／JPG／PDF 与 JSON 清单作为程序样片候选；JPEG 视觉比较容许有损误差，不要求与 PNG 字节一致。
+- [ ] <strong>Step 5: 提交</strong>本项路径与依赖；<code>git commit -m "feat(export): encode real image and PDF artifacts"</code>。</p>
+<h2>Task 10: 固定 Chromium 渲染入口、端到端验收与交付</h2>
+<p><strong>Files:</strong> Create <code>apps/render-cli/{package.json,src/main.ts,src/host.ts}</code>, <code>apps/web/src/render-entry.ts</code>, <code>tests/browser/c1-acceptance.spec.ts</code>, <code>tests/fixtures/documents/acceptance.json</code>, <code>scripts/verify-artifacts.ts</code>, <code>.github/workflows/c1.yml</code>, <code>docs/implementation/c1/{README.md,environment.json,acceptance-results.json}</code>, <code>docs/export-samples/program-c1/README.md</code>；Modify 根 <code>README.md</code>、<code>package.json</code>。</p>
+<p><strong>Interfaces:</strong> Consumes共享 render／export，不重写 scene。Produces CLI <code>npm run render:snapshot -- --bundle &lt;project.zip&gt; --snapshot &lt;snapshot.json&gt; --output &lt;directory&gt;</code>（仅可信开发／worker 调用），成功退出0，参数／预检错误2，资源／执行失败3。浏览器 render-entry 暴露 <code>renderSnapshot(request:TrustedRenderRequest):Promise&lt;ArtifactManifest&gt;</code>，请求仅携带快照和 manifest 内资源 ID，不接受任意 URL 或代码。</p>
+<ul>
+<li>[ ] <strong>Step 1: 写 <code>c1-acceptance.spec.ts</code>。</strong> 从空浏览器开始导入授权照片→应用模板→编辑中文→设置滤镜→保存→项目包恢复→预检→导出三格式；同一 fixture 在网页和固定 Chromium render-entry 中输出 PNG 解码像素 hash 相同。HEADLESS 请求外部 HTTP、file://、../ 路径、未知资源 ID 被拒；50MP 边界与低内存预算有可重复拒绝结果，不能悄悄缩小。重复运行同快照像素一致，metadata／文件排序一致；ZIP 时间等容器字节不作为跨系统逐字节承诺。</li>
+</ul>
+<p><code>ts
+  expect(webPixelsHash).toBe(headlessPixelsHash);
+  expect(artifactManifest.revision).toBe(12);
+  expect(artifactManifest.snapshotHash).toBe(snapshotHash);</code>
+- [ ] <strong>Step 2: 执行</strong> <code>npm run test:browser -- tests/browser/c1-acceptance.spec.ts</code>，预期 FAIL：CLI／端到端入口未接通。
+- [ ] <strong>Step 3: 实现入口与验证脚本。</strong> host 仅绑定 127.0.0.1 随机端口、每次随机 token，资源查表无任意路径；Playwright 拦截出站请求，仅允许本次受信 host／blob，固定 Chromium 版本、locale=zh-CN、timezone=UTC、DPR=1，超时120秒，关闭后清理临时目录。它不作为公网 API 发布。CI <code>npm ci</code>→<code>npx playwright install --with-deps chromium</code>→typecheck／unit／build／browser；记录 lockfile SHA、浏览器实际版本、OS、字体／kernel／build hash。无凭据也能运行 C1，不连微信／支付／AI。
+- [ ] <strong>Step 4: 执行最终验证</strong> <code>npm ci</code>、<code>npm run typecheck</code>、<code>npm run test:unit</code>、<code>npm run build</code>、<code>npm run test:browser</code>、<code>npm run verify:artifacts -- docs/export-samples/program-c1</code>，预期全部退出0。样片至少含600×300mm、300DPI、3mm出血的 PNG／JPG、4个内页＋独立封面正背面的单页PDF、快照／预检／资源manifest／实际环境与 SHA。记录耗时和峰值内存观察值，不把它升级为上线 SLA。按选择的执行方式安排独立复核，修复阻断问题后再认定 C1 完成。
+- [ ] <strong>Step 5: 提交</strong>本项路径、实际程序样片与验收记录；<code>git commit -m "feat(c1): verify reproducible editor-to-export delivery"</code>。根 README 改成实际可运行入口，保留历史 AI 样片标注；推送实施分支、创建草稿实现 PR，不能直接宣称生产上线。</p>
+<h2>附录 A：依赖、命令与验证状态</h2>
+<p>官方 npm registry 元数据于 2026-10-21 查阅；以下为计划候选精确版本，<strong>尚未安装验证兼容性</strong>，不能把这张表当已生成 lockfile 或安全审计。</p>
+<table>
+<thead>
+<tr>
+<th>依赖</th>
+<th>候选版本</th>
+<th>许可元数据／用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>node／npm</td>
+<td>24.19.0／11.9.0</td>
+<td>当前执行环境；Node 24 LTS 系列</td>
+</tr>
+<tr>
+<td>react／react-dom</td>
+<td>19.3.1／19.3.1</td>
+<td>MIT；编辑界面</td>
+</tr>
+<tr>
+<td>vite／@vitejs/plugin-react</td>
+<td>8.3.5／6.1.2</td>
+<td>MIT；构建</td>
+</tr>
+<tr>
+<td>typescript</td>
+<td>7.0.2</td>
+<td>Apache-2.0；类型检查</td>
+</tr>
+<tr>
+<td>fabric</td>
+<td>7.4.0</td>
+<td>MIT；仅作为 adapter</td>
+</tr>
+<tr>
+<td>vitest</td>
+<td>5.0.5</td>
+<td>MIT；纯逻辑测试</td>
+</tr>
+<tr>
+<td>@playwright/test</td>
+<td>1.64.1</td>
+<td>Apache-2.0；绑定其浏览器修订版本</td>
+</tr>
+<tr>
+<td>zod</td>
+<td>4.6.7</td>
+<td>MIT；严格已知字段＋透传扩展字段</td>
+</tr>
+<tr>
+<td>idb</td>
+<td>8.0.4</td>
+<td>ISC；本地事务封装</td>
+</tr>
+<tr>
+<td>pdf-lib／fflate</td>
+<td>1.17.1／0.8.3</td>
+<td>MIT；普通 PDF／ZIP</td>
+</tr>
+<tr>
+<td>@fontsource/noto-sans-sc</td>
+<td>5.3.1</td>
+<td>OFL-1.1；本地可追溯字体子集</td>
+</tr>
+<tr>
+<td>@fontsource/noto-serif-sc</td>
+<td>5.3.1</td>
+<td>OFL-1.1；第二字体、400／700真实字重</td>
+</tr>
+<tr>
+<td>fontkit</td>
+<td>2.0.4</td>
+<td>MIT；读取真实字体 cmap／度量；浏览器兼容在任务2验证</td>
+</tr>
+<tr>
+<td>tsx</td>
+<td>4.23.15</td>
+<td>MIT；可信 CLI 与构建脚本</td>
+</tr>
+<tr>
+<td>@types/node／@types/react／@types/react-dom</td>
+<td>24.19.2／19.3.0／19.3.0</td>
+<td>MIT；类型版本对齐</td>
+</tr>
+</tbody>
+</table>
+<p>新增依赖先说明用途，记录实际 LICENSE 与传递依赖，不无目的引入 Zustand／完整后端框架／图片生成 SDK。当前 C1 不需要数据库、Redis 或付款账号。</p>
+<p>根脚本定义：<code>test:unit=vitest run</code>；<code>typecheck=tsc --noEmit</code>（项目引用可分包但总命令不变）；<code>test:browser=playwright test</code>；<code>dev=vite --config apps/web/vite.config.ts</code>；<code>build</code> 构建共享包／web／CLI；<code>build:filters=tsx scripts/build-filter-manifest.ts</code>；<code>render:snapshot=tsx apps/render-cli/src/main.ts</code>；<code>verify:artifacts=tsx scripts/verify-artifacts.ts</code>。脚本随其拥有任务落地，计划阶段不创建空实现来伪造通过。</p>
+<h2>附录 B：CPU 滤镜 v1 算法合同</h2>
+<p>这是对 v0.1 留待固定算法的本次工程建议，需与计划一起评审；所有操作按 CSV 顺序执行。RGB 归一化至 <code>[0,1]</code>，每步 clamp，内部 float64，最后量化 <code>round(255×C)</code>；alpha 原字节不变。亮度 <code>Y=.2126R+.7152G+.0722B</code>。</p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>exposure:e</td>
+<td><code>clamp(C×2^e)</code></td>
+</tr>
+<tr>
+<td>contrast:k</td>
+<td><code>clamp((C-.5)×(1+k)+.5)</code></td>
+</tr>
+<tr>
+<td>saturation:s</td>
+<td><code>clamp(Y+(C-Y)×(1+s))</code></td>
+</tr>
+<tr>
+<td>temperature:t</td>
+<td><code>clamp([R+.08t,G+.02t,B-.08t])</code></td>
+</tr>
+<tr>
+<td>tint:q</td>
+<td><code>clamp([R+.04q,G-.08q,B+.04q])</code></td>
+</tr>
+<tr>
+<td>gamma:g</td>
+<td><code>C^(1/g)</code>，g&gt;0</td>
+</tr>
+<tr>
+<td>grayscale:a</td>
+<td><code>C×(1-a)+Y×a</code></td>
+</tr>
+<tr>
+<td>sepia:a</td>
+<td>标准矩阵行 <code>[.393,.769,.189]</code>、<code>[.349,.686,.168]</code>、<code>[.272,.534,.131]</code> 后 clamp，再与输入按 a 混合</td>
+</tr>
+<tr>
+<td>duotone:dark,light</td>
+<td><code>dark×(1-Y)+light×Y</code>，颜色由十六进制转归一化 sRGB</td>
+</tr>
+<tr>
+<td>posterize:L</td>
+<td><code>round(C×(L-1))/(L-1)</code>，L 为2–256整数</td>
+</tr>
+<tr>
+<td>vignette:v</td>
+<td>源图像素中心归一化到 x,y∈[-1,1]；<code>d=min(1,sqrt(x²+y²)/sqrt(2))</code>；RGB乘 <code>1-v×clamp((d-.2)/.8)^2</code></td>
+</tr>
+<tr>
+<td>grain:a</td>
+<td>源整数坐标 x,y 与 seed 混合：<code>h=seed XOR imul(x+1,73856093) XOR imul(y+1,19349663)</code>；MurmurHash3 fmix32 后转无符号 <code>n=h/4294967296-.5</code>；RGB各通道加 <code>a×n</code></td>
+</tr>
+</tbody>
+</table>
+<p>fmix32：<code>h ^= h&gt;&gt;&gt;16</code>；<code>h=imul(h,0x85ebca6b)</code>；<code>h ^= h&gt;&gt;&gt;13</code>；<code>h=imul(h,0xc2b2ae35)</code>；<code>h ^= h&gt;&gt;&gt;16</code>。grain 在同像素使用同一个噪声值；tile 坐标必须加 offset，因此切块不改变颗粒。</p>
+<p>最终强度 s 使用 IEC sRGB 转线性函数（阈值 .04045，低段除12.92，高段 <code>((C+.055)/1.055)^2.4</code>），混合 <code>linear(original)×(1-s)+linear(effect)×s</code>，再转回 sRGB（阈值 .0031308，低段乘12.92，高段 <code>1.055×L^(1/2.4)-.055</code>）。s=0 必须字节直通。不得把 s 乘进每个配方参数来冒充此混合。</p>
+<h2>自审与验收归属</h2>
+<table>
+<thead>
+<tr>
+<th>规格／风险</th>
+<th>本计划对应项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>文档、方向、资源不可变与未知字段</td>
+<td>1／2／3</td>
+<td>RF1–RF3 有指定失败用例</td>
+</tr>
+<tr>
+<td>33滤镜、原图、强度与多选撤销</td>
+<td>4／7</td>
+<td>数值确定性与视觉确认分开</td>
+</tr>
+<tr>
+<td>网页图层、文字、形状、模板、跨页、恢复</td>
+<td>3／5／6／7</td>
+<td>C1 完整基础编辑；C2 承担整本自动布局</td>
+</tr>
+<tr>
+<td>V3-EXPORT-01／02／03</td>
+<td>2／5／8／9</td>
+<td>缺原图阻断、中文／字体／溢出、像素与元数据</td>
+</tr>
+<tr>
+<td>V3-EXPORT-04</td>
+<td>3／8／9／10</td>
+<td>C1 验证冻结后继续编辑；持久队列／事务在 C4</td>
+</tr>
+<tr>
+<td>RF4／RF5</td>
+<td>2／5／6／8／9</td>
+<td>字体竞态、StrictMode、取消和资源生命周期</td>
+</tr>
+<tr>
+<td>小程序、登录、会员、队列、AI 与运营</td>
+<td>路线 C3／C4／C5</td>
+<td>明确后续验收，不作为 C1 已完成项</td>
+</tr>
+</tbody>
+</table>
+<p>自审结论：10 项任务的接口名按统一类型表引用，失败／通过命令与文件归属齐全；没有把技术候选、计划用例或现有调研结果记作产品通过证据。下一步是评审本计划并确认 AI 执行方式，然后从任务1开始。</p></section><section id="doc2"><h1>全程 AI 开发：交付顺序与上线条件</h1>
+<h2>执行依据</h2>
+<p>用户：全程 AI 开发。范围：<a href="../../design-v0.3/README.md">v0.3 基线</a>及其引用的 v0.1 商业、测试运维规则。研发按可验收单元推进，暂不根据虚构团队人数估算人周，也不把计划任务数换算为交期。</p>
+<p>当前完成：需求与原型、定向调研和算法验证、<a href="../../release-v1.0/README.md">C1–C6共44项详细实施计划及全模块接口／数据合同</a>。当前未完成：产品代码、真实供应商集成、部署、支付联调和上线验收。</p>
+<p>配置需求补充见 <a href="../../configuration-v0.4/README.md">v0.4 配置中心与素材目录</a>：C3–C5计划编制时需纳入配置版本、云存储根前缀／用户目录、AI模型与费用、20类配置及对应验收。此补充为待评审方案，未使C1自动包含云端实现。</p>
+<h2>交付顺序</h2>
+<table>
+<thead>
+<tr>
+<th>单元</th>
+<th>AI 实施结果</th>
+<th>验收关口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C1 文档与渲染</td>
+<td>网页导入、完整基础图层编辑、33 滤镜、原创模板、保存恢复、预检、实际 PNG／JPG／PDF；共享 headless 渲染入口</td>
+<td>同一冻结文档在网页与固定 Chromium 中一致；中文不漏字；缺原图阻断；输出像素、页序和元数据正确</td>
+</tr>
+<tr>
+<td>C2 排版与完整性</td>
+<td>整本照片分配、跨页候选、照片用途与 assignmentManifest、锁定与局部重排、核对页</td>
+<td>12 输入不能只放 11；50 张／10 跨页／最多 2 张报告无解；过期候选不能覆盖修改</td>
+</tr>
+<tr>
+<td>C3 账号、素材与跨端</td>
+<td>模块化 API、PostgreSQL、微信身份、工作区、私有素材上传、权限、云端 revision、小程序快速成册</td>
+<td>跨工作区访问被拒；微信身份不误合并；小程序 patch 保留高级字段；网页／小程序冲突有恢复路径</td>
+</tr>
+<tr>
+<td>C4 任务与商业</td>
+<td>Outbox＋持久化任务＋导出 worker、租约和取消、会员、AI 点数账本、兑换码、支付与退款</td>
+<td>Redis 重建不丢任务；重复回调不重复发放；重复结算不重复扣点；取消与迟到结果竞态可重放</td>
+</tr>
+<tr>
+<td>C5 AI 与运营</td>
+<td>自有／可商用预设、水墨彩绘、参考图用途、报价与生成、审核／标识、素材入册、运营后台</td>
+<td>超时先查询不重复付费提交；失败释放点数一次；许可不明预设不可上架；生成图与可编辑标题分层</td>
+</tr>
+<tr>
+<td>发布验收</td>
+<td>预发环境、备份恢复、告警、权限回归、真实设备验证、导出样本归档、发布／回滚记录</td>
+<td><a href="../../ai-album-v0.1/05-测试与运维手册.md">测试运维手册</a>要求与上述各单元验收全部有证据；没有凭据或未联调的能力不得标为上线可用</td>
+</tr>
+</tbody>
+</table>
+<p>每单元在实施前补齐独立详细计划并核对前一单元接口。首期小程序仍包含在 C3，会员与队列仍包含在 C4，AI 水墨彩绘仍包含在 C5；C1 是第一个可演示单元，不能作为完整首发验收。</p>
+<h2>AI 任务执行规则</h2>
+<ol>
+<li>先读取当前规格、计划与实际代码，再写一个有明确断言的失败用例。</li>
+<li>确认失败原因，再实现该项功能；运行针对性检查后提交。</li>
+<li>更新任务状态、实际验证环境、命令结果与限制；失败保留记录并修复，不用文案代替验证。</li>
+<li>遇到改变用户范围、商业费用、供应商授权或生产发布的决定，提供具体候选与影响再确认。常规可逆研发决定由 AI 执行。</li>
+<li>单元结束做接口、权限和功能复核；独立复核方式按用户选择的执行方法落实。接入真实服务前先完成模拟契约和可审查实现。</li>
+</ol>
+<h2>真实接入前需要的信息</h2>
+<table>
+<thead>
+<tr>
+<th>时点</th>
+<th>一次收集的内容</th>
+<th>未提供前可继续的工作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C3 微信联调前</td>
+<td>主体类型、网页／小程序 AppID、可用登录能力、服务域名与平台配置；密钥通过秘密配置注入</td>
+<td>API、测试身份适配器、授权测试、小程序本地流程</td>
+</tr>
+<tr>
+<td>C4 支付联调前</td>
+<td>商户号、渠道准入、真实 SKU／价格／有效期／点数规则、退款和权益处理规则；小程序平台限制按当期官方规则核验</td>
+<td>订单状态机、模拟支付回调、账本和重复通知测试；不预设小程序可直接购买全部数字权益</td>
+</tr>
+<tr>
+<td>C5 供应商接入前</td>
+<td>模型候选、服务条款和商业授权、单次成本／额度、数据用途与保留政策、标识／审核能力</td>
+<td>统一供应商契约、可重放模拟结果、费用幂等测试、原创预设登记</td>
+</tr>
+<tr>
+<td>预发／生产前</td>
+<td>云区域、域名、存储、数据库、备份、运维告警接收方式、平台资质与发布主体</td>
+<td>可部署容器、环境模板、恢复演练脚本、成本预算表和待核验清单</td>
+</tr>
+</tbody>
+</table>
+<p>不把密钥写入文档、Git 或聊天示例。确认事项只在其依赖真正到来时提出，当前 C1 不依赖这些真实账号。</p>
+<h2>本次计划新增的工程建议</h2>
+<p>C1 采用本地单用户存储，作为云端项目仓库的端口实现；明确显示“仅此浏览器保存”。浏览器本地导出用于演示与恢复验证；可信本地 headless 入口验证未来 worker 的共享渲染能力。持久化导出队列、登录、云备份、会员校验由 C3／C4 接管。这些是待评审实施边界，不是对商业首发范围的删减。</p>
+<h2>基线要求的归属</h2>
+<table>
+<thead>
+<tr>
+<th>要求</th>
+<th>主验收单元</th>
+<th>C1 铺垫</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V3-MODE-01</td>
+<td>C2／C5</td>
+<td>普通编辑不调用生成、不扣点</td>
+</tr>
+<tr>
+<td>V3-LAYOUT-01／02／03</td>
+<td>C2</td>
+<td>保留排版扩展字段；尚不接受自动布局候选</td>
+</tr>
+<tr>
+<td>V3-EXPORT-01／02／03／04</td>
+<td>C1＋C4</td>
+<td>C1 实现资源校验、中文、尺寸与不可变快照；C4 验证排队和权益事务</td>
+</tr>
+<tr>
+<td>V3-ART-01</td>
+<td>C5</td>
+<td>图片与文字层独立；C1 不生图</td>
+</tr>
+<tr>
+<td>V3-LICENSE-01</td>
+<td>C5</td>
+<td>C1 仅提供自制模板与可商用字体及依赖清单</td>
+</tr>
+<tr>
+<td>V3-CROSS-01</td>
+<td>C3</td>
+<td>C1 保存未知字段，未知层阻断渲染；C3 再验证服务端 patch 白名单</td>
+</tr>
+</tbody>
+</table>
+<p>评审通过后锁定对应计划版本；改变接口或验收值时记录原因与受影响用例，避免只改界面而遗留旧合同。</p></section></body></html>

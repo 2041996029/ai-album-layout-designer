@@ -1,0 +1,29 @@
+{
+  "adapterId": "adapter_demo",
+  "adapterVersion": "contract-v1",
+  "providerName": "DEMO — no real service",
+  "capabilities": [
+    "textToImage",
+    "imageToImage",
+    "asyncQuery",
+    "idempotentSubmit"
+  ],
+  "allowedEndpointHosts": [
+    "api.example.invalid"
+  ],
+  "allowedResultHosts": [
+    "result.example.invalid"
+  ],
+  "supportsModelDiscovery": false,
+  "modelLimits": {
+    "maxInputBytes": 25000000,
+    "maxReferenceImages": 1,
+    "maxOutputPixels": 80000000,
+    "maxPromptChars": 4000,
+    "acceptedMimeTypes": [
+      "image/jpeg",
+      "image/png"
+    ]
+  },
+  "contractTestRef": "test_contract_demo"
+}

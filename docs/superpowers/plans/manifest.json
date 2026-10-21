@@ -1,0 +1,65 @@
+{
+  "scope": "C1-C6 implementation planning package; repo-wide handoff manifest in release-v1.0",
+  "files": [
+    {
+      "path": "2026-10-21-c1-editor-render.md",
+      "bytes": 44185,
+      "sha256": "bf692a488447a289fad227fef4b80a4957b57a60ea8df47855c84d5e5ddd3df4"
+    },
+    {
+      "path": "2026-10-21-c2-layout.md",
+      "bytes": 25103,
+      "sha256": "c09f7f31a501ab0bffeb3f2b9181d90cfb51745d70874aae8f84bb1d82b3eab9"
+    },
+    {
+      "path": "2026-10-21-c3-cloud-identity-mini.md",
+      "bytes": 42549,
+      "sha256": "93003203c7a820f9be605ef75b83528f7d874192ca052ce227117d1153f327bf"
+    },
+    {
+      "path": "2026-10-21-c4-jobs-commerce.md",
+      "bytes": 36109,
+      "sha256": "acabca306eee15157173be80746236a4eadf17ffb148edb1edc3794e94ab6a03"
+    },
+    {
+      "path": "2026-10-21-c5-ai-admin.md",
+      "bytes": 35012,
+      "sha256": "de88ea9d5772b739ef9e6a4a96e55d92ac95ef482d0fd9bae11988cd35d68d7d"
+    },
+    {
+      "path": "2026-10-21-c6-release-operations.md",
+      "bytes": 10310,
+      "sha256": "5f22a386ca3d775a13b37f8d02aaa734aab5f15fb3661374c6fec50f5823a631"
+    },
+    {
+      "path": "2026-10-21-delivery-roadmap.md",
+      "bytes": 6012,
+      "sha256": "aa926d4a4b4f18ace9ea969be607d867b553226412c725432d1a819b07dd50c8"
+    },
+    {
+      "path": "C1-网页编辑与确定性导出-实施计划.docx",
+      "bytes": 60335,
+      "sha256": "10c1741444e30297d02bb63cae27eacbeb60eecb1306b8375353530535a0de78"
+    },
+    {
+      "path": "C1-网页编辑与确定性导出-实施计划.pdf",
+      "bytes": 62256,
+      "sha256": "edf47c2f8ebac5c87067a949b0f81af3847cdf446bb96b9b14c4c6be9b590f41"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2748,
+      "sha256": "6bbe32f22682cef24cd8f63148fb67c55e8e26c84c13fc9f3a7cd47c71f104b2"
+    },
+    {
+      "path": "artifact-checks.json",
+      "bytes": 485,
+      "sha256": "54b3832c0fe1f68b5969c000cf6390689eefff36a5eb1e922c2d4e52a6f56896"
+    },
+    {
+      "path": "review.html",
+      "bytes": 61318,
+      "sha256": "eab27eed10938e3c464d438792981e066e93de2e5d2e9c949fc2f56dd101f2cb"
+    }
+  ]
+}

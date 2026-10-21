@@ -1,0 +1,245 @@
+{
+  "snapshotId": "snapshot_demo",
+  "projectId": "prj_demo",
+  "revision": 12,
+  "doc": {
+    "schemaVersion": 1,
+    "projectId": "prj_demo",
+    "revision": 12,
+    "unit": "px96",
+    "colorSpace": "srgb",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "printProfile": {
+      "bleedMm": 3,
+      "safeMm": 5
+    },
+    "cover": {
+      "front": [],
+      "back": []
+    },
+    "spreads": [
+      {
+        "id": "spr_01",
+        "background": "#FFFFFF",
+        "layers": [
+          {
+            "x": 80,
+            "y": 80,
+            "width": 850,
+            "height": 850,
+            "rotation": 0,
+            "opacity": 1,
+            "visible": true,
+            "locked": false,
+            "id": "image_01",
+            "type": "image",
+            "assetId": "photo_01",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 0.75,
+              "height": 1
+            },
+            "fitMode": "cover",
+            "role": "photo",
+            "filter": {
+              "presetId": "F07",
+              "recipeVersion": 1,
+              "strength": 0.65,
+              "seed": 1729
+            }
+          },
+          {
+            "x": 1200,
+            "y": 180,
+            "width": 800,
+            "height": 170,
+            "rotation": 0,
+            "opacity": 1,
+            "visible": true,
+            "locked": false,
+            "id": "text_01",
+            "type": "text",
+            "text": "山海之间\n我们的旅行",
+            "fontAssetId": "font_demo",
+            "fontSize": 48,
+            "fontWeight": 400,
+            "lineHeight": 1.4,
+            "letterSpacing": 0,
+            "textAlign": "left",
+            "fill": "#243B35",
+            "editableFields": [
+              "text"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "spr_02",
+        "background": "#FFFFFF",
+        "layers": [
+          {
+            "x": 80,
+            "y": 80,
+            "width": 850,
+            "height": 850,
+            "rotation": 0,
+            "opacity": 1,
+            "visible": true,
+            "locked": false,
+            "id": "image_02",
+            "type": "image",
+            "assetId": "photo_02",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 0.75,
+              "height": 1
+            },
+            "fitMode": "cover",
+            "role": "photo",
+            "filter": {
+              "presetId": "F07",
+              "recipeVersion": 1,
+              "strength": 0.65,
+              "seed": 1729
+            }
+          },
+          {
+            "x": 1200,
+            "y": 180,
+            "width": 800,
+            "height": 170,
+            "rotation": 0,
+            "opacity": 1,
+            "visible": true,
+            "locked": false,
+            "id": "text_02",
+            "type": "text",
+            "text": "山海之间\n我们的旅行",
+            "fontAssetId": "font_demo",
+            "fontSize": 48,
+            "fontWeight": 400,
+            "lineHeight": 1.4,
+            "letterSpacing": 0,
+            "textAlign": "left",
+            "fill": "#243B35",
+            "editableFields": [
+              "text"
+            ]
+          }
+        ]
+      }
+    ],
+    "extensionDemo": {
+      "preserve": "unknown same-version fields"
+    }
+  },
+  "docHash": "a126de4a785117676a1dbafa40c369dd51b03f1818ee44f46370646d5e7d27ad",
+  "resources": {
+    "assets": [
+      {
+        "id": "photo_01",
+        "version": 1,
+        "origin": "uploaded",
+        "variants": {
+          "original": {
+            "objectId": "obj_orig_01",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "bytes": 1000,
+            "mime": "image/jpeg",
+            "width": 4000,
+            "height": 3000
+          },
+          "normalized": {
+            "objectId": "obj_norm_01",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "bytes": 1000,
+            "mime": "image/jpeg",
+            "width": 4000,
+            "height": 3000
+          },
+          "preview": {
+            "objectId": "obj_preview_01",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "bytes": 1000,
+            "mime": "image/jpeg",
+            "width": 1600,
+            "height": 1200
+          }
+        }
+      },
+      {
+        "id": "photo_02",
+        "version": 1,
+        "origin": "uploaded",
+        "variants": {
+          "original": {
+            "objectId": "obj_orig_02",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "bytes": 1000,
+            "mime": "image/jpeg",
+            "width": 4000,
+            "height": 3000
+          },
+          "normalized": {
+            "objectId": "obj_norm_02",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "bytes": 1000,
+            "mime": "image/jpeg",
+            "width": 4000,
+            "height": 3000
+          },
+          "preview": {
+            "objectId": "obj_preview_02",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "bytes": 1000,
+            "mime": "image/jpeg",
+            "width": 1600,
+            "height": 1200
+          }
+        }
+      }
+    ],
+    "fonts": [
+      {
+        "id": "font_demo",
+        "version": 1,
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "licenseRef": "license_demo",
+        "faceObjectIds": [
+          "font_face_demo"
+        ],
+        "embeddingAllowed": true
+      }
+    ],
+    "templates": [],
+    "filters": [
+      {
+        "presetId": "F07",
+        "recipeVersion": 1,
+        "kernelVersion": "cpu-srgb-v1",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "options": {
+    "format": "png",
+    "dpi": 300,
+    "view": "spread",
+    "pageIds": [
+      "spr_01",
+      "spr_02"
+    ],
+    "includeCover": false,
+    "bleedMm": 3,
+    "jpegMatte": "#FFFFFF"
+  },
+  "optionsHash": "53f28df3fdc8fc7621b61792bfd07994c92cb7b4586f6837eada2c8087269fbc",
+  "configReleaseId": "config_demo",
+  "createdAt": "2026-10-21T08:00:00Z",
+  "snapshotHash": "6be668a28b4c13730d8faa43b28a8610e2dee8d58d8323aa9d5dc807f71fe176"
+}

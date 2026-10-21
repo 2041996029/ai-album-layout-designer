@@ -1,0 +1,83 @@
+{
+  "selectionPolicy": "all",
+  "duplicatePolicy": "forbid",
+  "inputAssetIds": [
+    "photo_01",
+    "photo_02",
+    "photo_03",
+    "photo_04",
+    "photo_05",
+    "photo_06",
+    "photo_07",
+    "photo_08",
+    "photo_09",
+    "photo_10",
+    "photo_11",
+    "photo_12"
+  ],
+  "placements": [
+    {
+      "assetId": "photo_01",
+      "spreadId": "spr_01",
+      "layerId": "layer_01"
+    },
+    {
+      "assetId": "photo_02",
+      "spreadId": "spr_01",
+      "layerId": "layer_02"
+    },
+    {
+      "assetId": "photo_03",
+      "spreadId": "spr_01",
+      "layerId": "layer_03"
+    },
+    {
+      "assetId": "photo_04",
+      "spreadId": "spr_02",
+      "layerId": "layer_04"
+    },
+    {
+      "assetId": "photo_05",
+      "spreadId": "spr_02",
+      "layerId": "layer_05"
+    },
+    {
+      "assetId": "photo_06",
+      "spreadId": "spr_02",
+      "layerId": "layer_06"
+    },
+    {
+      "assetId": "photo_07",
+      "spreadId": "spr_03",
+      "layerId": "layer_07"
+    },
+    {
+      "assetId": "photo_08",
+      "spreadId": "spr_03",
+      "layerId": "layer_08"
+    },
+    {
+      "assetId": "photo_09",
+      "spreadId": "spr_03",
+      "layerId": "layer_09"
+    },
+    {
+      "assetId": "photo_10",
+      "spreadId": "spr_04",
+      "layerId": "layer_10"
+    },
+    {
+      "assetId": "photo_11",
+      "spreadId": "spr_04",
+      "layerId": "layer_11"
+    },
+    {
+      "assetId": "photo_12",
+      "spreadId": "spr_04",
+      "layerId": "layer_12"
+    }
+  ],
+  "unusedAssetIds": [],
+  "repeatedAssetIds": [],
+  "violations": []
+}

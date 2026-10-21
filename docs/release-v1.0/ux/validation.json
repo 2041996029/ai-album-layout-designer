@@ -1,0 +1,257 @@
+{
+  "artifact_status": "static-design-contract-only",
+  "checked_at_utc": "2026-10-21T14:54:57.869179+00:00",
+  "counts": {
+    "pages": 65,
+    "states": 390,
+    "permission_actions": 54,
+    "roles": 10,
+    "configuration_domains": 20,
+    "new_svg": 4,
+    "new_png": 4,
+    "historical_prototypes_linked": 15
+  },
+  "passed": true,
+  "checks": [
+    {
+      "check": "unique_page_ids_and_routes",
+      "passed": true,
+      "detail": "65 unique page IDs and routes"
+    },
+    {
+      "check": "stable_contiguous_numbering",
+      "passed": true,
+      "detail": {
+        "WEB": 22,
+        "MINI": 9,
+        "ADMIN": 28,
+        "COMMON": 6
+      }
+    },
+    {
+      "check": "all_required_page_states",
+      "passed": true,
+      "detail": "390 nonempty state cells (65 × 6)"
+    },
+    {
+      "check": "modules_valid",
+      "passed": true,
+      "detail": {
+        "C3": 23,
+        "C1": 8,
+        "C2": 4,
+        "C5": 8,
+        "C4": 15,
+        "OPS": 7
+      }
+    },
+    {
+      "check": "canonical_requirement_ids",
+      "passed": true,
+      "detail": {
+        "used": 48,
+        "unknown": [],
+        "APP-RESERVE": "Reserved architecture extension; no implemented App UI claimed"
+      }
+    },
+    {
+      "check": "roles_and_matrix_values",
+      "passed": true,
+      "detail": "10 roles; 540 role grants have valid enums"
+    },
+    {
+      "check": "permission_page_refs",
+      "passed": true,
+      "detail": "All 54 action rows reference registered page IDs"
+    },
+    {
+      "check": "permission_role_has_registered_page",
+      "passed": true,
+      "detail": {
+        "orphan_grants": [],
+        "rule": "Intersect per-page whitelist with action scope and conditions"
+      }
+    },
+    {
+      "check": "viewer_no_writes",
+      "passed": true,
+      "detail": [
+        "projects.create_edit_restore",
+        "assets.upload",
+        "assets.batch_move",
+        "templates.filters.apply",
+        "layout.calculate_apply",
+        "art.quote_submit",
+        "jobs.cancel",
+        "exports.preflight_submit",
+        "commerce.purchase",
+        "commerce.refund_request",
+        "commerce.redeem",
+        "shares.create_revoke"
+      ]
+    },
+    {
+      "check": "commerce_owner_only",
+      "passed": true,
+      "detail": "Purchase/order/refund/redeem only workspace owner in first release"
+    },
+    {
+      "check": "platform_no_secret_or_original_access",
+      "passed": true,
+      "detail": "No role directly reads secret plaintext or inherits customer original access from platform role"
+    },
+    {
+      "check": "prototype_paths_exist",
+      "passed": true,
+      "detail": {
+        "unique_svg_paths": 19,
+        "historical": 15,
+        "new": 4
+      }
+    },
+    {
+      "check": "flow_includes_every_page",
+      "passed": true,
+      "detail": {
+        "nodes": 65,
+        "missing": [],
+        "extra": [],
+        "limitation": "Structural ID coverage; Mermaid runtime rendering not executed"
+      }
+    },
+    {
+      "check": "20_config_domains",
+      "passed": true,
+      "detail": [
+        "ADMIN-02",
+        "ADMIN-03",
+        "ADMIN-04",
+        "ADMIN-05",
+        "ADMIN-06",
+        "ADMIN-07",
+        "ADMIN-08",
+        "ADMIN-09",
+        "ADMIN-10",
+        "ADMIN-11",
+        "ADMIN-12",
+        "ADMIN-13",
+        "ADMIN-14",
+        "ADMIN-15",
+        "ADMIN-16",
+        "ADMIN-17",
+        "ADMIN-18",
+        "ADMIN-19",
+        "ADMIN-20",
+        "ADMIN-21"
+      ]
+    },
+    {
+      "check": "P16-login-binding_original_static_svg",
+      "passed": true,
+      "detail": "Parseable SVG with accessible title/desc and no external image/script"
+    },
+    {
+      "check": "P16-login-binding_png",
+      "passed": true,
+      "detail": {
+        "size": [
+          1440,
+          1080
+        ],
+        "renderer": "Inkscape",
+        "visual_review": "Opened all four PNGs; no observed clipping/overlap at native preview"
+      }
+    },
+    {
+      "check": "P17-membership-refund_original_static_svg",
+      "passed": true,
+      "detail": "Parseable SVG with accessible title/desc and no external image/script"
+    },
+    {
+      "check": "P17-membership-refund_png",
+      "passed": true,
+      "detail": {
+        "size": [
+          1440,
+          1080
+        ],
+        "renderer": "Inkscape",
+        "visual_review": "Opened all four PNGs; no observed clipping/overlap at native preview"
+      }
+    },
+    {
+      "check": "P18-mini-quickflow_original_static_svg",
+      "passed": true,
+      "detail": "Parseable SVG with accessible title/desc and no external image/script"
+    },
+    {
+      "check": "P18-mini-quickflow_png",
+      "passed": true,
+      "detail": {
+        "size": [
+          1440,
+          1080
+        ],
+        "renderer": "Inkscape",
+        "visual_review": "Opened all four PNGs; no observed clipping/overlap at native preview"
+      }
+    },
+    {
+      "check": "P19-admin-reconciliation_original_static_svg",
+      "passed": true,
+      "detail": "Parseable SVG with accessible title/desc and no external image/script"
+    },
+    {
+      "check": "P19-admin-reconciliation_png",
+      "passed": true,
+      "detail": {
+        "size": [
+          1440,
+          1080
+        ],
+        "renderer": "Inkscape",
+        "visual_review": "Opened all four PNGs; no observed clipping/overlap at native preview"
+      }
+    },
+    {
+      "check": "local_document_links",
+      "passed": true,
+      "detail": {
+        "missing": []
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "svg": "prototypes/P16-login-binding.svg",
+      "png": "prototypes/P16-login-binding.png",
+      "svg_sha256": "502069807d8b010672ad7d5395bb05df3dbdd44c8851aca9d26204624eedac0a",
+      "png_sha256": "781772c811aa33f9b7036b9de860c7fc7b9283669607715752c3b20a4f674c02"
+    },
+    {
+      "svg": "prototypes/P17-membership-refund.svg",
+      "png": "prototypes/P17-membership-refund.png",
+      "svg_sha256": "dc9a8a2b49cddeb0cc52e09a9cddf61778da42046429e2956d27ff7e3c733dc3",
+      "png_sha256": "42c84fa52a3ba7f9124544049f412675666b3f612eed4ebf141f0a81e4cf15e9"
+    },
+    {
+      "svg": "prototypes/P18-mini-quickflow.svg",
+      "png": "prototypes/P18-mini-quickflow.png",
+      "svg_sha256": "d70f0789ae99cf2ff95ac25064ec23d363dae3e6f85a82a7866e116835dff209",
+      "png_sha256": "1c855851dec7bdc3a16967029d6fabf8746c975c1a8bc9c4fc16138f92c5f248"
+    },
+    {
+      "svg": "prototypes/P19-admin-reconciliation.svg",
+      "png": "prototypes/P19-admin-reconciliation.png",
+      "svg_sha256": "296bcaa3c9cbedc077afd7af4e6b34cb5d1f05cb68b19b839ce9153a6f5a00d3",
+      "png_sha256": "4332c8415ae5c59c6d3cb11995c85251e0e66ccafc0fae1c543e983c810f6748"
+    }
+  ],
+  "not_verified": [
+    "No production code, service or end-to-end business test executed",
+    "No real WeChat login, channel qualification, payment, refund or fulfillment",
+    "No real cloud upload, AI inference, queue durability, migration or restore drill",
+    "No functional keyboard or assistive-technology acceptance; accessibility is specified in the contract",
+    "Mermaid structure IDs checked; runtime renderer not executed"
+  ]
+}

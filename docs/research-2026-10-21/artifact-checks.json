@@ -1,0 +1,12 @@
+{
+  "artifactValidation": "passed",
+  "reproductionMatches": true,
+  "justifiedPositiveCases": 15,
+  "binderEvenPassed": 16,
+  "binderOddFailedAndDocumented": 12,
+  "uiOrPhotoExportTested": false,
+  "zineInvoked": false,
+  "mojingAccessible": false,
+  "wordEmbeddedProofs": 2,
+  "limitationsDocumented": true
+}

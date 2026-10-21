@@ -1,0 +1,329 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>产品与研发评审基线 v0.3</title><style>body{margin:36px auto;padding:24px;max-width:1100px;background:#f5f4ef;color:#203b35;font:15px/1.9 "Microsoft YaHei",sans-serif}h1,h2{line-height:1.5}h2{margin-top:2em}table{width:100%;border-collapse:collapse;background:white}td,th{border:1px solid #dce2db;padding:10px;text-align:left;vertical-align:top}pre{background:#e8eee7;padding:16px;overflow:auto}a{color:#26614e}img{width:100%;border:1px solid #dce2db}figure{margin:26px 0}figcaption{font-size:12px;color:#6c7772}@media print{body{margin:0;padding:0;background:white}h2{break-after:avoid}tr,figure{break-inside:avoid}}</style></head><body><h1>产品与研发评审基线 · v0.3</h1>
+<p>日期：2026-10-21。状态：供评审的整合规格与新版原型。本轮把 v0.2 的实测发现落实为约束，不新增商业模式、不引入受限的第三方 Skill。</p>
+<p>阅读／下载：<a href="产品与研发评审基线-v0.3.pdf">规格 PDF</a> · <a href="产品与研发评审基线-v0.3.docx">可编辑 Word</a> · <a href="新版原型-v0.3.pdf">4 页原型册</a> · <a href="review.html">离线阅读</a></p>
+<h2>1. 已确认范围与推荐方案</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>基线</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>用户</td>
+<td>摄影师／影楼＋个人消费者</td>
+<td>用户已确认</td>
+</tr>
+<tr>
+<td>首发端</td>
+<td>网页完整编辑＋微信小程序快速成册，预留 App</td>
+<td>用户已确认</td>
+</tr>
+<tr>
+<td>地域</td>
+<td>中国大陆、微信生态、人民币收款</td>
+<td>用户已确认</td>
+</tr>
+<tr>
+<td>商业模式</td>
+<td>账号会员＋AI 点数，影楼预留席位与兑换码</td>
+<td>用户已确认</td>
+</tr>
+<tr>
+<td>导出</td>
+<td>高清 JPG／PNG、普通 PDF，尺寸／DPI／出血／低清预警；专业印刷后续扩展</td>
+<td>用户已确认</td>
+</tr>
+<tr>
+<td>编辑器与后端</td>
+<td>Fabric.js＋自有文档模型；模块化单体；AI／导出独立 worker</td>
+<td>推荐技术方案，待书面评审</td>
+</tr>
+<tr>
+<td>创作路径</td>
+<td>照片忠实排版＋独立 AI 艺术素材创作</td>
+<td>本轮细化方案，待书面评审</td>
+</tr>
+</tbody>
+</table>
+<p>v0.1 的 <a href="../ai-album-v0.1/02-产品需求文档.md">PRD</a>、<a href="../ai-album-v0.1/03-开发架构与数据接口.md">架构</a>、<a href="../ai-album-v0.1/04-会员支付与授权设计.md">会员授权</a>和<a href="../ai-album-v0.1/05-测试与运维手册.md">测试运维</a>继续有效。本稿明确下述交互与约束；发生冲突时，以本稿标明的修订为评审对象，不静默修改历史版本。</p>
+<h2>2. 两条路径如何衔接</h2>
+<h3>A. 照片忠实排版</h3>
+<p>任务是整理用户已有照片，不生成或替换人物／场景。流程：选片 → 设置相册 → 整本分配 → 比较候选 → 图层编辑 → 预检 → 导出。保持原片与可编辑文档，自动排版只改变放置、顺序建议和可恢复的裁剪。</p>
+<p>默认全部使用、每张一次；用户明确允许选片或重复后才改变分配政策。按项目保留 used／unused／repeated 清单。“主体安全”优先提示和调整，不建立跨项目人脸身份库。</p>
+<h3>B. AI 艺术素材创作</h3>
+<p>任务是创建新素材，可能改变人物、场景和细节。流程：选原创预设 → 描述／可选参考图 → 确认参考图用途 → 报价 → 用户确认 → 生成与审核 → 结果入库 → 插入相册。AI 结果是一个图片素材，不能伪装成已拆分的可编辑文字／形状。</p>
+<p>相册标题、客户姓名、日期、页码、说明等由编辑器的文字图层绘制；艺术图里意外生成的文字不作为这些字段的权威来源。预设只来自自制或明确覆盖本业务的授权来源，不集成非商业 Zine Skill。</p>
+<h3>跨路径状态</h3>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th>不变条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原片用于参考生成</td>
+<td>原片不覆盖；记录输入授权、生成来源和结果素材</td>
+</tr>
+<tr>
+<td>生成结果插入相册</td>
+<td>新建图片图层；原有照片、文字和图层保留</td>
+</tr>
+<tr>
+<td>修改标题／日期</td>
+<td>修改文字图层，不重新生图、不重复扣点</td>
+</tr>
+<tr>
+<td>更换 AI 风格</td>
+<td>新任务、新报价；旧结果不自动删除</td>
+</tr>
+<tr>
+<td>返回相册</td>
+<td>回到已保存项目与跨页；生成中可到任务中心找回</td>
+</tr>
+</tbody>
+</table>
+<h2>3. 新版原型</h2>
+<table>
+<thead>
+<tr>
+<th>页面</th>
+<th>文件</th>
+<th>本轮落实的变化</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P09 创作入口</td>
+<td><a href="prototypes/P09-create-mode.png">PNG</a>／<a href="prototypes/P09-create-mode.svg">SVG</a></td>
+<td>明确照片排版与艺术创作对照片的不同影响</td>
+</tr>
+<tr>
+<td>P10 排版核对</td>
+<td><a href="prototypes/P10-layout-integrity.png">PNG</a>／<a href="prototypes/P10-layout-integrity.svg">SVG</a></td>
+<td>候选展示照片分配；遗漏的候选不能应用</td>
+</tr>
+<tr>
+<td>P11 艺术素材</td>
+<td><a href="prototypes/P11-art-to-album.png">PNG</a>／<a href="prototypes/P11-art-to-album.svg">SVG</a></td>
+<td>参考图用途、生成报价、结果作为素材、标题独立可编辑</td>
+</tr>
+<tr>
+<td>P12 导出预检</td>
+<td><a href="prototypes/P12-export-preflight.png">PNG</a>／<a href="prototypes/P12-export-preflight.svg">SVG</a></td>
+<td>缺图／字体阻断，低清警告需确认，显示快照和实际像素</td>
+</tr>
+</tbody>
+</table>
+<p>原型为原创静态设计稿，展示交互规则，不接通保存、支付、AI 或导出服务；演示照片以几何框表示，不使用第三方受限案例。</p>
+<h2>4. 智能排版：整本分配与单页构图</h2>
+<h3>4.1 输入与输出合同</h3>
+<p>输入至少包含 projectId、baseRevision、照片 ID 与宽高／方向、明确的排序、跨页数量、每跨页最少／最多张数、模板版本、锁定项、必选／禁用项、selectionPolicy、duplicatePolicy、seed。</p>
+<p>selectionPolicy：all（全部使用）／allowSelection（允许筛选）。duplicatePolicy：forbid（默认）／allowExplicit（仅明确标记的照片可重复）。默认值适用于相册，不继承图库库函数的截断语义。</p>
+<p>输出：候选文档片段＋assignmentManifest＋constraintReport＋warnings。每个候选都有 candidateId、baseRevision、inputHash、templateVersion、algorithmVersion 和 seed；应用时检查基线版本，不能覆盖用户后续编辑。</p>
+<h3>4.2 第一层：整本分配</h3>
+<p>首先验证可行性。例如 12 张必选照片、4 个跨页、每跨页 2–4 张可行；50 张全部必用、10 个跨页、每跨页最多 2 张不可行。返回最少所需跨页与调整选项，不静默删片或放宽约束。</p>
+<p>在按时序排列的输入上划分连续片段；用户分组作为优先保留的边界。锁定跨页从可变范围移出；锁定图层和必选照片参与容量计算。用户明确选择自定义顺序时不能被 EXIF 排序覆盖。</p>
+<p>第一版采用模板匹配与可解释评分；不要求引入遗传算法或自训练模型。Flickr 的行布局可作候选几何工具，但可变高度结果必须适配固定页框，不能直接把长图库压缩成相册页。</p>
+<h3>4.3 第二层：单页／跨页构图</h3>
+<p>按照片比例、主图权重、留白、阅读顺序、主体安全区匹配图框。保持可编辑图片与文字图层。对新布局检查坐标有限、尺寸为正、可见内容边界和图框合法重叠；装饰层可重叠，照片行模板的图框重叠须符合模板明示规则。</p>
+<p>无解时返回失败候选及冲突原因，仍可显示其他有效候选。版式评分不能抵消漏片、重复、锁定变化或越界等硬约束错误。第一版推荐 3 个有效候选；不足 3 个时显示实际数量，不能用无效候选凑数。</p>
+<h2>5. 照片分配清单</h2>
+<p>assignmentManifest 是每个候选必须携带的可验证结果，不能仅由 UI 文案拼成“已用全部照片”。字段示例：</p>
+<pre><code class="language-json">{
+  &quot;selectionPolicy&quot;: &quot;all&quot;,
+  &quot;duplicatePolicy&quot;: &quot;forbid&quot;,
+  &quot;inputAssetIds&quot;: [&quot;photo_01&quot;, &quot;photo_02&quot;, &quot;photo_03&quot;],
+  &quot;placements&quot;: [
+    {&quot;assetId&quot;: &quot;photo_01&quot;, &quot;spreadId&quot;: &quot;spread_01&quot;, &quot;layerId&quot;: &quot;image_01&quot;},
+    {&quot;assetId&quot;: &quot;photo_02&quot;, &quot;spreadId&quot;: &quot;spread_01&quot;, &quot;layerId&quot;: &quot;image_02&quot;},
+    {&quot;assetId&quot;: &quot;photo_03&quot;, &quot;spreadId&quot;: &quot;spread_02&quot;, &quot;layerId&quot;: &quot;image_03&quot;}
+  ],
+  &quot;unusedAssetIds&quot;: [],
+  &quot;repeatedAssetIds&quot;: [],
+  &quot;violations&quot;: []
+}
+</code></pre>
+<p>在 all＋forbid 时，输入集合与 placements 对应照片集合完全相同，每张只出现一次，unused 与 repeated 均为空。allowSelection 也要求每张输入落在已使用或未使用清单中，不能消失；允许重复的照片按授权策略校验并显示次数。</p>
+<p>服务端在生成候选后、应用候选前各验证一次；应用后从真实文档重新计算清单核对，避免清单正确但文档内容不一致。图片素材在文档其他装饰用途中的重复，不自动计入相册选片清单，需明确用途和引用。</p>
+<h2>6. 导出预检与确定性渲染</h2>
+<h3>6.1 输入冻结</h3>
+<p>预检绑定已保存 revision、文档 hash、素材／字体／模板／滤镜 manifest、格式、页范围、singlePage／spread 视图、物理尺寸、DPI 和出血。配置或作品发生变化后旧预检失效，重新运行。提交成功后冻结 snapshot；任务排队时继续编辑不改变已接受任务。</p>
+<h3>6.2 阻断与警告</h3>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>处理</th>
+<th>用户可做的操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原片缺失／未就绪／无权访问</td>
+<td>阻断，不能回退缩略图做高清导出</td>
+<td>重传或替换、重新预检</td>
+</tr>
+<tr>
+<td>字体文件缺失或无可用授权</td>
+<td>阻断，不静默替换</td>
+<td>换字体或恢复合法资源</td>
+</tr>
+<tr>
+<td>选片分配不满足策略</td>
+<td>阻断应用该候选；导出校验引用一致性</td>
+<td>重排或明确改变选片政策</td>
+</tr>
+<tr>
+<td>未知 schema、NaN／Infinity、负尺寸、超像素预算</td>
+<td>阻断</td>
+<td>修复文档或降低规格</td>
+</tr>
+<tr>
+<td>模板文字超框／不支持字符</td>
+<td>阻断成品导出</td>
+<td>调整文字、字体或文本框</td>
+</tr>
+<tr>
+<td>裁剪后有效 PPI 100–199</td>
+<td>警告</td>
+<td>替换更高清素材或明确确认继续</td>
+</tr>
+<tr>
+<td>有效 PPI 小于 100</td>
+<td>强警告；普通数字导出可确认继续</td>
+<td>说明明显低清风险，不宣传为可印刷质量</td>
+</tr>
+<tr>
+<td>小于建议安全区的关键文字／跨中缝标题</td>
+<td>警告</td>
+<td>移动图层或确认继续</td>
+</tr>
+<tr>
+<td>超过平台约定的生成标识范围／标识丢失</td>
+<td>阻断，按已核验规则处理</td>
+<td>修复标识后重新预检</td>
+</tr>
+</tbody>
+</table>
+<p>本表修订 v0.1 对文字溢出的笼统提示：明确文字超框为成品导出阻断项，避免姓名／说明漏字。产品允许的艺术性溢出以后通过独立属性和审批规则扩展，首期不默认放行。</p>
+<h3>6.3 像素与物理尺寸</h3>
+<p>文档坐标仍采用 px96；导出像素＝逻辑 px × DPI ÷96。必须分别验证像素尺寸与 DPI 元数据。600×300mm 跨页、300DPI 的裁切区约为 7087×3543px；若四边各 3mm 出血，画布为 606×306mm，约 7157×3614px。取整只在最终像素尺寸执行，不能凭写入“300DPI”提升源图细节。</p>
+<p>普通 PDF 和图片 ZIP 保持用户所选页范围和视图顺序；单页与跨页在任务参数及下载说明中明确区分。封面另列，不混入内页数量。PDF 为首期 sRGB 普通 PDF，PDF/X、CMYK、拼版与印厂验证继续留在后续范围。</p>
+<h2>7. 商业权益与素材授权边界</h2>
+<p>账号、会员、点数、兑换和工作区继续遵循 v0.1 设计。文本编辑／规则排版不自动消耗 AI 生图点数；生成任务报价前不预占，接受后原子预占，成功一次结算，确认失败一次释放。供应商状态未知时先查询，不能重复付费提交。</p>
+<p>艺术预设注册至少包括来源、作者、许可证版本、商业用途范围、是否可修改／再分发、署名要求、授权到期时间、模型和风格版本。非商业或许可不明的来源不能在商业生成预设库上架；运营后台显示缺口。未获得 Zine 商业授权前，不安装／调用该 Skill 生成商业样片，也不把作者示例作为模板销售。</p>
+<h2>8. 跨端与后续 App</h2>
+<p>网页拥有完整图层编辑。小程序只修改模板允许的文字字段、照片裁剪、选片与候选选择；服务端按白名单 patch，保留小程序不理解的图层字段。App 预留相同内部用户、项目 schema、revision 和任务 API，不复制一套账本。</p>
+<p>跨端修改冲突以 revision 明确返回；保留恢复草稿，不用后一次请求静默覆盖。用户在小程序提交的生成／导出任务可在网页找回；任务中心不以临时浏览器进程为事实源。</p>
+<h2>9. 研发拆分与评审边界</h2>
+<p>本项目包含多个可独立交付单元，应分别形成实施计划，而非一个无法独立验收的大任务：</p>
+<table>
+<thead>
+<tr>
+<th>单元</th>
+<th>可验收结果</th>
+<th>前置依赖</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C1 文档与确定性渲染</td>
+<td>同一文档可编辑、保存、恢复并按参数导出；素材／字体版本可追溯</td>
+<td>书面模型、渲染与字体验证</td>
+</tr>
+<tr>
+<td>C2 排版与完整性校验</td>
+<td>整本分配＋跨页构图＋manifest；无解和漏片明确阻断</td>
+<td>C1 文档模型</td>
+</tr>
+<tr>
+<td>C3 账号、素材与跨端</td>
+<td>微信／网页身份、工作区、上传、权限、小程序轻编辑</td>
+<td>C1 接口约定；平台资质</td>
+</tr>
+<tr>
+<td>C4 任务与商业权益</td>
+<td>可靠队列、导出快照、会员／点数／兑换、退款与审计</td>
+<td>C1／C3；支付准入</td>
+</tr>
+<tr>
+<td>C5 AI 创作与运营</td>
+<td>预设报价、供应商适配、审核／标识、素材插入、后台</td>
+<td>C3／C4；模型与素材授权</td>
+</tr>
+</tbody>
+</table>
+<p>本表是设计拆分，不是逐步编码计划。团队、预算和上线时间仍未提供；不能把 v0.1 的估算区间当作已承诺交期。</p>
+<h2>10. 验收追踪</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>本稿要求</th>
+<th>可观察的通过条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V3-MODE-01</td>
+<td>区分照片排版和艺术创作</td>
+<td>普通选片不会触发生图；艺术入口说明生成变化与用途</td>
+</tr>
+<tr>
+<td>V3-LAYOUT-01</td>
+<td>全量选片完整</td>
+<td>12 输入生成 12 个有效放置；库返回 11 个时不能应用</td>
+</tr>
+<tr>
+<td>V3-LAYOUT-02</td>
+<td>固定页数无解</td>
+<td>50 张／10 跨页／最多 2 张时返回冲突和调整方案</td>
+</tr>
+<tr>
+<td>V3-LAYOUT-03</td>
+<td>锁定与局部重排</td>
+<td>锁定内容和未选跨页不变；候选基线过期不能覆盖</td>
+</tr>
+<tr>
+<td>V3-EXPORT-01</td>
+<td>不静默降清晰度</td>
+<td>原图不可读但有缩略图时，高清导出仍被阻断</td>
+</tr>
+<tr>
+<td>V3-EXPORT-02</td>
+<td>中文与文字完整</td>
+<td>连续中文、标点和混排正确换行，超框可见并阻断成品导出</td>
+</tr>
+<tr>
+<td>V3-EXPORT-03</td>
+<td>像素／DPI 分离</td>
+<td>输出像素符合尺寸与出血计算；DPI 标签不能代替足够像素</td>
+</tr>
+<tr>
+<td>V3-EXPORT-04</td>
+<td>快照一致</td>
+<td>revision=12 提交导出后保存 13，产物仍完全来自 12</td>
+</tr>
+<tr>
+<td>V3-ART-01</td>
+<td>图像与文字分层</td>
+<td>改标题无需重新生图；插入结果不覆盖原片</td>
+</tr>
+<tr>
+<td>V3-LICENSE-01</td>
+<td>授权上架</td>
+<td>非商业或许可不明预设不能发布为付费生成能力</td>
+</tr>
+<tr>
+<td>V3-CROSS-01</td>
+<td>跨端字段保持</td>
+<td>小程序改文字／裁剪，网页高级图层字段完整保留</td>
+</tr>
+</tbody>
+</table>
+<p>参考依据：<a href="../research-2026-10-21/README.md">v0.2 调研与算法实测</a>。魔镜设计仍未访问成功，没有把其未知行为写成产品事实。本稿的视觉、技术选择与阻断规则供书面评审，实施前按对应单元形成具体计划。</p><h2>新版原型预览</h2><figure id="P09-create-mode"><a href="prototypes/P09-create-mode.svg"><img src="prototypes/P09-create-mode.svg" alt="P09-create-mode"></a><figcaption>P09-create-mode · 静态设计稿</figcaption></figure><figure id="P10-layout-integrity"><a href="prototypes/P10-layout-integrity.svg"><img src="prototypes/P10-layout-integrity.svg" alt="P10-layout-integrity"></a><figcaption>P10-layout-integrity · 静态设计稿</figcaption></figure><figure id="P11-art-to-album"><a href="prototypes/P11-art-to-album.svg"><img src="prototypes/P11-art-to-album.svg" alt="P11-art-to-album"></a><figcaption>P11-art-to-album · 静态设计稿</figcaption></figure><figure id="P12-export-preflight"><a href="prototypes/P12-export-preflight.svg"><img src="prototypes/P12-export-preflight.svg" alt="P12-export-preflight"></a><figcaption>P12-export-preflight · 静态设计稿</figcaption></figure></body></html>
