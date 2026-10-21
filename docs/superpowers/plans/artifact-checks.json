@@ -1,0 +1,20 @@
+{
+  "artifactValidation": "passed",
+  "scope": "Implementation planning documents only; no product implementation or product tests executed",
+  "planTasks": 10,
+  "uncheckedExecutionSteps": 50,
+  "reviewFocusCases": 5,
+  "localReferencesChecked": 45,
+  "pdfPages": 13,
+  "wordTaskHeadings": 10,
+  "userDevelopmentPreference": "All development by AI",
+  "executionMethod": "pending plan review and method selection",
+  "dependencyCompatibilityTested": false,
+  "programExportSamplesProducedThisTurn": false,
+  "reviewRequired": true,
+  "visualReviewedPdfPages": [
+    1,
+    7,
+    13
+  ]
+}

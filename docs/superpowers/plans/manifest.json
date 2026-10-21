@@ -1,0 +1,40 @@
+{
+  "scope": "C1 planning package",
+  "files": [
+    {
+      "path": "2026-10-21-c1-editor-render.md",
+      "bytes": 44185,
+      "sha256": "bf692a488447a289fad227fef4b80a4957b57a60ea8df47855c84d5e5ddd3df4"
+    },
+    {
+      "path": "2026-10-21-delivery-roadmap.md",
+      "bytes": 5642,
+      "sha256": "453da21f19cf2c1fde965b5900c69094816042cd6a7b5905d566c84e4c43ef36"
+    },
+    {
+      "path": "C1-网页编辑与确定性导出-实施计划.docx",
+      "bytes": 60152,
+      "sha256": "20a8af8dc4cd191f54d7e8bc1fe3d52df5281abc8c3399cdd58db8e944a43d3c"
+    },
+    {
+      "path": "C1-网页编辑与确定性导出-实施计划.pdf",
+      "bytes": 62008,
+      "sha256": "491e92b432e76c5e18d7bf99c1d5349aa51b9bc14efbc5fba325cd4a68d3103a"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1980,
+      "sha256": "0bf0a38df1e37d7983c8562e1f8851bc4c0285dab6532dc51b5a020407d5a8dd"
+    },
+    {
+      "path": "artifact-checks.json",
+      "bytes": 590,
+      "sha256": "99b3648aee98fcf2e91c5c051c7b022680b0883b778a880d0ab7323d46eba14c"
+    },
+    {
+      "path": "review.html",
+      "bytes": 60007,
+      "sha256": "e03067bcd3b769d6f039e0a5e96df2ba62ce08d4a09dcc1c2e52c5da5e9dd84c"
+    }
+  ]
+}
