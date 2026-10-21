@@ -1,0 +1,78 @@
+{
+  "retrievedDate": "2026-10-21",
+  "method": "GitHub repository file reads; SHA identifies file blob, not locked dependency version",
+  "files": [
+    {
+      "repo": "fabricjs/fabric.js",
+      "path": "README.md",
+      "sha": "e100151f6b724702984994d1796551bc901e3d7b",
+      "url": "https://github.com/fabricjs/fabric.js/blob/master/README.md"
+    },
+    {
+      "repo": "konvajs/konva",
+      "path": "LICENSE",
+      "sha": "a25747cf170708ecbe162fcd4f50396993155d59",
+      "url": "https://github.com/konvajs/konva/blob/master/LICENSE"
+    },
+    {
+      "repo": "ikuaitu/vue-fabric-editor",
+      "path": "README.md",
+      "sha": "048c86e24170a36a6841f74061106f698d54fc46",
+      "url": "https://github.com/ikuaitu/vue-fabric-editor/blob/main/README.md"
+    },
+    {
+      "repo": "ikuaitu/vue-fabric-editor",
+      "path": "LICENSE",
+      "sha": "67448e3b5ab9660e7b81982c6e5d13c2aac3a51a",
+      "url": "https://github.com/ikuaitu/vue-fabric-editor/blob/main/LICENSE"
+    },
+    {
+      "repo": "huggingface/diffusers",
+      "path": "LICENSE",
+      "sha": "038e32f6445e8f265bde482613cf0d2f43d86dbc",
+      "url": "https://github.com/huggingface/diffusers/blob/main/LICENSE"
+    },
+    {
+      "repo": "Comfy-Org/ComfyUI",
+      "path": "LICENSE",
+      "sha": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+      "url": "https://github.com/Comfy-Org/ComfyUI/blob/master/LICENSE"
+    },
+    {
+      "repo": "taskforcesh/bullmq",
+      "path": "LICENSE",
+      "sha": "19ca8e470081a19877e0e8fe4855e673965709d1",
+      "url": "https://github.com/taskforcesh/bullmq/blob/master/LICENSE"
+    },
+    {
+      "repo": "fabricjs/fabric.js",
+      "path": "LICENSE",
+      "sha": "94cbfebf065dd7cc97a358ca3583e9828ef89415",
+      "url": "https://github.com/fabricjs/fabric.js/blob/master/LICENSE"
+    },
+    {
+      "repo": "konvajs/konva",
+      "path": "README.md",
+      "sha": "9b033a576aa5b262a11665b78ad5072ff5ab488a",
+      "url": "https://github.com/konvajs/konva/blob/master/README.md"
+    },
+    {
+      "repo": "taskforcesh/bullmq",
+      "path": "README.md",
+      "sha": "5a752fddd5006d891f8564ae2e4a407089c3558b",
+      "url": "https://github.com/taskforcesh/bullmq/blob/master/README.md"
+    },
+    {
+      "repo": "huggingface/diffusers",
+      "path": "README.md",
+      "sha": "aaf5c97e09c3b12c3dc1a92756382df882ec5425",
+      "url": "https://github.com/huggingface/diffusers/blob/main/README.md"
+    },
+    {
+      "repo": "TencentCloudBase/skills",
+      "path": "skills/cloudbase-wechat-integration/references/virtual-payment.md",
+      "sha": "ab2c883437b1d5c0a154fc31a2c505a0bbedcb85",
+      "url": "https://github.com/TencentCloudBase/skills/blob/main/skills/cloudbase-wechat-integration/references/virtual-payment.md"
+    }
+  ]
+}
