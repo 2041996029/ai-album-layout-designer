@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "scope": "Isolated PostgreSQL schema and constraint execution only; no API/provider or production integration",
+  "serverVersion": "17.11",
+  "imageId": "sha256:79bd7c99e923138f136f8009d6bffa66e21e9d4fda5c0c561b00fc9c90cfe537",
+  "network": "none; no host ports",
+  "tables": 92,
+  "constraints": 746,
+  "foreignKeys": 203,
+  "negativeAssertions": 39,
+  "checks": [
+    "empty-database up",
+    "39 expected SQLSTATE rejections and positive jpeg/zip/upload/fence fixtures",
+    "unguarded down rejected and schema retained",
+    "guarded disposable down",
+    "re-up and catalog verification"
+  ],
+  "executedAtUtc": "2026-10-21T15:17:21.360178+00:00",
+  "displayTimezone": "Asia/Shanghai",
+  "artifacts": {
+    "001_initial.up.sql": "a92320636435e3f0cf8dc2b31f258dc3d3f1e12f8d3ecaadb9286bfee6487a6e",
+    "001_initial.down.sql": "21d5406bc1fe52526de26e5c856aebf30eef8a8b436167839ea5d0c00ab1b573",
+    "contract-checks.sql": "6b97747f57d8cc9ea47d6ed182ca7cdf9d5d826778b144619bccad2e081ef510"
+  },
+  "cleanup": "container and anonymous volumes removed by shell EXIT trap"
+}

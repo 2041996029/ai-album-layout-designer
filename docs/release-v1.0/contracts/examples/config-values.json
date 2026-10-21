@@ -1,0 +1,365 @@
+[
+  {
+    "kind": "storage",
+    "provider": "oss",
+    "adapterVersion": "demo_reference",
+    "region": "demo_reference",
+    "endpoint": "https://service.example.invalid",
+    "bucket": "demo_reference",
+    "credential": {
+      "secretRef": "demo_reference",
+      "secretVersion": "demo_reference"
+    },
+    "basePrefix": "相册/prod",
+    "keyPatternVersion": "v1",
+    "publicAccess": false,
+    "allowedOrigins": [
+      "https://album.example.invalid"
+    ],
+    "downloadTtlSeconds": 1,
+    "uploadTtlSeconds": 1,
+    "encryptionMode": "providerManaged",
+    "cdnMode": "disabled",
+    "retentionPolicyRef": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "quotaPolicyRef": {
+      "id": "demo_reference",
+      "version": 1
+    }
+  },
+  {
+    "kind": "aiConnection",
+    "adapterId": "demo_reference",
+    "adapterVersion": "demo_reference",
+    "name": "demo_reference",
+    "baseUrl": "https://service.example.invalid",
+    "credential": {
+      "secretRef": "demo_reference",
+      "secretVersion": "demo_reference"
+    },
+    "accountBillingId": "demo_reference",
+    "connectTimeoutMs": 100,
+    "requestTimeoutMs": 1000,
+    "maxConcurrent": 1,
+    "requestsPerMinute": 1,
+    "dailyBudgetFen": 0,
+    "budgetTimezone": "Asia/Shanghai",
+    "dataUsePolicyRef": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "enabled": false
+  },
+  {
+    "kind": "auth",
+    "webAppId": "demo_reference",
+    "miniAppId": "demo_reference",
+    "webCredential": {
+      "secretRef": "demo_reference",
+      "secretVersion": "demo_reference"
+    },
+    "miniCredential": {
+      "secretRef": "demo_reference",
+      "secretVersion": "demo_reference"
+    },
+    "callbackOrigins": [
+      "https://service.example.invalid"
+    ],
+    "accessTtlSeconds": 60,
+    "refreshTtlSeconds": 300,
+    "smsEnabled": false,
+    "registrationEnabled": false
+  },
+  {
+    "kind": "payment",
+    "channel": "wechat_pay",
+    "appId": "demo_reference",
+    "merchantId": "demo_reference",
+    "credential": {
+      "secretRef": "demo_reference",
+      "secretVersion": "demo_reference"
+    },
+    "verificationKeyRef": "demo_reference",
+    "callbackUrl": "https://service.example.invalid",
+    "refundEnabled": false,
+    "platformCapabilityRef": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "enabled": false
+  },
+  {
+    "kind": "sku",
+    "skuId": "demo_reference",
+    "skuKind": "membership",
+    "name": "TEST 结构样例，不可作为真实商品",
+    "priceFen": 0,
+    "currency": "CNY",
+    "durationDays": 1,
+    "credits": 0,
+    "creditValidityDays": 1,
+    "features": {
+      "storageBytes": 0,
+      "maxProjectPhotos": 1,
+      "maxSpreads": 1,
+      "exportDpis": [
+        72
+      ],
+      "exportConcurrency": 1,
+      "aiConcurrency": 1,
+      "seatLimit": 1,
+      "commercialTemplateSetIds": []
+    },
+    "refundPolicyRef": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "enabled": false
+  },
+  {
+    "kind": "editor",
+    "filterManifestVersion": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "fontCatalogVersion": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "templateCatalogVersion": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "undoLimit": 100,
+    "autosaveIdleMs": 2000,
+    "autosaveMaxMs": 10000,
+    "maxLayersPerSpread": 100,
+    "maxGroupDepth": 5,
+    "snapScreenPixels": 6
+  },
+  {
+    "kind": "layout",
+    "algorithmVersion": "demo_reference",
+    "candidateCount": 1,
+    "minPhotosPerSpread": 0,
+    "maxPhotosPerSpread": 1,
+    "selectionPolicy": "all",
+    "duplicatePolicy": "forbid",
+    "weights": {
+      "subject": 0.3,
+      "timeline": 0.25,
+      "whitespace": 0.2,
+      "variety": 0.15,
+      "color": 0.1
+    }
+  },
+  {
+    "kind": "export",
+    "allowedFormats": [
+      "png"
+    ],
+    "allowedDpis": [
+      72
+    ],
+    "maxSurfacePixels": 50000000,
+    "browserBudgetMiB": 768,
+    "workerBudgetMiB": 2048,
+    "ppiWarning": 200,
+    "ppiStrongWarning": 100,
+    "outputRetentionDays": 7,
+    "jpegQuality": 0.95,
+    "jpegMatte": "#FFFFFF"
+  },
+  {
+    "kind": "queue",
+    "workerKind": "export",
+    "maxGlobalConcurrency": 1,
+    "maxWorkspaceConcurrency": 1,
+    "leaseSeconds": 120,
+    "heartbeatSeconds": 20,
+    "retryLimit": 3,
+    "retryBackoffSeconds": [
+      10,
+      30,
+      90
+    ],
+    "maxWaitingSeconds": 1,
+    "maxAttemptsPerTask": 4
+  },
+  {
+    "kind": "content",
+    "moderationRouteRef": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "labelPolicyRef": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "licensePolicyVersion": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "allowedOrigins": [
+      "uploaded"
+    ],
+    "referenceConsentRequired": true,
+    "quarantineOnUnverified": true
+  },
+  {
+    "kind": "share",
+    "defaultPrivate": true,
+    "sharingEnabled": false,
+    "maxShareTtlSeconds": 60,
+    "downloadTtlSeconds": 1,
+    "revokeMode": "shortLivedUrl",
+    "allowOriginalDownload": false
+  },
+  {
+    "kind": "notification",
+    "channels": [
+      "inApp"
+    ],
+    "templateRefs": [],
+    "userConsentRequired": true,
+    "enabledEvents": []
+  },
+  {
+    "kind": "retention",
+    "trashDays": 30,
+    "outputDays": 7,
+    "temporaryHours": 24,
+    "revisionKeepCount": 20,
+    "backupRetentionDays": 1,
+    "auditRetentionDays": 1,
+    "honorPins": true,
+    "replayDeletionTombstones": true
+  },
+  {
+    "kind": "monitor",
+    "dailyBudgetWarnRatio": 0,
+    "dailyBudgetStopRatio": 1,
+    "storageWarnRatio": 0,
+    "apiErrorRatio": 0,
+    "queueOldestSeconds": 1,
+    "alertSinkRefs": [
+      "demo_reference"
+    ],
+    "redactPersonalData": true
+  },
+  {
+    "kind": "workspace",
+    "defaultFeatures": {
+      "storageBytes": 0,
+      "maxProjectPhotos": 1,
+      "maxSpreads": 1,
+      "exportDpis": [
+        72
+      ],
+      "exportConcurrency": 1,
+      "aiConcurrency": 1,
+      "seatLimit": 1,
+      "commercialTemplateSetIds": []
+    },
+    "roles": [
+      "owner"
+    ],
+    "designerCanDeleteUnusedAssets": false,
+    "seatInvitationEnabled": false,
+    "byosEnabled": false,
+    "byokEnabled": false
+  },
+  {
+    "kind": "account",
+    "deletionGraceDays": 1,
+    "requireReauthentication": true,
+    "sessionRevokeOnDeletion": true,
+    "defaultDisplayTimezone": "Asia/Shanghai",
+    "privacyPolicyVersion": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "termsVersion": {
+      "id": "demo_reference",
+      "version": 1
+    }
+  },
+  {
+    "kind": "site",
+    "productName": "demo_reference",
+    "publicOrigin": "https://service.example.invalid",
+    "miniAppId": "demo_reference",
+    "supportContact": "demo_reference",
+    "maintenanceMode": false,
+    "webEnabled": false,
+    "miniEnabled": false,
+    "privacyPolicyVersion": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "termsVersion": {
+      "id": "demo_reference",
+      "version": 1
+    }
+  },
+  {
+    "kind": "upload",
+    "allowedMimeTypes": [
+      "image/jpeg"
+    ],
+    "maxFileBytes": 1,
+    "maxSourcePixels": 1,
+    "maxProjectPhotos": 1,
+    "previewLongEdge": 100,
+    "maxFolderDepth": 1,
+    "maxFolderNameChars": 1,
+    "multipartEnabled": false,
+    "activeStorageProfileRef": {
+      "id": "demo_reference",
+      "version": 1
+    }
+  },
+  {
+    "kind": "aiRoute",
+    "capability": "textToImage",
+    "primaryModelRef": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "fallbackModelRefs": [],
+    "fallbackPolicy": "beforeAcceptanceOnly",
+    "enabled": false
+  },
+  {
+    "kind": "aiPricing",
+    "costRuleId": "demo_reference",
+    "modelRef": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "presetRef": {
+      "id": "demo_reference",
+      "version": 1
+    },
+    "creditsPerImage": 0,
+    "estimatedProviderCostFen": 0,
+    "quoteTtlSeconds": 60,
+    "unknownFinalTimeoutSeconds": 60,
+    "countPerChildTask": 1,
+    "enabled": false
+  },
+  {
+    "kind": "albumDefaults",
+    "pageWidthMm": 300,
+    "pageHeightMm": 300,
+    "interiorSpreadCount": 10,
+    "bleedMm": 3,
+    "safeMm": 5,
+    "templateRef": {
+      "id": "demo_reference",
+      "version": 1
+    }
+  }
+]

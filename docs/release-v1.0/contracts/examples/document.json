@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "projectId": "prj_demo",
+  "revision": 12,
+  "unit": "px96",
+  "colorSpace": "srgb",
+  "pageSize": {
+    "width": 1133.858268,
+    "height": 1133.858268
+  },
+  "printProfile": {
+    "bleedMm": 3,
+    "safeMm": 5
+  },
+  "cover": {
+    "front": [],
+    "back": []
+  },
+  "spreads": [
+    {
+      "id": "spr_01",
+      "background": "#FFFFFF",
+      "layers": [
+        {
+          "x": 80,
+          "y": 80,
+          "width": 850,
+          "height": 850,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "id": "image_01",
+          "type": "image",
+          "assetId": "photo_01",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 0.75,
+            "height": 1
+          },
+          "fitMode": "cover",
+          "role": "photo",
+          "filter": {
+            "presetId": "F07",
+            "recipeVersion": 1,
+            "strength": 0.65,
+            "seed": 1729
+          }
+        },
+        {
+          "x": 1200,
+          "y": 180,
+          "width": 800,
+          "height": 170,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "id": "text_01",
+          "type": "text",
+          "text": "山海之间\n我们的旅行",
+          "fontAssetId": "font_demo",
+          "fontSize": 48,
+          "fontWeight": 400,
+          "lineHeight": 1.4,
+          "letterSpacing": 0,
+          "textAlign": "left",
+          "fill": "#243B35",
+          "editableFields": [
+            "text"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spr_02",
+      "background": "#FFFFFF",
+      "layers": [
+        {
+          "x": 80,
+          "y": 80,
+          "width": 850,
+          "height": 850,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "id": "image_02",
+          "type": "image",
+          "assetId": "photo_02",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 0.75,
+            "height": 1
+          },
+          "fitMode": "cover",
+          "role": "photo",
+          "filter": {
+            "presetId": "F07",
+            "recipeVersion": 1,
+            "strength": 0.65,
+            "seed": 1729
+          }
+        },
+        {
+          "x": 1200,
+          "y": 180,
+          "width": 800,
+          "height": 170,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "id": "text_02",
+          "type": "text",
+          "text": "山海之间\n我们的旅行",
+          "fontAssetId": "font_demo",
+          "fontSize": 48,
+          "fontWeight": 400,
+          "lineHeight": 1.4,
+          "letterSpacing": 0,
+          "textAlign": "left",
+          "fill": "#243B35",
+          "editableFields": [
+            "text"
+          ]
+        }
+      ]
+    }
+  ],
+  "extensionDemo": {
+    "preserve": "unknown same-version fields"
+  }
+}

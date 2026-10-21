@@ -1,0 +1,640 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Layout input and candidate integrity",
+  "x-contract-version": "1.0.0",
+  "$defs": {
+    "assignmentManifest": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "selectionPolicy": {
+          "enum": [
+            "all",
+            "allowSelection"
+          ]
+        },
+        "duplicatePolicy": {
+          "enum": [
+            "forbid",
+            "allowExplicit"
+          ]
+        },
+        "inputAssetIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+          },
+          "minItems": 1,
+          "maxItems": 500,
+          "uniqueItems": true
+        },
+        "placements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "assetId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "spreadId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "layerId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              }
+            },
+            "required": [
+              "assetId",
+              "spreadId",
+              "layerId"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 5000
+        },
+        "unusedAssetIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 500,
+          "uniqueItems": true
+        },
+        "repeatedAssetIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 500,
+          "uniqueItems": true
+        },
+        "violations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "assetIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+                },
+                "minItems": 0,
+                "maxItems": 500
+              },
+              "layerIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+                },
+                "minItems": 0,
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 500
+        }
+      },
+      "required": [
+        "selectionPolicy",
+        "duplicatePolicy",
+        "inputAssetIds",
+        "placements",
+        "unusedAssetIds",
+        "repeatedAssetIds",
+        "violations"
+      ],
+      "additionalProperties": false
+    },
+    "photo": {
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 80000000
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 80000000
+        },
+        "captureTime": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "groupId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "assetId",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false
+    },
+    "violation": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "assetIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 500
+        },
+        "layerIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 500
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "root": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "baseRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "photos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "assetId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 80000000
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 80000000
+              },
+              "captureTime": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "groupId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "assetId",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "maxItems": 500
+        },
+        "constraints": {
+          "type": "object",
+          "properties": {
+            "spreadCount": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "minPhotosPerSpread": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "maxPhotosPerSpread": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "selectionPolicy": {
+              "enum": [
+                "all",
+                "allowSelection"
+              ],
+              "default": "all"
+            },
+            "duplicatePolicy": {
+              "enum": [
+                "forbid",
+                "allowExplicit"
+              ],
+              "default": "forbid"
+            },
+            "explicitRepeatAssetIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 500,
+              "uniqueItems": true
+            },
+            "requiredAssetIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 500,
+              "uniqueItems": true
+            },
+            "excludedAssetIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 500,
+              "uniqueItems": true
+            },
+            "orderPolicy": {
+              "enum": [
+                "user",
+                "captureTime"
+              ]
+            },
+            "lockedSpreadIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 50,
+              "uniqueItems": true
+            },
+            "lockedLayerIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 5000,
+              "uniqueItems": true
+            },
+            "targetSpreadIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 50,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "spreadCount",
+            "minPhotosPerSpread",
+            "maxPhotosPerSpread",
+            "selectionPolicy",
+            "duplicatePolicy",
+            "orderPolicy"
+          ],
+          "additionalProperties": false
+        },
+        "templateRef": {
+          "$ref": "document.schema.json#/$defs/templateRef"
+        },
+        "algorithmVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "projectId",
+        "baseRevision",
+        "photos",
+        "constraints",
+        "templateRef",
+        "algorithmVersion",
+        "seed"
+      ],
+      "additionalProperties": false
+    },
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "candidateId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "baseRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "inputHash": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64,
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "templateVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "algorithmVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "spreads": {
+          "type": "array",
+          "items": {
+            "$ref": "document.schema.json#/$defs/spread"
+          },
+          "minItems": 1,
+          "maxItems": 50
+        },
+        "assignmentManifest": {
+          "$ref": "#/$defs/assignmentManifest"
+        },
+        "constraintReport": {
+          "type": "object",
+          "properties": {
+            "valid": {
+              "type": "boolean"
+            },
+            "violations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "assetIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+                    },
+                    "minItems": 0,
+                    "maxItems": 500
+                  },
+                  "layerIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+                    },
+                    "minItems": 0,
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 500
+            }
+          },
+          "required": [
+            "valid",
+            "violations"
+          ],
+          "additionalProperties": false
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "assetIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+                },
+                "minItems": 0,
+                "maxItems": 500
+              },
+              "layerIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+                },
+                "minItems": 0,
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 500
+        }
+      },
+      "required": [
+        "candidateId",
+        "baseRevision",
+        "inputHash",
+        "templateVersion",
+        "algorithmVersion",
+        "seed",
+        "spreads",
+        "assignmentManifest",
+        "constraintReport",
+        "warnings"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$ref": "#/$defs/root",
+  "x-semantic-invariants": [
+    "Input photo IDs unique; required/excluded/repeat subsets refer to input IDs; required/excluded disjoint.",
+    "minPhotosPerSpread<=maxPhotosPerSpread; all/forbid requires every input photo placed exactly once; selection and repeat policies validated independently of score.",
+    "Manifest rederived from real candidate image layers with photo role; defaults never inherited from truncating gallery layout libraries.",
+    "Locked content and untouched spreads byte-equivalent; apply checks current revision and candidate inputHash."
+  ]
+}

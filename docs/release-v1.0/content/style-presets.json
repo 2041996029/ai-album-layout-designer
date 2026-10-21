@@ -1,0 +1,53 @@
+{
+  "status": "design draft; no model binding, no generated output or real quote",
+  "items": [
+    {
+      "id": "ink-landscape",
+      "version": 1,
+      "name": "山水水墨",
+      "promptTemplate": "远山、江面与留白，淡墨层次，安静的构图；不生成标题与日期。 用户补充：{description}",
+      "allowedVariables": [
+        "description"
+      ],
+      "origin": "project-original-prompt-draft",
+      "state": "draft",
+      "modelVersionRef": null,
+      "costRuleRef": null,
+      "licenseReviewRequired": true,
+      "referenceConsentRequired": true,
+      "generatedTextIsNotEditableField": true
+    },
+    {
+      "id": "portrait-watercolor",
+      "version": 1,
+      "name": "人像淡彩",
+      "promptTemplate": "柔和水彩纸感，保留参考图主题但允许艺术化变化；不生成姓名或身份文字。 用户补充：{description}",
+      "allowedVariables": [
+        "description"
+      ],
+      "origin": "project-original-prompt-draft",
+      "state": "draft",
+      "modelVersionRef": null,
+      "costRuleRef": null,
+      "licenseReviewRequired": true,
+      "referenceConsentRequired": true,
+      "generatedTextIsNotEditableField": true
+    },
+    {
+      "id": "flower-bird",
+      "version": 1,
+      "name": "花鸟写意",
+      "promptTemplate": "花枝与小鸟的写意构图，淡彩、留白与纸面质感；不生成文字。 用户补充：{description}",
+      "allowedVariables": [
+        "description"
+      ],
+      "origin": "project-original-prompt-draft",
+      "state": "draft",
+      "modelVersionRef": null,
+      "costRuleRef": null,
+      "licenseReviewRequired": true,
+      "referenceConsentRequired": true,
+      "generatedTextIsNotEditableField": true
+    }
+  ]
+}

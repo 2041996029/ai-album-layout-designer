@@ -1,0 +1,110 @@
+{
+  "sources": [
+    {
+      "path": "docs/release-v1.0/README.md",
+      "sha256": "3c9248f008a1ced9bb0f885a34de2a70974c1c1dece42d0ff9dc061880a37085"
+    },
+    {
+      "path": "docs/release-v1.0/01-产品与模块基线.md",
+      "sha256": "7470fff1541b81087c6afb59fdf9774b9f61c78cc0bc3351c4c86a0acb8c728a"
+    },
+    {
+      "path": "docs/release-v1.0/02-架构与集成合同.md",
+      "sha256": "8b256da3906a25c43e9ee8c534b1a5d94233888cee5f341018a741ab551d9dcc"
+    },
+    {
+      "path": "docs/release-v1.0/03-状态机与一致性.md",
+      "sha256": "2918fd7b8746888828acc919bbf050f2d024980ea5bdc6018d3c4ddc0ee057e8"
+    },
+    {
+      "path": "docs/release-v1.0/04-实施与交接索引.md",
+      "sha256": "a0ee003ae47a4b200e21aee78f2402e445e91a0388ccb4f6a21f879731aa1195"
+    },
+    {
+      "path": "docs/release-v1.0/06-发布准出清单.md",
+      "sha256": "173c825e5ce1d9d733ce5f5193eba66b792f0bbc7b008fea4bc01815c5e3dc65"
+    },
+    {
+      "path": "docs/release-v1.0/07-决策与接入清单.md",
+      "sha256": "f36cf6d29e4c6bc3bd6cf963898cff11c1275d25277918d113c1d69e8e84bd00"
+    },
+    {
+      "path": "docs/release-v1.0/contracts/API-GUIDE.md",
+      "sha256": "90c8e3df56c87613daa436c4bc36d184fd8ca669b1ebad09415b80cb6a5f41b2"
+    },
+    {
+      "path": "docs/release-v1.0/contracts/SCHEMA-GUIDE.md",
+      "sha256": "bcaf8b5245ff9bcdd9537aee27e50d7db79b682352816090c02beccda2f9b13e"
+    },
+    {
+      "path": "docs/release-v1.0/content/README.md",
+      "sha256": "b50ed287a68c6a74219129c7e1c83d8f005d368b204f07a245a0187d6a702940"
+    },
+    {
+      "path": "docs/release-v1.0/content/filter-kernel.md",
+      "sha256": "7179027d025a0bd59ec884467ed07dda22fbb95b199139f090fb089609875614"
+    },
+    {
+      "path": "docs/release-v1.0/ux/interaction-spec.md",
+      "sha256": "0da0f701846c3ff1e98f290890148d3daadf3713733117f167dd576d7c220fb3"
+    },
+    {
+      "path": "docs/release-v1.0/operations/deployment-runbook.md",
+      "sha256": "5eb1ad00e8c6f768dec467f8396712d75babb46a0fe1a7e8d9c971cd26f2a166"
+    },
+    {
+      "path": "docs/release-v1.0/testing/TEST-STRATEGY.md",
+      "sha256": "6c2ffdc5f568ce3d85db9746e1399e5ebe7e443f149fa3babb1cb77815db3670"
+    },
+    {
+      "path": "docs/release-v1.0/database/transaction-safety.md",
+      "sha256": "d2c8c76fa4a406afcdaf1ad2192181df9b18650dbec73743ef0075765bf899c7"
+    },
+    {
+      "path": "docs/release-v1.0/database/data-dictionary.md",
+      "sha256": "ec94bddac0ebd681820d1e04b5aa4766b28f4001943c441c8655f0fcaebad78d"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-21-c1-editor-render.md",
+      "sha256": "bf692a488447a289fad227fef4b80a4957b57a60ea8df47855c84d5e5ddd3df4"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-21-c2-layout.md",
+      "sha256": "c09f7f31a501ab0bffeb3f2b9181d90cfb51745d70874aae8f84bb1d82b3eab9"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-21-c3-cloud-identity-mini.md",
+      "sha256": "93003203c7a820f9be605ef75b83528f7d874192ca052ce227117d1153f327bf"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-21-c4-jobs-commerce.md",
+      "sha256": "acabca306eee15157173be80746236a4eadf17ffb148edb1edc3794e94ab6a03"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-21-c5-ai-admin.md",
+      "sha256": "de88ea9d5772b739ef9e6a4a96e55d92ac95ef482d0fd9bae11988cd35d68d7d"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-21-c6-release-operations.md",
+      "sha256": "5f22a386ca3d775a13b37f8d02aaa734aab5f15fb3661374c6fec50f5823a631"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/release-v1.0/AI相册-全模块研发手册-v1.0.pdf",
+      "sha256": "dedca26863b0e6387c117a1114a9aa984dd70af8a63adec503e957d47d93cd41"
+    },
+    {
+      "path": "docs/release-v1.0/AI相册-全模块研发手册-v1.0.docx",
+      "sha256": "cda6963301d2fd5d489e67277d26450146c542f16344287534f5694eb30bd1b3"
+    },
+    {
+      "path": "docs/release-v1.0/全部页面原型册-v1.0.pdf",
+      "sha256": "66b19d7ebf1720d9391c5d11123e37360e55cbb421427f7fbc39b9cb14b02c51"
+    },
+    {
+      "path": "docs/release-v1.0/review.html",
+      "sha256": "e7a2321d150dc3dd2e601fbb9122616ca1fef92bf8c3f22577e9c4f074939e85"
+    }
+  ]
+}

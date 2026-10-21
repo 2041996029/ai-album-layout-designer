@@ -1,0 +1,100 @@
+{
+  "projectId": "prj_demo",
+  "baseRevision": 12,
+  "photos": [
+    {
+      "assetId": "photo_01",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_02",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_03",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_04",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_05",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_06",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_07",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_08",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_09",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_10",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_11",
+      "width": 4000,
+      "height": 3000
+    },
+    {
+      "assetId": "photo_12",
+      "width": 4000,
+      "height": 3000
+    }
+  ],
+  "constraints": {
+    "spreadCount": 4,
+    "minPhotosPerSpread": 2,
+    "maxPhotosPerSpread": 4,
+    "selectionPolicy": "all",
+    "duplicatePolicy": "forbid",
+    "orderPolicy": "user",
+    "requiredAssetIds": [
+      "photo_01",
+      "photo_02",
+      "photo_03",
+      "photo_04",
+      "photo_05",
+      "photo_06",
+      "photo_07",
+      "photo_08",
+      "photo_09",
+      "photo_10",
+      "photo_11",
+      "photo_12"
+    ],
+    "explicitRepeatAssetIds": [],
+    "excludedAssetIds": [],
+    "lockedSpreadIds": [],
+    "lockedLayerIds": [],
+    "targetSpreadIds": []
+  },
+  "templateRef": {
+    "id": "tpl_travel",
+    "version": 1,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "algorithmVersion": "rules-v1",
+  "seed": 1729
+}

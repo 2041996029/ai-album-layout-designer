@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Typed startup configuration after env parsing",
+  "type": "object",
+  "properties": {
+    "APP_ENV": {
+      "enum": [
+        "dev",
+        "staging",
+        "prod"
+      ]
+    },
+    "SERVICE_ROLE": {
+      "enum": [
+        "api",
+        "export-worker",
+        "ai-worker",
+        "web",
+        "admin"
+      ]
+    },
+    "PUBLIC_ORIGIN": {
+      "type": "string",
+      "format": "uri"
+    },
+    "PUBLIC_API_ORIGIN": {
+      "type": "string",
+      "format": "uri"
+    },
+    "HTTP_PORT": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "TRUST_PROXY_HOPS": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "SECRET_STORE_PROVIDER": {
+      "enum": [
+        "localFiles",
+        "cloudSecretManager"
+      ]
+    },
+    "CONFIG_REFRESH_SECONDS": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+    },
+    "CONFIG_MAX_STALENESS_SECONDS": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 3600
+    },
+    "WORKER_MEMORY_MIB": {
+      "type": "integer",
+      "minimum": 128,
+      "maximum": 65536
+    },
+    "WORKER_CONCURRENCY": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "LOG_LEVEL": {
+      "enum": [
+        "error",
+        "warn",
+        "info",
+        "debug"
+      ]
+    },
+    "LOG_REDACTION": {
+      "const": "strict"
+    },
+    "RELEASE_ID": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "COMMIT_SHA": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "RENDER_BROWSER_REVISION": {
+      "type": "string",
+      "minLength": 1
+    },
+    "DATABASE_URL_FILE": {
+      "type": "string",
+      "pattern": "^/run/secrets/[^.][A-Za-z0-9_./-]+$",
+      "maxLength": 512
+    },
+    "REDIS_URL_FILE": {
+      "type": "string",
+      "pattern": "^/run/secrets/[^.][A-Za-z0-9_./-]+$",
+      "maxLength": 512
+    },
+    "SESSION_SIGNING_SECRET_FILE": {
+      "type": "string",
+      "pattern": "^/run/secrets/[^.][A-Za-z0-9_./-]+$",
+      "maxLength": 512
+    },
+    "SECRET_STORE_CATALOG_FILE": {
+      "type": "string",
+      "pattern": "^/run/secrets/[^.][A-Za-z0-9_./-]+$",
+      "maxLength": 512
+    }
+  },
+  "required": [
+    "APP_ENV",
+    "SERVICE_ROLE",
+    "PUBLIC_ORIGIN",
+    "PUBLIC_API_ORIGIN",
+    "DATABASE_URL_FILE",
+    "REDIS_URL_FILE",
+    "SECRET_STORE_PROVIDER",
+    "CONFIG_REFRESH_SECONDS",
+    "CONFIG_MAX_STALENESS_SECONDS",
+    "LOG_REDACTION",
+    "RELEASE_ID",
+    "COMMIT_SHA"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "APP_ENV": {
+            "const": "prod"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "SECRET_STORE_PROVIDER": {
+            "const": "cloudSecretManager"
+          },
+          "PUBLIC_ORIGIN": {
+            "pattern": "^https://"
+          },
+          "PUBLIC_API_ORIGIN": {
+            "pattern": "^https://"
+          },
+          "LOG_LEVEL": {
+            "enum": [
+              "error",
+              "warn",
+              "info"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "SERVICE_ROLE": {
+            "const": "api"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "SESSION_SIGNING_SECRET_FILE"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "SERVICE_ROLE": {
+            "const": "export-worker"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "WORKER_MEMORY_MIB",
+          "WORKER_CONCURRENCY",
+          "RENDER_BROWSER_REVISION"
+        ]
+      }
+    }
+  ],
+  "x-semantic-invariants": [
+    "Parse numeric env strings before schema validation; do not validate entire process.env because unrelated system vars are not config.",
+    "Secret file paths canonicalized and must stay below controlled /run/secrets; no user paths.",
+    "Production images and browser revision pinned to tested releases; runtime refresh<=staleness."
+  ]
+}

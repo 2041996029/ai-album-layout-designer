@@ -1,0 +1,15 @@
+{
+  "APP_ENV": "dev",
+  "SERVICE_ROLE": "api",
+  "PUBLIC_ORIGIN": "http://localhost:8080",
+  "PUBLIC_API_ORIGIN": "http://localhost:3000",
+  "DATABASE_URL_FILE": "/run/secrets/database_url",
+  "REDIS_URL_FILE": "/run/secrets/redis_url",
+  "SESSION_SIGNING_SECRET_FILE": "/run/secrets/session_signing",
+  "SECRET_STORE_PROVIDER": "localFiles",
+  "CONFIG_REFRESH_SECONDS": 30,
+  "CONFIG_MAX_STALENESS_SECONDS": 300,
+  "LOG_REDACTION": "strict",
+  "RELEASE_ID": "review_fixture",
+  "COMMIT_SHA": "0000000000000000000000000000000000000000"
+}
