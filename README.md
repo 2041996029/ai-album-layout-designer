@@ -7,6 +7,7 @@
 
 ## 最新评审入口
 
+- [v0.4 配置中心与素材目录规格](docs/configuration-v0.4/README.md)：补充云存储、自定义根前缀／用户文件夹、AI连接／模型／费用及20类配置覆盖；含3张静态原型、PDF／Word。新增方案待评审，尚无后台实现。
 - [全程 AI 开发：实施与验收入口](docs/superpowers/plans/README.md)：C1 的 10 项执行任务、验证命令、接口与 C1–C5 交付路线。
 - [C1 实施计划 PDF](docs/superpowers/plans/C1-网页编辑与确定性导出-实施计划.pdf)／[Word](docs/superpowers/plans/C1-网页编辑与确定性导出-实施计划.docx)：网页编辑、保存恢复与真实图片／PDF 导出的逐项计划。
 - [v0.3 产品与研发评审基线](docs/design-v0.3/README.md)：整合已确认范围与调研发现，明确创作分流、照片完整性、导出阻断和跨端规则。

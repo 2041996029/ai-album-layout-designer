@@ -1,5 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>C1 全程 AI 开发实施计划</title><style>body{margin:32px auto;padding:24px;max-width:1100px;background:#f5f4ef;color:#203b35;font:15px/1.9 "Microsoft YaHei",sans-serif}h1,h2{line-height:1.5}h2{margin-top:2em}table{width:100%;border-collapse:collapse;background:white}td,th{border:1px solid #dce2db;padding:10px;text-align:left;vertical-align:top}pre{background:#e8eee7;padding:16px;overflow:auto}a{color:#26614e}section{margin-bottom:48px}code{overflow-wrap:anywhere}@media print{body{margin:0;padding:0;background:white}h2{break-after:avoid}tr{break-inside:avoid}pre{white-space:pre-wrap}}</style></head><body><section id="doc0"><h1>全程 AI 开发：实施与验收入口</h1>
 <p>日期：2026-10-21。用户已明确由 AI 完成开发。本目录把 <a href="../../design-v0.3/README.md">v0.3 评审基线</a>转换为可执行任务；当前交付是实施计划，尚未实现产品功能，也未承诺上线日期。</p>
+<p>后续规格增补：<a href="../../configuration-v0.4/README.md">v0.4 配置中心与素材目录</a>。云存储、自定义目录、AI连接／模型／预算和其他配置进入C3–C5及发布验收，未包含在C1本地闭环的实现范围中。</p>
 <ul>
 <li><a href="2026-10-21-c1-editor-render.md">C1 网页编辑与确定性导出实施计划</a>：10 项任务，包含文件职责、接口、失败用例、验证命令和逐项提交要求。</li>
 <li><a href="2026-10-21-delivery-roadmap.md">实施顺序与上线条件</a>：覆盖 C1–C5、小程序、会员支付、AI 创作和运维上线。</li>
@@ -468,6 +469,7 @@ docs/implementation/c1/     实际环境、验收结果与导出样片
 <h2>执行依据</h2>
 <p>用户：全程 AI 开发。范围：<a href="../../design-v0.3/README.md">v0.3 基线</a>及其引用的 v0.1 商业、测试运维规则。研发按可验收单元推进，暂不根据虚构团队人数估算人周，也不把计划任务数换算为交期。</p>
 <p>当前完成：需求与原型、定向调研和算法验证、C1 详细实施计划。当前未完成：产品代码、真实供应商集成、部署、支付联调和上线验收。</p>
+<p>配置需求补充见 <a href="../../configuration-v0.4/README.md">v0.4 配置中心与素材目录</a>：C3–C5计划编制时需纳入配置版本、云存储根前缀／用户目录、AI模型与费用、20类配置及对应验收。此补充为待评审方案，未使C1自动包含云端实现。</p>
 <h2>交付顺序</h2>
 <table>
 <thead>

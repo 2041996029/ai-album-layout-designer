@@ -8,33 +8,33 @@
     },
     {
       "path": "2026-10-21-delivery-roadmap.md",
-      "bytes": 5642,
-      "sha256": "453da21f19cf2c1fde965b5900c69094816042cd6a7b5905d566c84e4c43ef36"
+      "bytes": 5935,
+      "sha256": "e19fa1cafbc9e6fa2f44d289bdf748f2b4ad116a583cfdb526ee9d1320566721"
     },
     {
       "path": "C1-网页编辑与确定性导出-实施计划.docx",
-      "bytes": 60152,
-      "sha256": "20a8af8dc4cd191f54d7e8bc1fe3d52df5281abc8c3399cdd58db8e944a43d3c"
+      "bytes": 60293,
+      "sha256": "def6e9d0b3d5492e1674a0a7e6cf5df87fd4eb5b5358ae16685cea3b8776d1af"
     },
     {
       "path": "C1-网页编辑与确定性导出-实施计划.pdf",
-      "bytes": 62008,
-      "sha256": "491e92b432e76c5e18d7bf99c1d5349aa51b9bc14efbc5fba325cd4a68d3103a"
+      "bytes": 62215,
+      "sha256": "5b5de042aa35b2b3c8fb02f6e740317a5afc261172d3ffd8b93eb2d200aa98be"
     },
     {
       "path": "README.md",
-      "bytes": 1980,
-      "sha256": "0bf0a38df1e37d7983c8562e1f8851bc4c0285dab6532dc51b5a020407d5a8dd"
+      "bytes": 2225,
+      "sha256": "b76382a343bab7fbaeebdb32c122229af61eba37e5f87827047919b7e792f8d0"
     },
     {
       "path": "artifact-checks.json",
       "bytes": 590,
-      "sha256": "99b3648aee98fcf2e91c5c051c7b022680b0883b778a880d0ab7323d46eba14c"
+      "sha256": "66e683f438ec8e5eda9f4344a118d07e634475fad9882989b907e9af2f63e1c5"
     },
     {
       "path": "review.html",
-      "bytes": 60007,
-      "sha256": "e03067bcd3b769d6f039e0a5e96df2ba62ce08d4a09dcc1c2e52c5da5e9dd84c"
+      "bytes": 60579,
+      "sha256": "8488cec88f40afd261de9aba45948325de5c7ad398ac8bf3a5ed74954daa7556"
     }
   ]
 }
