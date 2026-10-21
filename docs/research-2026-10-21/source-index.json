@@ -1,0 +1,109 @@
+{
+  "retrievedDate": "2026-10-21",
+  "files": [
+    {
+      "url": "https://github.com/Zeejay0/gathered-scenes-zine-skill/blob/main/LICENSE",
+      "blobSha": "ac7b03ce03422d3895f85e3eb2139c28057c1829"
+    },
+    {
+      "url": "https://github.com/Zeejay0/gathered-scenes-zine-skill/blob/main/examples/README.md",
+      "blobSha": "bcfb755bb3362ca1533a270508107c860536e94b"
+    },
+    {
+      "url": "https://github.com/Zeejay0/gathered-scenes-zine-skill/blob/main/examples/real-scene-collage/01-where-stone-meets-sky/README.md",
+      "blobSha": "1af3644afbdebd04d46632e6d38ae0a40caa9dd6"
+    },
+    {
+      "url": "https://github.com/Zeejay0/gathered-scenes-zine-skill/blob/main/examples/image-distillation/01-time-waves-back/README.md",
+      "blobSha": "d56349a30ba64b316de0ed8d400cd6aa3a0cd334"
+    },
+    {
+      "url": "https://github.com/Kubimeter/Photo-Book-Binder/blob/main/LICENSE",
+      "blobSha": "e8c01a9a1e96591abb7630153d44694e4f3f42bd"
+    },
+    {
+      "url": "https://github.com/EddyXorb/fotobuch/blob/main/LICENSE",
+      "blobSha": "e7d3c4b078e090a75fc183f27fdf9586bb9497bf"
+    },
+    {
+      "url": "https://github.com/flickr/justified-layout/blob/main/LICENSE",
+      "blobSha": "bf65506e0c18c0ddf2e6b11057c498e9cc3fb2b1"
+    },
+    {
+      "url": "https://github.com/flickr/justified-layout/blob/main/package.json",
+      "blobSha": "16cf40d81fc9d6305c57072d94619ac4148615ed"
+    },
+    {
+      "url": "https://github.com/flickr/justified-layout/blob/main/lib/index.js",
+      "blobSha": "657d4cfc51fe9b9147c5a2a69023c0035065b847"
+    },
+    {
+      "url": "https://github.com/GhostInTheBus/book-builder/blob/main/app/package.json",
+      "blobSha": "0a16b77493fb3552a9499e4e16814d8ca0d4118b"
+    },
+    {
+      "url": "https://github.com/GhostInTheBus/book-builder/blob/main/app/src/lib/pdfExport.ts",
+      "blobSha": "6f0107402be1b23c017afb9cdfa1961b37f84e87"
+    },
+    {
+      "url": "https://github.com/EddyXorb/fotobuch/blob/main/Cargo.toml",
+      "blobSha": "519e8024d8c535c10905e8b4dce4510686f0acc1"
+    },
+    {
+      "url": "https://github.com/Spacerat/photobook/blob/main/README.md",
+      "blobSha": "795be02dbde0e190da364fc0fe130c2d928d8198"
+    },
+    {
+      "url": "https://github.com/GhostInTheBus/book-builder/blob/main/README.md",
+      "blobSha": "676fbbf6b55fc76d847914a8e109870769b1911b"
+    },
+    {
+      "url": "https://github.com/Kubimeter/Photo-Book-Binder/blob/main/README.md",
+      "blobSha": "9d2375bf6a725f5f19044a539be8a2fff810ba75"
+    },
+    {
+      "url": "https://github.com/EddyXorb/fotobuch/blob/main/README.md",
+      "blobSha": "586cf679cfaeaea368429f3f858b8a00e627d585"
+    }
+  ],
+  "webSources": [
+    {
+      "url": "https://mojingsheji.com/",
+      "status": "not_accessible_via_current_web_tool"
+    },
+    {
+      "url": "https://www.mojingsheji.com/",
+      "status": "not_accessible_via_current_web_tool"
+    },
+    {
+      "url": "https://polotno.com/sdk/product/industries/photo-products",
+      "status": "read_official_page"
+    },
+    {
+      "url": "https://polotno.com/docs/pdf-export",
+      "status": "read_official_page"
+    }
+  ],
+  "invokedComponents": [
+    {
+      "repo": "flickr/justified-layout",
+      "commit": "9d4db49cdbf45604c63a8b25293650af4fe952ab",
+      "entry": "lib/index.js"
+    },
+    {
+      "repo": "Kubimeter/Photo-Book-Binder",
+      "commit": "b9c10ad8a9911e65d4cee8c5289519de29d0aa0f",
+      "entry": "app.js:buildImposition"
+    }
+  ],
+  "notInvoked": [
+    {
+      "repo": "Zeejay0/gathered-scenes-zine-skill",
+      "reason": "Personal non-commercial license; no commercial permission recorded"
+    },
+    {
+      "url": "https://mojingsheji.com/",
+      "reason": "No accessible official page, no verified public API"
+    }
+  ]
+}

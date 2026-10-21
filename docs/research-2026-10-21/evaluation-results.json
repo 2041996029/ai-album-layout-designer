@@ -1,0 +1,470 @@
+{
+  "date": "2026-10-21",
+  "scope": "Isolated algorithm probes only, not end-to-end product export or supplier API testing",
+  "sources": [
+    {
+      "repo": "flickr/justified-layout",
+      "commit": "9d4db49cdbf45604c63a8b25293650af4fe952ab",
+      "packageVersion": "4.1.0",
+      "licenseFile": "MIT",
+      "packageJsonLicense": "ISC"
+    },
+    {
+      "repo": "Kubimeter/Photo-Book-Binder",
+      "commit": "b9c10ad8a9911e65d4cee8c5289519de29d0aa0f",
+      "licenseFile": "MIT"
+    }
+  ],
+  "justified": {
+    "cases": 15,
+    "passed": 15,
+    "invariants": [
+      "count",
+      "finite positive dimensions",
+      "no overlap",
+      "within geometry container",
+      "aspect ratios preserved"
+    ],
+    "layouts": [
+      {
+        "width": 320,
+        "count": 1,
+        "boxes": 1,
+        "containerHeight": 112,
+        "status": "passed"
+      },
+      {
+        "width": 320,
+        "count": 7,
+        "boxes": 7,
+        "containerHeight": 301.9725845719537,
+        "status": "passed"
+      },
+      {
+        "width": 320,
+        "count": 50,
+        "boxes": 50,
+        "containerHeight": 1702.817203344649,
+        "status": "passed"
+      },
+      {
+        "width": 320,
+        "count": 200,
+        "boxes": 200,
+        "containerHeight": 6657.777032176327,
+        "status": "passed"
+      },
+      {
+        "width": 320,
+        "count": 500,
+        "boxes": 500,
+        "containerHeight": 16616.53304297082,
+        "status": "passed"
+      },
+      {
+        "width": 600,
+        "count": 1,
+        "boxes": 1,
+        "containerHeight": 182,
+        "status": "passed"
+      },
+      {
+        "width": 600,
+        "count": 7,
+        "boxes": 7,
+        "containerHeight": 558.4688284499009,
+        "status": "passed"
+      },
+      {
+        "width": 600,
+        "count": 50,
+        "boxes": 50,
+        "containerHeight": 3257.82996654743,
+        "status": "passed"
+      },
+      {
+        "width": 600,
+        "count": 200,
+        "boxes": 200,
+        "containerHeight": 12809.113484217927,
+        "status": "passed"
+      },
+      {
+        "width": 600,
+        "count": 500,
+        "boxes": 500,
+        "containerHeight": 32000.441594094686,
+        "status": "passed"
+      },
+      {
+        "width": 1060,
+        "count": 1,
+        "boxes": 1,
+        "containerHeight": 297,
+        "status": "passed"
+      },
+      {
+        "width": 1060,
+        "count": 7,
+        "boxes": 7,
+        "containerHeight": 979.8555148208144,
+        "status": "passed"
+      },
+      {
+        "width": 1060,
+        "count": 50,
+        "boxes": 50,
+        "containerHeight": 5812.493791809142,
+        "status": "passed"
+      },
+      {
+        "width": 1060,
+        "count": 200,
+        "boxes": 200,
+        "containerHeight": 22914.880512572,
+        "status": "passed"
+      },
+      {
+        "width": 1060,
+        "count": 500,
+        "boxes": 500,
+        "containerHeight": 57274.00564236975,
+        "status": "passed"
+      }
+    ],
+    "omissionOptions": {
+      "showWidowsFalse": {
+        "input": 12,
+        "output": 11
+      },
+      "maxNumRowsOne": {
+        "input": 12,
+        "output": 4
+      }
+    }
+  },
+  "binder": {
+    "cases": 28,
+    "passed": 16,
+    "failed": 12,
+    "uiStep": 2,
+    "findings": "Even sheets pass tested page-set invariants. Odd sheets fail; UI step is 2, but source input and JSON loading do not validate evenness.",
+    "signatures": [
+      {
+        "numLagen": 1,
+        "blaetter": 2,
+        "expectedPages": 8,
+        "pdfSides": 2,
+        "assignedSlots": 8,
+        "uniquePages": 8,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 1,
+        "blaetter": 3,
+        "expectedPages": 12,
+        "pdfSides": 4,
+        "assignedSlots": 16,
+        "uniquePages": 12,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 1,
+        "blaetter": 4,
+        "expectedPages": 16,
+        "pdfSides": 4,
+        "assignedSlots": 16,
+        "uniquePages": 16,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 1,
+        "blaetter": 5,
+        "expectedPages": 20,
+        "pdfSides": 6,
+        "assignedSlots": 24,
+        "uniquePages": 20,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 1,
+        "blaetter": 6,
+        "expectedPages": 24,
+        "pdfSides": 6,
+        "assignedSlots": 24,
+        "uniquePages": 24,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 1,
+        "blaetter": 7,
+        "expectedPages": 28,
+        "pdfSides": 8,
+        "assignedSlots": 32,
+        "uniquePages": 28,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 1,
+        "blaetter": 8,
+        "expectedPages": 32,
+        "pdfSides": 8,
+        "assignedSlots": 32,
+        "uniquePages": 32,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 2,
+        "blaetter": 2,
+        "expectedPages": 16,
+        "pdfSides": 4,
+        "assignedSlots": 16,
+        "uniquePages": 16,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 2,
+        "blaetter": 3,
+        "expectedPages": 24,
+        "pdfSides": 8,
+        "assignedSlots": 32,
+        "uniquePages": 24,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 2,
+        "blaetter": 4,
+        "expectedPages": 32,
+        "pdfSides": 8,
+        "assignedSlots": 32,
+        "uniquePages": 32,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 2,
+        "blaetter": 5,
+        "expectedPages": 40,
+        "pdfSides": 12,
+        "assignedSlots": 48,
+        "uniquePages": 40,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 2,
+        "blaetter": 6,
+        "expectedPages": 48,
+        "pdfSides": 12,
+        "assignedSlots": 48,
+        "uniquePages": 48,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 2,
+        "blaetter": 7,
+        "expectedPages": 56,
+        "pdfSides": 16,
+        "assignedSlots": 64,
+        "uniquePages": 56,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 2,
+        "blaetter": 8,
+        "expectedPages": 64,
+        "pdfSides": 16,
+        "assignedSlots": 64,
+        "uniquePages": 64,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 6,
+        "blaetter": 2,
+        "expectedPages": 48,
+        "pdfSides": 12,
+        "assignedSlots": 48,
+        "uniquePages": 48,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 6,
+        "blaetter": 3,
+        "expectedPages": 72,
+        "pdfSides": 24,
+        "assignedSlots": 96,
+        "uniquePages": 72,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 6,
+        "blaetter": 4,
+        "expectedPages": 96,
+        "pdfSides": 24,
+        "assignedSlots": 96,
+        "uniquePages": 96,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 6,
+        "blaetter": 5,
+        "expectedPages": 120,
+        "pdfSides": 36,
+        "assignedSlots": 144,
+        "uniquePages": 120,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 6,
+        "blaetter": 6,
+        "expectedPages": 144,
+        "pdfSides": 36,
+        "assignedSlots": 144,
+        "uniquePages": 144,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 6,
+        "blaetter": 7,
+        "expectedPages": 168,
+        "pdfSides": 48,
+        "assignedSlots": 192,
+        "uniquePages": 168,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 6,
+        "blaetter": 8,
+        "expectedPages": 192,
+        "pdfSides": 48,
+        "assignedSlots": 192,
+        "uniquePages": 192,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 20,
+        "blaetter": 2,
+        "expectedPages": 160,
+        "pdfSides": 40,
+        "assignedSlots": 160,
+        "uniquePages": 160,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 20,
+        "blaetter": 3,
+        "expectedPages": 240,
+        "pdfSides": 80,
+        "assignedSlots": 320,
+        "uniquePages": 240,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 20,
+        "blaetter": 4,
+        "expectedPages": 320,
+        "pdfSides": 80,
+        "assignedSlots": 320,
+        "uniquePages": 320,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 20,
+        "blaetter": 5,
+        "expectedPages": 400,
+        "pdfSides": 120,
+        "assignedSlots": 480,
+        "uniquePages": 400,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 20,
+        "blaetter": 6,
+        "expectedPages": 480,
+        "pdfSides": 120,
+        "assignedSlots": 480,
+        "uniquePages": 480,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      },
+      {
+        "numLagen": 20,
+        "blaetter": 7,
+        "expectedPages": 560,
+        "pdfSides": 160,
+        "assignedSlots": 640,
+        "uniquePages": 560,
+        "integerPages": true,
+        "inRange": true,
+        "status": "failed"
+      },
+      {
+        "numLagen": 20,
+        "blaetter": 8,
+        "expectedPages": 640,
+        "pdfSides": 160,
+        "assignedSlots": 640,
+        "uniquePages": 640,
+        "integerPages": true,
+        "inRange": true,
+        "status": "passed"
+      }
+    ]
+  },
+  "limitations": [
+    "No real photographs used",
+    "No browser UI or native PDF exporter executed",
+    "No print folding proof",
+    "No production load or visual beauty evaluation",
+    "Zine not invoked due non-commercial license; Mojing inaccessible"
+  ]
+}
