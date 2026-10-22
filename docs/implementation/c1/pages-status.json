@@ -1,6 +1,6 @@
 {
   "observedDate": "2026-10-22",
-  "state": "requires_manual_pages_enablement",
+  "state": "deployed",
   "deploymentRunUrl": "https://github.com/2041996029/ai-album-layout-designer/actions/runs/39739824473",
   "remoteChecks": {
     "install": "passed",
@@ -8,10 +8,13 @@
     "unitTests": 99,
     "build": "passed"
   },
-  "failedStep": "Configure GitHub Pages",
-  "githubError": "Create Pages site failed: Resource not accessible by integration",
-  "liveUrl": null,
+  "failedStep": null,
+  "githubError": null,
+  "liveUrl": "https://2041996029.github.io/ai-album-layout-designer/",
   "settingsUrl": "https://github.com/2041996029/ai-album-layout-designer/settings/pages",
-  "requiredAction": "Select GitHub Actions as Pages source, then rerun failed deployment job",
-  "repositoryVisibility": "private; unchanged"
+  "requiredAction": null,
+  "repositoryVisibility": "public; explicitly authorized by user",
+  "deploymentAttempt": 4,
+  "deploymentJobId": 119704518574,
+  "verification": "GitHub deployment success and page_url verified; direct live HTTP blocked by managed proxy, web reader unavailable; local production subpath interaction test passed"
 }

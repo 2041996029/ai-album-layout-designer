@@ -7,6 +7,8 @@
 
 ## 运行与查看
 
+[直接打开在线测试站](https://2041996029.github.io/ai-album-layout-designer/)（GitHub Pages，当前 C1 版本）。
+
 需要 Node 24：`npm ci` → `npm run dev` → 打开终端显示的地址。
 
 - [C1 运行说明与范围](docs/implementation/c1/README.md)
