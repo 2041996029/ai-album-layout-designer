@@ -11,7 +11,7 @@ export function LayerPanel({ layers, selected, onSelect, patch }: Props) {
     [...list].reverse().map((layer) => (
       <div key={layer.id}>
         <div
-          className={`layer-row ${selected.includes(layer.id) ? "selected" : ""}`}
+          className={`layer-row ${selected.includes(layer.id) ? "selected" : ""} ${layer.visible === false ? "is-hidden" : ""} ${layer.locked ? "is-locked" : ""}`}
           style={{ paddingLeft: 12 + depth * 16 }}
         >
           <button
@@ -37,17 +37,21 @@ export function LayerPanel({ layers, selected, onSelect, patch }: Props) {
                     ? "▣"
                     : "◇"}
             </span>
-            {label(layer)}
+            <span className="layer-name" title={label(layer)}>
+              {label(layer)}
+            </span>
           </button>
           <button
-            title="显隐"
+            title={layer.visible ? "隐藏此图层" : "显示此图层"}
+            aria-pressed={layer.visible !== false}
             aria-label={`切换显隐 ${layer.id}`}
             onClick={() => patch({ visible: !layer.visible }, [layer.id])}
           >
             {layer.visible ? "◉" : "○"}
           </button>
           <button
-            title="锁定"
+            title={layer.locked ? "解锁此图层" : "锁定此图层"}
+            aria-pressed={!!layer.locked}
             aria-label={`切换锁定 ${layer.id}`}
             onClick={() => patch({ locked: !layer.locked }, [layer.id])}
           >

@@ -9,7 +9,7 @@ export function PreflightPanel({
   onChange: (ids: string[]) => void;
 }) {
   return (
-    <section aria-label="导出检查">
+    <section className="preflight-panel" aria-label="导出检查">
       <h3>导出检查</h3>
       <p>预计工作集 {Math.ceil(report.estimatedBytes / 1024 ** 2)} MiB</p>
       <ul>
@@ -20,12 +20,15 @@ export function PreflightPanel({
         ))}
       </ul>
       {report.blockers.map((i) => (
-        <p role="alert" key={i.id}>
+        <p className="preflight-blocker" role="alert" key={i.id}>
           {i.code}：{i.message}
         </p>
       ))}
       {report.warnings.map((i) => (
-        <label key={i.id} style={{ display: "block" }}>
+        <label
+          className={`preflight-warning ${i.level === "strong" ? "strong" : ""}`}
+          key={i.id}
+        >
           <input
             type="checkbox"
             checked={acknowledged.includes(i.id)}
@@ -41,7 +44,9 @@ export function PreflightPanel({
           {i.message} 我已检查并接受。
         </label>
       ))}
-      {!report.blockers.length && !report.warnings.length && <p>检查通过。</p>}
+      {!report.blockers.length && !report.warnings.length && (
+        <p className="preflight-success">检查通过。</p>
+      )}
     </section>
   );
 }

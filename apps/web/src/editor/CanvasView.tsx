@@ -363,7 +363,7 @@ export function CanvasView({
       <div className="canvas-caption">
         <span>
           {surfaceId.startsWith("cover:") ? "封面设计" : "内页跨页"} <b>·</b>{" "}
-          {Math.round(width)} × {height} px
+          {Math.round(width)} × {Math.round(height)} px
         </span>
         <span>Alt 暂停吸附 · Shift 多选</span>
       </div>
@@ -379,6 +379,17 @@ export function CanvasView({
           data-active-listeners={activeListeners}
         >
           <div className="render-layer" ref={canvas} />
+          {!layers.length && status !== "error" && (
+            <div className="canvas-empty">
+              <span aria-hidden="true">▧</span>
+              <h2>从一张照片开始</h2>
+              <p>
+                在照片栏导入照片，再点击或拖入画布。
+                <br />
+                也可以从上方添加文字与形状。
+              </p>
+            </div>
+          )}
           <svg
             ref={svg}
             className="interaction"

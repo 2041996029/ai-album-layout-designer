@@ -1,3 +1,4 @@
+import { Modal } from "../components/Modal";
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import {
   allLayers,
@@ -236,11 +237,12 @@ export function Editor(p: EditorProps) {
   };
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
+      if (document.querySelector("dialog[open]")) return;
       const target = event.target as HTMLElement;
       const input = target.closest(
         "input,textarea,select,[contenteditable=true]",
       );
-      if (input) return;
+      if (input || target.closest("dialog,[role=dialog]")) return;
       const mod = event.ctrlKey || event.metaKey;
       if (mod && event.key.toLowerCase() === "z") {
         event.preventDefault();
@@ -614,6 +616,7 @@ export function Editor(p: EditorProps) {
           <button className="save-button" onClick={() => void save()}>
             保存
           </button>
+          {p.renderExport?.({ save })}
           {p.onExport && (
             <button className="primary" onClick={() => p.onExport!(save)}>
               导出相册 ↗
@@ -630,20 +633,33 @@ export function Editor(p: EditorProps) {
           >
             ☰ 素材
           </button>
-          <button disabled={!history.canUndo} aria-label="撤销" onClick={undo}>
+          <button
+            disabled={!history.canUndo}
+            aria-label="撤销"
+            title="撤销 · Ctrl / ⌘ Z"
+            onClick={undo}
+          >
             ↶
           </button>
-          <button disabled={!history.canRedo} aria-label="重做" onClick={redo}>
+          <button
+            disabled={!history.canRedo}
+            aria-label="重做"
+            title="重做 · Ctrl / ⌘ Shift Z"
+            onClick={redo}
+          >
             ↷
           </button>
           <i />
-          <button onClick={() => add("text")}>文字</button>
+          <button title="添加文字图层" onClick={() => add("text")}>
+            文字
+          </button>
           <button onClick={() => add("rectangle")}>矩形</button>
           <button onClick={() => add("ellipse")}>圆形</button>
           <button onClick={() => add("line")}>线条</button>
           <i />
           <button
             aria-label="复制图层"
+            title="复制图层 · Ctrl / ⌘ D"
             disabled={!selected.length}
             onClick={duplicate}
           >
@@ -651,6 +667,7 @@ export function Editor(p: EditorProps) {
           </button>
           <button
             aria-label="删除图层"
+            title="删除图层 · Delete"
             disabled={!selected.length}
             onClick={deleteSelected}
           >
@@ -938,169 +955,171 @@ export function Editor(p: EditorProps) {
             });
         }}
       />
-      {p.renderExport?.({ save })}
       {crop && (
-        <div className="modal-scrim">
-          <section role="dialog" aria-label="照片裁剪" className="modal">
-            <div className="panel-heading">
-              <h2>裁剪照片</h2>
-              <button aria-label="关闭裁剪" onClick={() => setCrop(undefined)}>
-                ×
-              </button>
-            </div>
-            <p>调整原图归一化裁剪区域。画框的位置、尺寸与旋转保持不变。</p>
-            <div
-              className="crop-diagram"
-              style={
-                cropAsset
+        <Modal
+          label="照片裁剪"
+          className="modal"
+          onDismiss={() => setCrop(undefined)}
+        >
+          <div className="panel-heading">
+            <h2>裁剪照片</h2>
+            <button aria-label="关闭裁剪" onClick={() => setCrop(undefined)}>
+              ×
+            </button>
+          </div>
+          <p>调整原图归一化裁剪区域。画框的位置、尺寸与旋转保持不变。</p>
+          <div
+            className="crop-diagram"
+            style={
+              cropAsset
+                ? {
+                    width: `min(100%, ${(240 * cropAsset.width) / cropAsset.height}px)`,
+                    height: "auto",
+                    aspectRatio: `${cropAsset.width}/${cropAsset.height}`,
+                    marginInline: "auto",
+                  }
+                : undefined
+            }
+            onPointerMove={(event) => {
+              const drag = cropDrag.current;
+              if (!drag) return;
+              setCrop((current) =>
+                current
                   ? {
-                      width: `min(100%, ${(240 * cropAsset.width) / cropAsset.height}px)`,
-                      height: "auto",
-                      aspectRatio: `${cropAsset.width}/${cropAsset.height}`,
-                      marginInline: "auto",
+                      ...current,
+                      crop: {
+                        ...current.crop,
+                        x: Math.max(
+                          0,
+                          Math.min(
+                            1 - current.crop.width,
+                            drag.x +
+                              (event.clientX - drag.clientX) / drag.width,
+                          ),
+                        ),
+                        y: Math.max(
+                          0,
+                          Math.min(
+                            1 - current.crop.height,
+                            drag.y +
+                              (event.clientY - drag.clientY) / drag.height,
+                          ),
+                        ),
+                      },
                     }
-                  : undefined
-              }
-              onPointerMove={(event) => {
-                const drag = cropDrag.current;
-                if (!drag) return;
-                setCrop((current) =>
-                  current
-                    ? {
-                        ...current,
-                        crop: {
-                          ...current.crop,
-                          x: Math.max(
-                            0,
-                            Math.min(
-                              1 - current.crop.width,
-                              drag.x +
-                                (event.clientX - drag.clientX) / drag.width,
-                            ),
-                          ),
-                          y: Math.max(
-                            0,
-                            Math.min(
-                              1 - current.crop.height,
-                              drag.y +
-                                (event.clientY - drag.clientY) / drag.height,
-                            ),
-                          ),
-                        },
-                      }
-                    : current,
-                );
+                  : current,
+              );
+            }}
+            onPointerUp={() => (cropDrag.current = undefined)}
+            onPointerCancel={() => (cropDrag.current = undefined)}
+          >
+            {cropAsset && <AssetPreview asset={cropAsset} port={p.port} />}
+            <div
+              onPointerDown={(event) => {
+                const rect =
+                  event.currentTarget.parentElement!.getBoundingClientRect();
+                event.currentTarget.setPointerCapture(event.pointerId);
+                cropDrag.current = {
+                  x: crop.crop.x,
+                  y: crop.crop.y,
+                  clientX: event.clientX,
+                  clientY: event.clientY,
+                  width: rect.width,
+                  height: rect.height,
+                };
               }}
-              onPointerUp={() => (cropDrag.current = undefined)}
-              onPointerCancel={() => (cropDrag.current = undefined)}
-            >
-              {cropAsset && <AssetPreview asset={cropAsset} port={p.port} />}
-              <div
-                onPointerDown={(event) => {
-                  const rect =
-                    event.currentTarget.parentElement!.getBoundingClientRect();
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                  cropDrag.current = {
-                    x: crop.crop.x,
-                    y: crop.crop.y,
-                    clientX: event.clientX,
-                    clientY: event.clientY,
-                    width: rect.width,
-                    height: rect.height,
-                  };
-                }}
-                style={{
-                  left: `${crop.crop.x * 100}%`,
-                  top: `${crop.crop.y * 100}%`,
-                  width: `${crop.crop.width * 100}%`,
-                  height: `${crop.crop.height * 100}%`,
-                }}
-              />
-            </div>
-            <div className="field-grid">
-              {(["x", "y", "width", "height"] as const).map((key, i) => (
-                <label className="field" key={key}>
-                  <span>{["裁剪 X", "裁剪 Y", "裁剪宽度", "裁剪高度"][i]}</span>
-                  <input
-                    aria-label={["裁剪 X", "裁剪 Y", "裁剪宽度", "裁剪高度"][i]}
-                    type="number"
-                    step="0.01"
-                    min={key === "width" || key === "height" ? 0.01 : 0}
-                    max="1"
-                    value={crop.crop[key]}
-                    onChange={(e) =>
-                      setCrop({
-                        ...crop,
-                        crop: { ...crop.crop, [key]: Number(e.target.value) },
-                      })
-                    }
-                  />
-                </label>
-              ))}
-            </div>
-            {message && <p className="render-error">{message}</p>}
-            <div className="modal-actions">
-              <button
-                onClick={() =>
-                  setCrop({
-                    ...crop,
-                    crop: { x: 0, y: 0, width: 1, height: 1 },
-                  })
-                }
-              >
-                重置裁剪
-              </button>
-              <button
-                className="primary"
-                onClick={() => {
-                  if (
-                    execute({
-                      type: "update-layer",
-                      layerId: crop.id,
-                      patch: { crop: crop.crop },
+              style={{
+                left: `${crop.crop.x * 100}%`,
+                top: `${crop.crop.y * 100}%`,
+                width: `${crop.crop.width * 100}%`,
+                height: `${crop.crop.height * 100}%`,
+              }}
+            />
+          </div>
+          <div className="field-grid">
+            {(["x", "y", "width", "height"] as const).map((key, i) => (
+              <label className="field" key={key}>
+                <span>{["裁剪 X", "裁剪 Y", "裁剪宽度", "裁剪高度"][i]}</span>
+                <input
+                  aria-label={["裁剪 X", "裁剪 Y", "裁剪宽度", "裁剪高度"][i]}
+                  type="number"
+                  step="0.01"
+                  min={key === "width" || key === "height" ? 0.01 : 0}
+                  max="1"
+                  value={crop.crop[key]}
+                  onChange={(e) =>
+                    setCrop({
+                      ...crop,
+                      crop: { ...crop.crop, [key]: Number(e.target.value) },
                     })
-                  )
-                    setCrop(undefined);
-                }}
-              >
-                应用裁剪
-              </button>
-            </div>
-          </section>
-        </div>
+                  }
+                />
+              </label>
+            ))}
+          </div>
+          {message && <p className="render-error">{message}</p>}
+          <div className="modal-actions">
+            <button
+              onClick={() =>
+                setCrop({
+                  ...crop,
+                  crop: { x: 0, y: 0, width: 1, height: 1 },
+                })
+              }
+            >
+              重置裁剪
+            </button>
+            <button
+              className="primary"
+              onClick={() => {
+                if (
+                  execute({
+                    type: "update-layer",
+                    layerId: crop.id,
+                    patch: { crop: crop.crop },
+                  })
+                )
+                  setCrop(undefined);
+              }}
+            >
+              应用裁剪
+            </button>
+          </div>
+        </Modal>
       )}
       {textEdit?.type === "text" && (
-        <div className="modal-scrim">
-          <section className="modal" role="dialog" aria-label="编辑文字">
-            <h2>编辑文字</h2>
-            <textarea
-              autoFocus
-              aria-label="画布文字编辑"
-              value={textEdit.text}
-              onChange={(e) =>
-                setTextEdit({ ...textEdit, text: e.target.value })
-              }
-            />
-            <div className="modal-actions">
-              <button onClick={() => setTextEdit(undefined)}>取消</button>
-              <button
-                className="primary"
-                onClick={() => {
-                  if (
-                    execute({
-                      type: "update-layer",
-                      layerId: textEdit.id,
-                      patch: { text: textEdit.text },
-                    })
-                  )
-                    setTextEdit(undefined);
-                }}
-              >
-                应用文字
-              </button>
-            </div>
-          </section>
-        </div>
+        <Modal
+          label="编辑文字"
+          className="modal"
+          initialFocus="textarea"
+          onDismiss={() => setTextEdit(undefined)}
+        >
+          <h2>编辑文字</h2>
+          <textarea
+            autoFocus
+            aria-label="画布文字编辑"
+            value={textEdit.text}
+            onChange={(e) => setTextEdit({ ...textEdit, text: e.target.value })}
+          />
+          <div className="modal-actions">
+            <button onClick={() => setTextEdit(undefined)}>取消</button>
+            <button
+              className="primary"
+              onClick={() => {
+                if (
+                  execute({
+                    type: "update-layer",
+                    layerId: textEdit.id,
+                    patch: { text: textEdit.text },
+                  })
+                )
+                  setTextEdit(undefined);
+              }}
+            >
+              应用文字
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );
