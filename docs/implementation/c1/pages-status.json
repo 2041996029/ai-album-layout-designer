@@ -1,0 +1,17 @@
+{
+  "observedDate": "2026-10-22",
+  "state": "requires_manual_pages_enablement",
+  "deploymentRunUrl": "https://github.com/2041996029/ai-album-layout-designer/actions/runs/39739824473",
+  "remoteChecks": {
+    "install": "passed",
+    "typecheck": "passed",
+    "unitTests": 99,
+    "build": "passed"
+  },
+  "failedStep": "Configure GitHub Pages",
+  "githubError": "Create Pages site failed: Resource not accessible by integration",
+  "liveUrl": null,
+  "settingsUrl": "https://github.com/2041996029/ai-album-layout-designer/settings/pages",
+  "requiredAction": "Select GitHub Actions as Pages source, then rerun failed deployment job",
+  "repositoryVisibility": "private; unchanged"
+}

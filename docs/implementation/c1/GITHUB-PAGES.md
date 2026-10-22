@@ -1,5 +1,7 @@
 # GitHub Pages 测试部署
 
+2026-10-22 实际状态：远端安装、类型检查、99项单测、构建已通过；首次创建 Pages 站点返回 `Resource not accessible by integration`。当前未生成可访问测试网址。[部署任务](https://github.com/2041996029/ai-album-layout-designer/actions/runs/39739824473)；请管理员先在 [Pages 设置](https://github.com/2041996029/ai-album-layout-designer/settings/pages) 选择 GitHub Actions，再重跑失败任务。
+
 仓库保留私有，不修改主分支。`.github/workflows/pages.yml` 在 `feat/album-development` 更新后构建并部署网页，使用仓库的 `github-pages` 环境；只申请 contents:read、pages:write、id-token:write，无须提供微信、AI或支付密钥。
 
 预期标准地址为 `https://2041996029.github.io/ai-album-layout-designer/`，但必须以成功部署步骤输出的 page_url 为准。未看到部署成功前，这不是已开通网址。
