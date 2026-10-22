@@ -1,3 +1,4 @@
+import themes from "../templates/themes-v1.json";
 import styles from "../templates/styles-v1.json";
 import wedding from "../templates/wedding-v1.json";
 import travel from "../templates/travel-v1.json";
@@ -9,7 +10,13 @@ import type { Layer, Rect, TemplateRef } from "./model";
 import type { DocumentCommand } from "./commands";
 export interface TemplateSlot {
   slotId: string;
-  kind: "image" | "text";
+  kind: "image" | "text" | "shape";
+  shapeKind?: "rectangle" | "ellipse" | "line";
+  stroke?: string;
+  strokeWidth?: number;
+  radius?: number;
+  rotation?: number;
+  opacity?: number;
   frame: Rect;
   fitMode?: "cover" | "contain";
   bindingRequired?: boolean;
@@ -27,6 +34,10 @@ export interface TemplateVersion {
   version: number;
   sha256: string;
   category: string;
+  themeId?: string;
+  collectionName?: string;
+  pageRole?: "opening" | "two-photo" | "three-photo" | "four-photo" | "closing";
+  pageOrder?: number;
   name: string;
   unit: "px96";
   pageSize: { width: number; height: number };
@@ -53,6 +64,7 @@ export const templateVersions: readonly TemplateVersion[] = freeze([
   portrait,
   ink,
   ...styles,
+  ...themes,
 ] as TemplateVersion[]);
 export const templateRefs: readonly TemplateRef[] = freeze(
   templateVersions.map(({ id, version, sha256 }) => ({ id, version, sha256 })),
@@ -112,8 +124,8 @@ export function instantiateTemplate(
     const base = {
       id,
       ...slot.frame,
-      rotation: 0,
-      opacity: 1,
+      rotation: slot.rotation ?? 0,
+      opacity: slot.opacity ?? 1,
       visible: true,
       locked: false,
     };
@@ -126,19 +138,29 @@ export function instantiateTemplate(
           fitMode: slot.fitMode ?? "cover",
           role: "photo",
         }
-      : {
-          ...base,
-          type: "text",
-          text: slot.defaultText ?? "",
-          fontAssetId: slot.fontAssetId!,
-          fontSize: slot.fontSize!,
-          fontWeight: slot.fontWeight!,
-          lineHeight: 1.3,
-          letterSpacing: slot.letterSpacing ?? 0,
-          fill: slot.fill ?? "#253d3b",
-          textAlign: slot.textAlign ?? "left",
-          critical: true,
-        };
+      : slot.kind === "shape"
+        ? {
+            ...base,
+            type: "shape",
+            shapeKind: slot.shapeKind ?? "rectangle",
+            fill: slot.fill ?? "transparent",
+            stroke: slot.stroke ?? "transparent",
+            strokeWidth: slot.strokeWidth ?? 0,
+            ...(slot.radius === undefined ? {} : { radius: slot.radius }),
+          }
+        : {
+            ...base,
+            type: "text",
+            text: slot.defaultText ?? "",
+            fontAssetId: slot.fontAssetId!,
+            fontSize: slot.fontSize!,
+            fontWeight: slot.fontWeight!,
+            lineHeight: 1.3,
+            letterSpacing: slot.letterSpacing ?? 0,
+            fill: slot.fill ?? "#253d3b",
+            textAlign: slot.textAlign ?? "left",
+            critical: true,
+          };
   });
 }
 export function applyTemplateCommand(
