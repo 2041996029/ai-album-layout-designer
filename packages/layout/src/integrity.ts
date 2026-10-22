@@ -4,6 +4,9 @@ import {
   isImageLayer,
   isKnownLayer,
   isGroupLayer,
+  isTextLayer,
+  isShapeLayer,
+  type ImportedTemplateProof,
   walkLayers,
   validateDocument,
   type DocumentModel,
@@ -142,6 +145,94 @@ export function deriveAssignment(
     violations,
   });
 }
+/** The source may intentionally bleed beyond the page. Only its exact uniformly
+ * scaled composition qualifies; ordinary layouts retain strict frame bounds. */
+export function importedSourceGeometryMatches(
+  spread: Spread,
+  width: number,
+  height: number,
+): boolean {
+  try {
+    const proof = spread.importedTemplate as ImportedTemplateProof | undefined;
+    if (
+      !proof ||
+      proof.version !== 1 ||
+      !Array.isArray(proof.sourceLayers) ||
+      !Number.isFinite(proof.width) ||
+      !Number.isFinite(proof.height) ||
+      proof.width <= 0 ||
+      proof.height <= 0 ||
+      Math.abs(width / height - proof.width / proof.height) > 1e-6 ||
+      spread.templateRef?.sha256 !== proof.sha256 ||
+      spread.templateRef.id !== `mjpage_${proof.sha256.slice(0, 32)}` ||
+      spread.templateRef.version !== 1 ||
+      spread.background !== proof.background
+    )
+      return false;
+    const scale = width / proof.width;
+    const compare = (source: Layer[], actual: Layer[]): boolean =>
+      source.length === actual.length &&
+      source.every((original, index) => {
+        const expected = structuredClone(original),
+          found = structuredClone(actual[index]);
+        if (
+          !isKnownLayer(expected) ||
+          !isKnownLayer(found) ||
+          expected.type !== found.type
+        )
+          return false;
+        expected.x *= scale;
+        expected.y *= scale;
+        expected.width *= scale;
+        expected.height *= scale;
+        if (isTextLayer(expected)) {
+          expected.fontSize *= scale;
+          expected.letterSpacing *= scale;
+        }
+        if (isShapeLayer(expected)) {
+          expected.strokeWidth *= scale;
+          if (expected.radius !== undefined) expected.radius *= scale;
+        }
+        if (isGroupLayer(expected)) {
+          if (
+            !isGroupLayer(found) ||
+            !compare(expected.children, found.children)
+          )
+            return false;
+          expected.children = [];
+          found.children = [];
+        }
+        // The compositor changes identity and attribution; declared photo slots
+        // additionally replace the demonstration image and normalize its crop.
+        for (const layer of [expected, found]) {
+          delete (layer as Record<string, unknown>).id;
+          delete layer.layoutInputHash;
+          delete layer.layoutPhotoRole;
+        }
+        if (
+          isImageLayer(expected) &&
+          isImageLayer(found) &&
+          actual[index].layoutPhotoRole === "selection"
+        ) {
+          if (
+            expected.templateSlot &&
+            canonicalJson(expected.templateSlot) !==
+              canonicalJson(found.templateSlot)
+          )
+            return false;
+          delete expected.templateSlot;
+          delete found.templateSlot;
+          expected.assetId = found.assetId;
+          expected.crop = { x: 0, y: 0, width: 1, height: 1 };
+          expected.fitMode = "cover";
+        }
+        return canonicalJson(expected) === canonicalJson(found);
+      });
+    return compare(proof.sourceLayers, spread.layers);
+  } catch {
+    return false;
+  }
+}
 export function verifyCandidate(
   input: LayoutInput,
   before: DocumentModel,
@@ -227,6 +318,11 @@ export function verifyCandidate(
       (s) =>
         !framesWithinPage(
           s.layers,
+          before.pageSize.width * 2,
+          before.pageSize.height,
+        ) &&
+        !importedSourceGeometryMatches(
+          s,
           before.pageSize.width * 2,
           before.pageSize.height,
         ),

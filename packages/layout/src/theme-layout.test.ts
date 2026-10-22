@@ -164,3 +164,25 @@ it("retains decorative assets outside selection and binds hashes to the source p
     ),
   ).toThrow("UNTRUSTED");
 });
+it("allows declared source overscan but rejects changed imported geometry", async () => {
+  const { d, theme, input } = setup([1]);
+  theme.pages[0].layers[0].rotation = 15;
+  theme.pages[0].layers.push({
+    ...theme.pages[0].layers[0],
+    id: "bleed_decoration",
+    x: -10,
+    width: 220,
+    rotation: 0,
+  });
+  const [candidate] = await generateThemeCandidates(input, d, theme, [
+    "page_0",
+  ]);
+  expect(candidate.constraintReport.valid).toBe(true);
+  const changed = structuredClone(candidate);
+  changed.spreads[0].layers[1].width = 99999;
+  const { verifyCandidate } = await import("./integrity");
+  expect(verifyCandidate(input, d, changed)).toContain("FRAME_OUT_OF_BOUNDS");
+  const mask = structuredClone(candidate);
+  mask.spreads[0].layers[0].alphaMask = { version: 1, assetId: "forged_mask" };
+  expect(verifyCandidate(input, d, mask)).toContain("FRAME_OUT_OF_BOUNDS");
+});
