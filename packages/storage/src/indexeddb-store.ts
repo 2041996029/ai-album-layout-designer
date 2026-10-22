@@ -71,9 +71,14 @@ export function assertManifest(m: ResourceManifest): void {
     !m ||
     !Array.isArray(m.assets) ||
     !Array.isArray(m.fonts) ||
-    m.assets.length > 500 ||
+    m.assets.length > 2500 ||
     m.fonts.length > 20
   )
+    throw new StorageError("INVALID_RESOURCE_MANIFEST");
+  const photos = m.assets.filter(
+    (a) => a.usage === undefined || a.usage === "photo",
+  ).length;
+  if (photos > 500 || m.assets.length - photos > 2000)
     throw new StorageError("INVALID_RESOURCE_MANIFEST");
   const seen = new Set<string>();
   const unique = (key: string) => {
@@ -95,6 +100,11 @@ export function assertManifest(m: ResourceManifest): void {
       throw new StorageError("INVALID_RESOURCE_RECORD");
   }
   for (const a of m.assets) {
+    if (
+      a.usage !== undefined &&
+      !["photo", "decoration", "mask", "text-raster"].includes(a.usage)
+    )
+      throw new StorageError("INVALID_RESOURCE_USAGE");
     if (
       !Number.isSafeInteger(a.width) ||
       !Number.isSafeInteger(a.height) ||
