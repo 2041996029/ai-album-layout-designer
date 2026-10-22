@@ -6,3 +6,5 @@ export * from "./score";
 export * from "./integrity";
 export { generateCandidates } from "./candidates";
 export * from "./apply";
+
+export * from "./theme-layout";
