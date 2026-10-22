@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "projectId": "project_program_c1",
+  "revision": 12,
+  "unit": "px96",
+  "colorSpace": "srgb",
+  "pageSize": {
+    "width": 1133.858268,
+    "height": 1133.858268
+  },
+  "printProfile": {
+    "bleedMm": 3,
+    "safeMm": 5
+  },
+  "cover": {
+    "front": [
+      {
+        "id": "sample_cover_title",
+        "x": 100,
+        "y": 400,
+        "width": 900,
+        "height": 150,
+        "rotation": 0,
+        "opacity": 1,
+        "visible": true,
+        "locked": false,
+        "type": "text",
+        "text": "山河之间",
+        "fontAssetId": "noto-sans-sc",
+        "fontSize": 72,
+        "fontWeight": 400,
+        "lineHeight": 1.3,
+        "letterSpacing": 0,
+        "fill": "#244c47",
+        "textAlign": "left",
+        "critical": true
+      }
+    ],
+    "back": []
+  },
+  "spreads": [
+    {
+      "id": "sample_spread_1",
+      "background": "#faf7ef",
+      "templateRef": {
+        "id": "tpl_wedding",
+        "version": 1,
+        "sha256": "e2dad2bab8cf6e255f47f224f3dc1e988be9fb312d58e631bb6bbea48350b7f4"
+      },
+      "layers": [
+        {
+          "id": "sample_layer_1",
+          "x": 60,
+          "y": 70,
+          "width": 1000,
+          "height": 750,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "type": "image",
+          "assetId": "image-8b1e828e4678d03ac80e1613f6eb0280b036616bb7bc93bc7331ac3aae9cd611",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "fitMode": "cover",
+          "role": "photo"
+        },
+        {
+          "id": "sample_layer_2",
+          "x": 1200,
+          "y": 70,
+          "width": 1000,
+          "height": 750,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "type": "image",
+          "assetId": "image-6bd77af403280eddbbae0b98cc5da717847501bd454b48417b776a25aeb6287f",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "fitMode": "cover",
+          "role": "photo"
+        },
+        {
+          "id": "sample_layer_3",
+          "x": 60,
+          "y": 940,
+          "width": 900,
+          "height": 85,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "type": "text",
+          "text": "山河之间",
+          "fontAssetId": "noto-sans-sc",
+          "fontSize": 48,
+          "fontWeight": 400,
+          "lineHeight": 1.3,
+          "letterSpacing": 0,
+          "fill": "#244c47",
+          "textAlign": "left",
+          "critical": true
+        },
+        {
+          "id": "sample_layer_4",
+          "x": 60,
+          "y": 1040,
+          "width": 900,
+          "height": 40,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "type": "text",
+          "text": "2026 · 原创程序样片",
+          "fontAssetId": "noto-sans-sc",
+          "fontSize": 24,
+          "fontWeight": 400,
+          "lineHeight": 1.3,
+          "letterSpacing": 0,
+          "fill": "#244c47",
+          "textAlign": "left",
+          "critical": true
+        }
+      ]
+    },
+    {
+      "id": "sample_spread_2",
+      "background": "#faf7ef",
+      "templateRef": {
+        "id": "tpl_wedding",
+        "version": 1,
+        "sha256": "e2dad2bab8cf6e255f47f224f3dc1e988be9fb312d58e631bb6bbea48350b7f4"
+      },
+      "layers": [
+        {
+          "id": "sample_layer_5",
+          "x": 60,
+          "y": 70,
+          "width": 1000,
+          "height": 750,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "type": "image",
+          "assetId": "image-8b1e828e4678d03ac80e1613f6eb0280b036616bb7bc93bc7331ac3aae9cd611",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "fitMode": "cover",
+          "role": "photo"
+        },
+        {
+          "id": "sample_layer_6",
+          "x": 1200,
+          "y": 70,
+          "width": 1000,
+          "height": 750,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "type": "image",
+          "assetId": "image-6bd77af403280eddbbae0b98cc5da717847501bd454b48417b776a25aeb6287f",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "fitMode": "cover",
+          "role": "photo"
+        },
+        {
+          "id": "sample_layer_7",
+          "x": 60,
+          "y": 940,
+          "width": 900,
+          "height": 85,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "type": "text",
+          "text": "行过山河",
+          "fontAssetId": "noto-sans-sc",
+          "fontSize": 48,
+          "fontWeight": 400,
+          "lineHeight": 1.3,
+          "letterSpacing": 0,
+          "fill": "#244c47",
+          "textAlign": "left",
+          "critical": true
+        },
+        {
+          "id": "sample_layer_8",
+          "x": 60,
+          "y": 1040,
+          "width": 900,
+          "height": 40,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "locked": false,
+          "type": "text",
+          "text": "2026 · 原创程序样片",
+          "fontAssetId": "noto-sans-sc",
+          "fontSize": 24,
+          "fontWeight": 400,
+          "lineHeight": 1.3,
+          "letterSpacing": 0,
+          "fill": "#244c47",
+          "textAlign": "left",
+          "critical": true
+        }
+      ]
+    }
+  ]
+}

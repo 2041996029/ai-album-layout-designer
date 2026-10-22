@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "renderBuild": "c1-cpu-fabric-v1",
+  "projectId": "project_program_c1",
+  "revision": 12,
+  "snapshotHash": "d6611ef6e60543554e0f57b64b31411932743dfdc984bb1fe7725e0757184ee0",
+  "docHash": "7dd36a5bbfb8e2443067d6944d095252b8d09483d8e0a916b809813e44467ce7",
+  "options": {
+    "format": "png",
+    "dpi": 300,
+    "view": "spread",
+    "pageIds": [
+      "sample_spread_1"
+    ],
+    "includeCover": false,
+    "bleedMm": 3,
+    "jpegMatte": "#ffffff"
+  },
+  "createdAt": "2026-10-22T00:00:00Z",
+  "surfaces": [
+    {
+      "id": "sample_spread_1",
+      "sourceSpreadId": "sample_spread_1",
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 2267.716536,
+        "height": 1133.858268
+      },
+      "bleedPx96": 11.338582677165356,
+      "background": "#faf7ef",
+      "pixelWidth": 7157,
+      "pixelHeight": 3614,
+      "fileStem": "0001-spread-01",
+      "trimWidthMm": 600.0000001499999,
+      "trimHeightMm": 300.00000007499995,
+      "bleedMm": 3,
+      "trimBoxMm": {
+        "x": 3,
+        "y": 3,
+        "width": 600.0000001499999,
+        "height": 300.00000007499995
+      }
+    }
+  ],
+  "resources": {
+    "assets": [
+      {
+        "id": "image-8b1e828e4678d03ac80e1613f6eb0280b036616bb7bc93bc7331ac3aae9cd611",
+        "version": 1,
+        "sha256": "8b1e828e4678d03ac80e1613f6eb0280b036616bb7bc93bc7331ac3aae9cd611",
+        "normalizedSha256": "8b1e828e4678d03ac80e1613f6eb0280b036616bb7bc93bc7331ac3aae9cd611"
+      },
+      {
+        "id": "image-6bd77af403280eddbbae0b98cc5da717847501bd454b48417b776a25aeb6287f",
+        "version": 1,
+        "sha256": "6bd77af403280eddbbae0b98cc5da717847501bd454b48417b776a25aeb6287f",
+        "normalizedSha256": "6bd77af403280eddbbae0b98cc5da717847501bd454b48417b776a25aeb6287f"
+      }
+    ],
+    "fonts": [
+      {
+        "id": "noto-sans-sc",
+        "version": 1,
+        "sha256": "41314067140a1e003cf4e235b177fdec114656b736263694ad18b3cbf29c5fcd"
+      }
+    ]
+  },
+  "files": [
+    {
+      "filename": "0001-spread-01.png",
+      "mime": "image/png",
+      "sha256": "c3d62cd822ed4db396c15c0971196cc0a40f8a22403f714f65dae3dbebae9c7f",
+      "surfaceId": "sample_spread_1",
+      "pixelWidth": 7157,
+      "pixelHeight": 3614,
+      "byteLength": 1406146
+    }
+  ]
+}

@@ -1,0 +1,399 @@
+import { templateRefs } from "@album/document";
+import { useEffect, useRef, useState } from "react";
+import { Zip, ZipPassThrough, strToU8 } from "fflate";
+import type {
+  IndexedDbRevisionStore,
+  SaveResult,
+  SavedRevision,
+} from "@album/storage";
+import {
+  allSurfaceIds,
+  freezeSnapshot,
+  preflight,
+  runExport,
+  artifactManifest,
+  MAX_ENCODED_BYTES,
+  type ExportOptions,
+  type ExportSnapshot,
+  type PreflightReport,
+  type Artifact,
+} from "@album/export";
+import { PreflightPanel } from "./PreflightPanel";
+function download(bytes: Uint8Array, name: string, mime: string) {
+  const url = URL.createObjectURL(
+    new Blob([bytes as Uint8Array<ArrayBuffer>], { type: mime }),
+  );
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function archive(files: Artifact[], manifest: unknown): Uint8Array {
+  const parts: Uint8Array[] = [],
+    zip = new Zip((error, chunk) => {
+      if (error) throw error;
+      parts.push(chunk);
+    });
+  let total = 0;
+  for (const file of [
+    ...files,
+    {
+      filename: "manifest.json",
+      bytes: strToU8(JSON.stringify(manifest, null, 2)),
+    },
+  ]) {
+    total += file.bytes.length;
+    if (total > MAX_ENCODED_BYTES) throw new Error("DOWNLOAD_TOO_LARGE");
+    const entry = new ZipPassThrough(file.filename);
+    zip.add(entry);
+    entry.push(file.bytes, true);
+  }
+  zip.end();
+  const length = parts.reduce((n, p) => n + p.length, 0);
+  if (length > MAX_ENCODED_BYTES) throw new Error("DOWNLOAD_TOO_LARGE");
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const p of parts) {
+    bytes.set(p, offset);
+    offset += p.length;
+  }
+  return bytes;
+}
+export function ExportPanel({
+  store,
+  save,
+}: {
+  store: IndexedDbRevisionStore;
+  save: () => Promise<SaveResult>;
+}) {
+  const [open, setOpen] = useState(false),
+    [saved, setSaved] = useState<SavedRevision>(),
+    [snapshot, setSnapshot] = useState<ExportSnapshot>(),
+    [report, setReport] = useState<PreflightReport>(),
+    [ack, setAck] = useState<string[]>([]),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [progress, setProgress] = useState(""),
+    [files, setFiles] = useState<Artifact[]>([]);
+  const [options, setOptions] = useState<ExportOptions>({
+      format: "png",
+      dpi: 300,
+      view: "spread",
+      pageIds: [],
+      includeCover: false,
+      bleedMm: 3,
+      jpegMatte: "#ffffff",
+    }),
+    controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
+  const invalidate = (next: ExportOptions) => {
+    controller.current?.abort();
+    setOptions(next);
+    setSnapshot(undefined);
+    setReport(undefined);
+    setAck([]);
+    setFiles([]);
+    setError("");
+  };
+  async function begin() {
+    setError("");
+    setBusy(true);
+    try {
+      const result = await save();
+      if (!result.ok)
+        throw new Error(result.code + "：请先备份并解决保存问题。");
+      setSaved(result.value);
+      setOptions((o) => ({
+        ...o,
+        bleedMm: result.value.doc.printProfile.bleedMm,
+        pageIds: allSurfaceIds(result.value.doc, o.view, o.includeCover),
+      }));
+      setOpen(true);
+      setFiles([]);
+      setReport(undefined);
+      setSnapshot(undefined);
+      setProgress("");
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function check() {
+    if (!saved) return;
+    controller.current?.abort();
+    const c = new AbortController();
+    controller.current = c;
+    setBusy(true);
+    setFiles([]);
+    setError("");
+    setAck([]);
+    try {
+      const snap = await freezeSnapshot(
+        saved,
+        options,
+        new Date().toISOString(),
+      );
+      const next = await preflight(snap, store, c.signal, { templateRefs });
+      c.signal.throwIfAborted();
+      setSnapshot(snap);
+      setReport(next);
+    } catch (e) {
+      if (!c.signal.aborted) setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function render() {
+    if (!snapshot || !report) return;
+    const c = new AbortController();
+    controller.current = c;
+    setBusy(true);
+    setFiles([]);
+    setError("");
+    setProgress("准备渲染");
+    let pinned = false;
+    try {
+      await store.pinResources(snapshot.snapshotHash, snapshot.resources);
+      pinned = true;
+      const result: Artifact[] = [];
+      for await (const file of runExport(
+        snapshot,
+        report,
+        ack,
+        store,
+        c.signal,
+        (done, total) => setProgress(`${done} / ${total} 面`),
+      ))
+        result.push(file);
+      c.signal.throwIfAborted();
+      setFiles(result);
+      setProgress("导出完成，可下载");
+    } catch (e) {
+      setFiles([]);
+      setProgress(c.signal.aborted ? "已取消，没有生成完整下载" : "");
+      if (!c.signal.aborted) setError(String(e));
+    } finally {
+      try {
+        if (pinned) await store.releaseResources(snapshot.snapshotHash);
+      } catch (e) {
+        setError("资源清理失败，请重新打开项目：" + String(e));
+      } finally {
+        setBusy(false);
+      }
+    }
+  }
+  return (
+    <>
+      <button className="primary" disabled={busy} onClick={() => void begin()}>
+        导出作品
+      </button>
+      {error && !open && <p role="alert">{error}</p>}
+      {open && (
+        <div className="export-backdrop">
+          <section
+            className="export-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="导出作品"
+          >
+            <header>
+              <h2>导出作品</h2>
+              <button disabled={busy} onClick={() => setOpen(false)}>
+                关闭
+              </button>
+            </header>
+            <p>
+              本地渲染 · 已保存版本 {saved?.doc.revision} · 请保持此页面打开
+            </p>
+            <fieldset disabled={busy}>
+              <label>
+                格式{" "}
+                <select
+                  aria-label="导出格式"
+                  value={options.format}
+                  onChange={(e) =>
+                    invalidate({
+                      ...options,
+                      format: e.target.value as ExportOptions["format"],
+                    })
+                  }
+                >
+                  <option value="png">PNG（保留透明）</option>
+                  <option value="jpeg">JPEG</option>
+                  <option value="pdf">普通 PDF（栅格 sRGB）</option>
+                </select>
+              </label>
+              <label>
+                DPI{" "}
+                <select
+                  aria-label="导出DPI"
+                  value={options.dpi}
+                  onChange={(e) =>
+                    invalidate({
+                      ...options,
+                      dpi: Number(e.target.value) as ExportOptions["dpi"],
+                    })
+                  }
+                >
+                  {[72, 150, 300].map((d) => (
+                    <option key={d}>{d}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                视图{" "}
+                <select
+                  value={options.view}
+                  onChange={(e) => {
+                    const view = e.target.value as ExportOptions["view"];
+                    invalidate({
+                      ...options,
+                      view,
+                      pageIds: allSurfaceIds(
+                        saved!.doc,
+                        view,
+                        options.includeCover,
+                      ),
+                    });
+                  }}
+                >
+                  <option value="spread">跨页</option>
+                  <option value="singlePage">单页</option>
+                </select>
+              </label>
+              <label>
+                出血 mm{" "}
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  step="0.5"
+                  value={options.bleedMm}
+                  onChange={(e) =>
+                    invalidate({ ...options, bleedMm: Number(e.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                JPEG 底色{" "}
+                <input
+                  type="color"
+                  value={options.jpegMatte}
+                  onChange={(e) =>
+                    invalidate({ ...options, jpegMatte: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={options.includeCover}
+                  onChange={(e) =>
+                    invalidate({
+                      ...options,
+                      includeCover: e.target.checked,
+                      pageIds: allSurfaceIds(
+                        saved!.doc,
+                        options.view,
+                        e.target.checked,
+                      ),
+                    })
+                  }
+                />
+                包含封面正背面
+              </label>
+              <div className="export-pages">
+                {saved &&
+                  allSurfaceIds(
+                    saved.doc,
+                    options.view,
+                    options.includeCover,
+                  ).map((id) => (
+                    <label key={id}>
+                      <input
+                        type="checkbox"
+                        checked={options.pageIds.includes(id)}
+                        onChange={(e) =>
+                          invalidate({
+                            ...options,
+                            pageIds: e.target.checked
+                              ? [...options.pageIds, id]
+                              : options.pageIds.filter((p) => p !== id),
+                          })
+                        }
+                      />
+                      {id}
+                    </label>
+                  ))}
+              </div>
+              <button
+                disabled={!options.pageIds.length}
+                onClick={() => void check()}
+              >
+                检查导出条件
+              </button>
+            </fieldset>
+            {report && (
+              <PreflightPanel
+                report={report}
+                acknowledged={ack}
+                onChange={setAck}
+              />
+            )}
+            {error && <p role="alert">{error}</p>}
+            <p role="status">{progress}</p>
+            {busy ? (
+              <button onClick={() => controller.current?.abort()}>取消</button>
+            ) : (
+              report && (
+                <button
+                  className="primary"
+                  disabled={
+                    !!report.blockers.length ||
+                    report.warnings.some((w) => !ack.includes(w.id))
+                  }
+                  onClick={() => void render()}
+                >
+                  开始导出
+                </button>
+              )
+            )}
+            {!!files.length && snapshot && (
+              <div>
+                <button
+                  onClick={() => {
+                    try {
+                      download(
+                        archive(files, artifactManifest(snapshot, files)),
+                        `album-r${snapshot.revision}.zip`,
+                        "application/zip",
+                      );
+                    } catch (e) {
+                      setError(String(e));
+                    }
+                  }}
+                >
+                  下载文件与清单 ZIP
+                </button>
+                {files.map((f) => (
+                  <button
+                    key={f.filename}
+                    onClick={() => download(f.bytes, f.filename, f.mime)}
+                  >
+                    下载 {f.filename}
+                  </button>
+                ))}
+              </div>
+            )}
+            <p>
+              普通 PDF 不包含 CMYK 或 PDF/X 印刷认证。单次下载上限 256
+              MiB，超出请分批选择页面。
+            </p>
+          </section>
+        </div>
+      )}
+    </>
+  );
+}

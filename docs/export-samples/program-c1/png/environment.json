@@ -1,0 +1,32 @@
+{
+  "node": "v24.19.0",
+  "browser": "154.0.8037.57",
+  "platform": "linux",
+  "osRelease": "6.18.55",
+  "fontCatalogSha256": "ed04ff2c19d24f1699e44a004c9136c606330a56a5816dd6234b2a4f8f1954ff",
+  "filterManifestSha256": "5dffffc7b5aa1431e27e5b168f9d291a0311b7fb1963b2cb9553df237fa42497",
+  "buildFiles": [
+    {
+      "name": "main-C2AI0Y2E.css",
+      "sha256": "ba706e7e5f661f8f0e374ad41bdcec392132574f9c0e4bfccc5bd718f179caa0"
+    },
+    {
+      "name": "main-DkHC9wcI.js",
+      "sha256": "273095940a2e6711485b56f5e8211bfe01b4041249633edaae5e9254a6b65c70"
+    },
+    {
+      "name": "render-DUMbZBqk.js",
+      "sha256": "eb7d4e3dc0788957516ffee09821c8677f25721c83c91af7a29716bac67d774e"
+    },
+    {
+      "name": "src-DpyumkJE.js",
+      "sha256": "4a60545e9fa4f9d0d1934a50828f7311b62724098d0f367cb806e7091d3e7352"
+    }
+  ],
+  "locale": "zh-CN",
+  "timezone": "UTC",
+  "deviceScaleFactor": 1,
+  "elapsedMs": 4375,
+  "nodeProcessPeakRssBytes": 330416128,
+  "lockSha256": "5798533cf60ffa65bced8101c55d2ce83100a6d8e4f63e518ca23790a41bc0df"
+}

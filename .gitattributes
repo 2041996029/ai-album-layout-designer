@@ -12,3 +12,6 @@
 *.docx binary
 *.png binary
 *.zip binary
+
+# Preserve the historical source CSV bytes used by fixed filter recipes.
+docs/ai-album-v0.1/filters.csv -text

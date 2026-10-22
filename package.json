@@ -1,0 +1,53 @@
+{
+  "name": "ai-album-layout-designer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "test:browser": "playwright test",
+    "build:filters": "tsx scripts/build-filter-manifest.ts",
+    "build:fonts": "tsx scripts/build-font-catalog.ts",
+    "build:fixtures": "tsx scripts/build-image-fixtures.ts",
+    "dev": "vite --config apps/web/vite.config.ts",
+    "build": "tsc --noEmit && vite build --config apps/web/vite.config.ts",
+    "render:snapshot": "tsx apps/render-cli/src/main.ts",
+    "verify:artifacts": "tsx scripts/verify-artifacts.ts",
+    "build:samples": "tsx scripts/build-program-samples.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/fontkit": "2.0.8",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@fontsource/noto-sans-sc": "5.3.1",
+    "@fontsource/noto-serif-sc": "5.3.1",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "fabric": "7.4.0",
+    "fflate": "0.8.3",
+    "fontkit": "2.0.4",
+    "idb": "8.0.4",
+    "pdf-lib": "1.17.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "orientation-6",
+  "width": 300,
+  "height": 200,
+  "orientation": 6,
+  "colors": [
+    "red",
+    "green",
+    "blue",
+    "yellow"
+  ],
+  "channelTolerance": 8
+}

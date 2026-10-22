@@ -1,0 +1,14 @@
+{
+  "name": "@album/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@album/assets": "*",
+    "@album/document": "*",
+    "@album/render": "*",
+    "@album/storage": "*",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

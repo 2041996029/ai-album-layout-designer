@@ -1,0 +1,12 @@
+{
+  "name": "transparent",
+  "width": 32,
+  "height": 32,
+  "colors": [
+    "red",
+    "green",
+    "blue",
+    "yellow"
+  ],
+  "channelTolerance": 0
+}
