@@ -71,6 +71,13 @@ test("retains only an actual embedded 400 face with glyph coverage, and rejects 
   expect(
     result.files.has(`${result.theme.resources.fonts[0].faces[0].id}:font`),
   ).toBe(true);
+  node.transform.width = 0.005;
+  result = await convertMjtpl(parsed, signal);
+  expect(result.theme.pages[0].layers[0].type).toBe("image");
+  expect(
+    result.theme.issues.some((i) => i.code === "TEXT_LAYOUT_PRESERVED"),
+  ).toBe(true);
+  node.transform.width = 1;
   node.textStyle.fontWeight = 500;
   result = await convertMjtpl(parsed, signal);
   expect(result.theme.resources.fonts).toHaveLength(0);

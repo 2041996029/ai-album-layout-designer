@@ -131,3 +131,47 @@ export async function embeddedFontRecord(
     return null;
   }
 }
+
+const textFontCache = new WeakMap<Uint8Array, ReturnType<typeof create>>();
+/** Reject reflow: original explicit line breaks and frame bounds must remain valid. */
+export function embeddedTextFits(
+  bytes: Uint8Array,
+  text: string,
+  size: number,
+  spacing: number,
+  lineHeight: number,
+  width: number,
+  height: number,
+): boolean {
+  try {
+    let parsed = textFontCache.get(bytes);
+    if (!parsed) {
+      parsed = create(bytes as Buffer);
+      textFontCache.set(bytes, parsed);
+    }
+    if (!("layout" in parsed)) return false;
+    const font = parsed,
+      lines = text.replace(/\r\n?/g, "\n").split("\n");
+    if (lines.length * size * lineHeight > height + 1e-6) return false;
+    const segmenter = new Intl.Segmenter("zh", { granularity: "grapheme" });
+    return lines.every((line) => {
+      const glyphs = Array.from(segmenter.segment(line), (g) => g.segment);
+      const advance =
+        spacing === 0
+          ? font.layout(line).positions.reduce((n, p) => n + p.xAdvance, 0)
+          : glyphs.reduce(
+              (n, g) =>
+                n +
+                font.layout(g).positions.reduce((n, p) => n + p.xAdvance, 0),
+              0,
+            );
+      return (
+        (advance / font.unitsPerEm) * size +
+          Math.max(0, glyphs.length - 1) * spacing <=
+        width + 1e-6
+      );
+    });
+  } catch {
+    return false;
+  }
+}

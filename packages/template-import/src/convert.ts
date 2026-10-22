@@ -1,7 +1,12 @@
 import { sha256 } from "@album/document";
 import type { ImageLayer, Layer } from "@album/document";
 import type { AssetRecord, FontRecord } from "@album/assets";
-import { imageInfo, imageRecord, embeddedFontRecord } from "./resources";
+import {
+  imageInfo,
+  imageRecord,
+  embeddedFontRecord,
+  embeddedTextFits,
+} from "./resources";
 import type {
   ParsedMjtpl,
   ConvertedTheme,
@@ -187,34 +192,52 @@ export async function convertMjtpl(
             scale = page.unit === "cm" ? 96 / ppi : 1;
           if (!Number.isFinite(scale) || scale <= 0)
             throw Error("Invalid text resolution");
-          fonts.set(font.id, font);
-          files.set(
-            `${font.faces[0].id}:font`,
-            parsed.files.get(fontSource!.path)!,
+          if (
+            embeddedTextFits(
+              parsed.files.get(fontSource!.path)!,
+              text,
+              fontSize * scale,
+              letterSpacing * scale,
+              lineHeight,
+              t.width * width,
+              t.height * height,
+            )
+          ) {
+            fonts.set(font.id, font);
+            files.set(
+              `${font.faces[0].id}:font`,
+              parsed.files.get(fontSource!.path)!,
+            );
+            output.layers.push({
+              id: layerId,
+              type: "text",
+              x: t.x * width,
+              y: t.y * height,
+              width: t.width * width,
+              height: t.height * height,
+              rotation: t.rotationDeg ?? 0,
+              opacity: opacity * color.opacity,
+              visible: node.visible !== false,
+              locked: node.locked === true,
+              text,
+              fontAssetId: font.id,
+              fontSize: fontSize * scale,
+              fontWeight: weight,
+              lineHeight,
+              letterSpacing: letterSpacing * scale,
+              textAlign: (style.alignment ?? "left") as
+                "left" | "center" | "right" | "justify",
+              fill: color.color,
+              layoutPhotoRole: "decoration",
+            });
+            continue;
+          }
+          report(
+            node,
+            "TEXT_LAYOUT_PRESERVED",
+            "Embedded font text would reflow or exceed source frame; retained matching appearance raster",
+            "warning",
           );
-          output.layers.push({
-            id: layerId,
-            type: "text",
-            x: t.x * width,
-            y: t.y * height,
-            width: t.width * width,
-            height: t.height * height,
-            rotation: t.rotationDeg ?? 0,
-            opacity: opacity * color.opacity,
-            visible: node.visible !== false,
-            locked: node.locked === true,
-            text,
-            fontAssetId: font.id,
-            fontSize: fontSize * scale,
-            fontWeight: weight,
-            lineHeight,
-            letterSpacing: letterSpacing * scale,
-            textAlign: (style.alignment ?? "left") as
-              "left" | "center" | "right" | "justify",
-            fill: color.color,
-            layoutPhotoRole: "decoration",
-          });
-          continue;
         }
       }
       const source = byKey.get(node.assetRef?.assetId ?? "");
