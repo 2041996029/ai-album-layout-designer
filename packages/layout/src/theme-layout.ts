@@ -61,6 +61,8 @@ export async function generateThemeCandidates(
   const pages = selectedPageIds.map((id) => {
     const p = theme.pages.find((p) => p.id === id);
     if (!p) throw new Error("UNKNOWN_THEME_PAGE");
+    if (p.issues.some((issue) => issue.severity === "blocker"))
+      throw new Error("UNSUPPORTED_TEMPLATE_PAGE");
     return p;
   });
   const p = await prepareLayout(input),

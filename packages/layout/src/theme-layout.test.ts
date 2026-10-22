@@ -186,3 +186,14 @@ it("allows declared source overscan but rejects changed imported geometry", asyn
   mask.spreads[0].layers[0].alphaMask = { version: 1, assetId: "forged_mask" };
   expect(verifyCandidate(input, d, mask)).toContain("FRAME_OUT_OF_BOUNDS");
 });
+it("rejects blocked source pages before composition", async () => {
+  const { d, theme, input } = setup([1]);
+  theme.pages[0].issues.push({
+    code: "UNSUPPORTED_TEXT",
+    severity: "blocker",
+    message: "Cannot preserve source text",
+  });
+  await expect(
+    generateThemeCandidates(input, d, theme, ["page_0"]),
+  ).rejects.toThrow("UNSUPPORTED_TEMPLATE_PAGE");
+});
