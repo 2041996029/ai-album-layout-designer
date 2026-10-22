@@ -10,6 +10,7 @@
 需要 Node 24：`npm ci` → `npm run dev` → 打开终端显示的地址。
 
 - [C1 运行说明与范围](docs/implementation/c1/README.md)
+- [GitHub Pages 测试部署说明](docs/implementation/c1/GITHUB-PAGES.md)（实际开通状态以部署工作流为准）
 - [真实 PNG / JPEG / PDF 导出样片](docs/export-samples/program-c1/README.md)
 - [程序 PNG 样片](docs/export-samples/program-c1/png/0001-spread-01.png)
 - [网页源代码](apps/web/src)、[共享内核](packages)、[确定性渲染 CLI](apps/render-cli/src)

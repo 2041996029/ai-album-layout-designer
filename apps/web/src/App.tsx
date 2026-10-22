@@ -1,4 +1,5 @@
-import {LibraryPanel} from './editor/LibraryPanel';
+import { bundledAssetUrl } from "./bundled-url";
+import { LibraryPanel } from "./editor/LibraryPanel";
 import { ExportPanel } from "./export/ExportPanel";
 import { useEffect, useState } from "react";
 import type { ResourceManifest } from "@album/assets";
@@ -21,13 +22,13 @@ async function start(): Promise<SavedRevision> {
         projects[0].projectId,
     );
   }
-  const response = await fetch("/fonts/manifest.json");
+  const response = await fetch(bundledAssetUrl("fonts/manifest.json"));
   if (!response.ok) throw new Error("本地字体目录不可用，请重新加载");
   const resources = (await response.json()) as ResourceManifest;
   for (const font of resources.fonts) {
     const files = new Map<string, Uint8Array>();
     for (const face of font.faces) {
-      const response = await fetch(face.file);
+      const response = await fetch(bundledAssetUrl(face.file));
       if (!response.ok) throw new Error(`缺少本地字体 ${face.file}`);
       files.set(face.id, new Uint8Array(await response.arrayBuffer()));
     }
@@ -127,7 +128,7 @@ export function App() {
       store={store}
       resources={saved.resources}
       port={store}
-      renderLibrary={ctx=><LibraryPanel {...ctx}/>}
+      renderLibrary={(ctx) => <LibraryPanel {...ctx} />}
       renderExport={({ save }) => <ExportPanel store={store} save={save} />}
       onRecover={async (file) => {
         const next = await importProject(
@@ -137,9 +138,9 @@ export function App() {
         localStorage.setItem("album-active", next.doc.projectId);
         setSaved(next);
       }}
-      onProjectExport={async (doc,resources) =>
+      onProjectExport={async (doc, resources) =>
         download(
-          await exportDraftProject(doc,resources, store),
+          await exportDraftProject(doc, resources, store),
           "拾光-可恢复项目.zip",
         )
       }
