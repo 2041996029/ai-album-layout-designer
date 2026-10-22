@@ -25,7 +25,7 @@ export class History {
   referencesAsset(assetId: string): boolean {
     return [...this.past, this.value, ...this.future].some((doc) =>
       allLayers(doc).some(
-        (layer) => isImageLayer(layer) && layer.assetId === assetId,
+        (layer) => isImageLayer(layer) && (layer.assetId === assetId || layer.alphaMask?.assetId === assetId),
       ),
     );
   }

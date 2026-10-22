@@ -4,6 +4,7 @@ import {
   isImageLayer,
   isKnownLayer,
   isTextLayer,
+  isShapeLayer,
   isGroupLayer,
   walkLayers,
   templateVersions,
@@ -87,16 +88,19 @@ export function composeSpread(
       return id;
     };
     // Prefer the fixed composition for this style and actual allocated count.
-    const composition = t.id.startsWith("style_")
-      ? (templateVersions.find(
-          (v) =>
-            v.id.startsWith("style_") &&
-            v.category === t.category &&
-            v.version === t.version &&
-            v.slots.filter((s) => s.kind === "image").length ===
-              remaining.length,
-        ) ?? t)
-      : t;
+    const composition =
+      t.id.startsWith("style_") || Boolean(t.themeId)
+        ? (templateVersions.find(
+            (v) =>
+              (t.themeId
+                ? v.themeId === t.themeId
+                : v.id.startsWith("style_")) &&
+              v.category === t.category &&
+              v.version === t.version &&
+              v.slots.filter((s) => s.kind === "image").length ===
+                remaining.length,
+          ) ?? t)
+        : t;
     const compositionSlots = composition.slots.filter(
       (s) => s.kind === "image",
     );
@@ -110,7 +114,7 @@ export function composeSpread(
       remaining.length === compositionSlots.length &&
       sameAspect &&
       !retained.length &&
-      (variant === 0 || t.id.startsWith("style_"))
+      (variant === 0 || t.id.startsWith("style_") || Boolean(t.themeId))
     ) {
       const bindings = Object.fromEntries(
         compositionSlots.map((slot, i) => [slot.slotId, remaining[i]]),
@@ -126,6 +130,10 @@ export function composeSpread(
           if (isTextLayer(l)) {
             l.fontSize *= scale;
             l.letterSpacing *= scale;
+          }
+          if (isShapeLayer(l)) {
+            l.strokeWidth *= scale;
+            if (l.radius !== undefined) l.radius *= scale;
           }
         }
     } else if (!fixed && remaining.length) {
@@ -175,7 +183,8 @@ export function composeSpread(
         )
       )
         continue;
-      if (t.id.startsWith("style_") && variant === 1) l.fitMode = "contain";
+      if ((t.id.startsWith("style_") || Boolean(t.themeId)) && variant === 1)
+        l.fitMode = "contain";
       l.layoutPhotoRole = "selection";
       l.layoutInputHash = p.inputHash;
       const photo = p.input.photos.find((v) => v.assetId === l.assetId);

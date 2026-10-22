@@ -1850,3 +1850,115 @@ script[type="application/json"] {
   font-size: 11px;
   color: #797d73;
 }
+
+.theme-library {
+  padding: 16px;
+}
+.theme-library .panel-hint {
+  line-height: 1.8;
+}
+.theme-list {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+}
+.theme-list-item {
+  display: flex;
+  gap: 6px;
+}
+.theme-list-item > button:first-child {
+  flex: 1;
+  text-align: left;
+  padding: 12px;
+  background: #f5f4ed;
+}
+.theme-list-item small {
+  display: block;
+  font-size: 11px;
+  color: #777;
+  margin-top: 5px;
+}
+.theme-page-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+.theme-page-grid article {
+  min-width: 0;
+}
+.theme-page-grid button {
+  width: 100%;
+  padding: 5px;
+  text-align: left;
+  border: 1px solid #d9ded5;
+  background: #f9f7f2;
+}
+.theme-page-grid button.is-selected {
+  border-color: #3d6753;
+  box-shadow: 0 0 0 1px #3d6753;
+}
+.theme-page-grid img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2;
+  object-fit: contain;
+}
+.theme-page-grid span {
+  font-size: 11px;
+  display: block;
+  margin: 5px 0;
+}
+.theme-page-grid label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+.theme-page-grid input,
+.theme-photo-selection input {
+  width: auto;
+}
+.theme-large-preview {
+  width: 100%;
+  display: block;
+  margin: 12px 0;
+}
+.theme-render-preview canvas {
+  width: 100% !important;
+  height: auto !important;
+}
+.theme-binding {
+  display: block;
+  margin: 12px 0;
+  font-size: 12px;
+}
+.theme-binding select {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+}
+.theme-book {
+  margin-top: 20px;
+  border-top: 1px solid #ddd;
+  padding-top: 16px;
+}
+.theme-book summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+.theme-book ol {
+  max-height: 180px;
+  overflow: auto;
+  font-size: 12px;
+}
+.theme-photo-selection {
+  display: grid;
+  max-height: 220px;
+  overflow: auto;
+  gap: 6px;
+  font-size: 12px;
+}
+.theme-photo-selection label {
+  overflow-wrap: anywhere;
+}

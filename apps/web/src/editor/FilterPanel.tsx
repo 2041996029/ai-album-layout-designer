@@ -20,7 +20,13 @@ export function FilterPanel(ctx: LibraryContext) {
     for (const layer of layers) {
       const locked = ancestorLocked || layer.locked === true,
         chosen = inheritedSelected || selected.has(layer.id);
-      if (isImageLayer(layer) && chosen && !locked) images.set(layer.id, layer);
+      if (
+        isImageLayer(layer) &&
+        layer.layoutPhotoRole !== "decoration" &&
+        chosen &&
+        !locked
+      )
+        images.set(layer.id, layer);
       if (isGroupLayer(layer)) collect(layer.children, chosen, locked);
     }
   };

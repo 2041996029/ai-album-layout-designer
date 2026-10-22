@@ -27,6 +27,7 @@ export type LayoutInput = {
   photos: LayoutPhoto[];
   constraints: LayoutConstraints;
   templateRef: TemplateRef;
+  templatePageIds?: string[];
   algorithmVersion: string;
   seed: number;
 };

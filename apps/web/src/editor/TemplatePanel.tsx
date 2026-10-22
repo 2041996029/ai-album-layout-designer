@@ -1,3 +1,4 @@
+import { isUserPhoto } from "@album/assets";
 import { useEffect, useState } from "react";
 import {
   templateVersions,
@@ -59,6 +60,41 @@ function Preview({
               </g>
             )}
           </g>
+        ) : s.kind === "shape" ? (
+          s.shapeKind === "ellipse" ? (
+            <ellipse
+              key={s.slotId}
+              cx={s.frame.x + s.frame.width / 2}
+              cy={s.frame.y + s.frame.height / 2}
+              rx={s.frame.width / 2}
+              ry={s.frame.height / 2}
+              fill={s.fill}
+              stroke={s.stroke}
+              strokeWidth={s.strokeWidth}
+              opacity={s.opacity ?? 1}
+            />
+          ) : s.shapeKind === "line" ? (
+            <line
+              key={s.slotId}
+              x1={s.frame.x}
+              y1={s.frame.y}
+              x2={s.frame.x + s.frame.width}
+              y2={s.frame.y + s.frame.height}
+              stroke={s.stroke ?? s.fill}
+              strokeWidth={s.strokeWidth ?? 1}
+              opacity={s.opacity ?? 1}
+            />
+          ) : (
+            <rect
+              key={s.slotId}
+              {...s.frame}
+              rx={s.radius ?? 0}
+              fill={s.fill}
+              stroke={s.stroke}
+              strokeWidth={s.strokeWidth}
+              opacity={s.opacity ?? 1}
+            />
+          )
         ) : (
           <text
             key={s.slotId}
@@ -88,7 +124,10 @@ function Preview({
     </svg>
   );
 }
-export function TemplatePanel(ctx: LibraryContext) {
+export function TemplatePanel(
+  ctx: LibraryContext & { onUseCollection?: (themeId: string) => void },
+) {
+  const [series, setSeries] = useState("all");
   const [category, setCategory] = useState("all"),
     [template, setTemplate] = useState<TemplateVersion>(),
     [bindings, setBindings] = useState<Record<string, string>>({}),
@@ -96,7 +135,7 @@ export function TemplatePanel(ctx: LibraryContext) {
     [confirm, setConfirm] = useState(false),
     [message, setMessage] = useState("");
   const assets = ctx.resources.assets.filter(
-      (a) => a.status === "ready" && a.license.usable,
+      (a) => isUserPhoto(a) && a.status === "ready" && a.license.usable,
     ),
     spread = ctx.doc.spreads.find((s) => s.id === ctx.surfaceId);
   const [urls, setUrls] = useState<string[]>([]);
@@ -164,7 +203,15 @@ export function TemplatePanel(ctx: LibraryContext) {
               fontSize: Number(layer.fontSize) * scale,
               letterSpacing: Number(layer.letterSpacing) * scale,
             }
-          : next;
+          : layer.type === "shape"
+            ? {
+                ...next,
+                strokeWidth: Number(layer.strokeWidth) * scale,
+                ...(layer.radius === undefined
+                  ? {}
+                  : { radius: Number(layer.radius) * scale }),
+              }
+            : next;
       });
       if (
         ctx.execute(
@@ -200,11 +247,27 @@ export function TemplatePanel(ctx: LibraryContext) {
     <section aria-label="原创模板" className="template-library">
       <div className="panel-heading">
         <h3>风格模板</h3>
-        <small>36 套新设计</small>
+        <small>12 主题 · 96 跨页</small>
       </div>
       <p className="panel-hint">
         选择一种气质，让照片自然成册。每款包含可编辑照片与文字。
       </p>
+      <label>
+        模板系列
+        <select
+          aria-label="模板系列"
+          value={series}
+          onChange={(e) => {
+            setSeries(e.target.value);
+            setTemplate(undefined);
+            setConfirm(false);
+          }}
+        >
+          <option value="all">全部模板</option>
+          <option value="themes">主题套装 · 96 跨页</option>
+          <option value="basic">基础版式 · 41 套</option>
+        </select>
+      </label>
       <label>
         模板分类{" "}
         <select
@@ -233,8 +296,13 @@ export function TemplatePanel(ctx: LibraryContext) {
         {[...templateVersions]
           .sort(
             (a, b) =>
-              Number(b.id.startsWith("style_")) -
-              Number(a.id.startsWith("style_")),
+              (b.themeId ? 2 : Number(b.id.startsWith("style_"))) -
+              (a.themeId ? 2 : Number(a.id.startsWith("style_"))),
+          )
+          .filter(
+            (t) =>
+              series === "all" ||
+              (series === "themes" ? Boolean(t.themeId) : !t.themeId),
           )
           .filter((t) => category === "all" || t.category === category)
           .map((t) => (
@@ -253,9 +321,12 @@ export function TemplatePanel(ctx: LibraryContext) {
               <Preview template={t} urls={urls} />
               <span className="template-card-title">{t.name}</span>
               <small>
+                {t.collectionName
+                  ? `${t.collectionName} · 第${t.pageOrder}/8页 · `
+                  : ""}
                 {t.slots.filter((s) => s.kind === "image").length} 张照片 ·{" "}
                 {categories[t.category]}
-                {t.id.startsWith("style_") ? "" : " · 旧版"}
+                {t.id.startsWith("style_") || t.themeId ? "" : " · 旧版"}
               </small>
             </button>
           ))}
@@ -264,6 +335,14 @@ export function TemplatePanel(ctx: LibraryContext) {
       {template && (
         <div aria-label="模板预览">
           <h4>{template.name}</h4>
+          {template.themeId && ctx.onUseCollection && (
+            <button
+              className="wide"
+              onClick={() => ctx.onUseCollection!(template.themeId!)}
+            >
+              使用整套主题（8 跨页）
+            </button>
+          )}
           <p>
             预览不修改作品；按当前项目尺寸等比适配。
             {template.slots.filter((s) => s.kind === "image").length}{" "}

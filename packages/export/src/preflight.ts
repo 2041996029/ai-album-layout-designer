@@ -1,3 +1,4 @@
+import { verifyImportedTemplateProof } from "@album/document";
 import {
   validateDocumentAssignment,
   validateLayoutContextHash,
@@ -250,6 +251,7 @@ export async function preflight(
   for (const spread of snapshot.doc.spreads)
     if (
       spread.templateRef &&
+      !(await verifyImportedTemplateProof(spread)) &&
       !policy.templateRefs?.some(
         (t) =>
           t.id === spread.templateRef!.id &&
@@ -437,7 +439,11 @@ export async function preflight(
         const font = snapshot.resources.fonts.find(
           (f) => f.id === layer.fontAssetId,
         );
-        if (!font || ![400, 700].includes(layer.fontWeight)) {
+        if (
+          !font ||
+          ![400, 700].includes(layer.fontWeight) ||
+          !font.faces.some((face) => face.weight === layer.fontWeight)
+        ) {
           await add("FONT_UNAVAILABLE", path, "指定字体或实际字重不可用。", {
             layerId: layer.id,
           });

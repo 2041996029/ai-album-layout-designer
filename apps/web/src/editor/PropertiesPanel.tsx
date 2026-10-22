@@ -47,11 +47,13 @@ export function PropertiesPanel({
   fonts,
   patch,
   onCrop,
+  onConvertImportedText,
 }: {
   layer: KnownLayer | undefined;
   fonts: readonly FontRecord[];
   patch: Patch;
   onCrop: () => void;
+  onConvertImportedText?: () => void;
 }) {
   if (!layer)
     return (
@@ -103,6 +105,16 @@ export function PropertiesPanel({
         </div>
         {isGroupLayer(layer) &&
           num("组合缩放", "scale", layer.scale ?? 1, 0.01)}
+        {layer.type === "image" &&
+        layer.importedText &&
+        onConvertImportedText ? (
+          <div>
+            <p className="panel-hint">
+              此文字当前以图像保留外观。转换为本地字体后，字形和换行可能变化，可撤销。
+            </p>
+            <button onClick={onConvertImportedText}>转为可编辑文字</button>
+          </div>
+        ) : null}
         {layer.type === "image" && (
           <>
             <div className="section-label">照片填充</div>
@@ -165,8 +177,26 @@ export function PropertiesPanel({
                     patch({ fontWeight: Number(e.target.value) })
                   }
                 >
-                  <option value={400}>常规 400</option>
-                  <option value={700}>粗体 700</option>
+                  <option
+                    value={400}
+                    disabled={
+                      !fonts
+                        .find((f) => f.id === layer.fontAssetId)
+                        ?.faces.some((f) => f.weight === 400)
+                    }
+                  >
+                    常规 400
+                  </option>
+                  <option
+                    value={700}
+                    disabled={
+                      !fonts
+                        .find((f) => f.id === layer.fontAssetId)
+                        ?.faces.some((f) => f.weight === 700)
+                    }
+                  >
+                    粗体 700
+                  </option>
                 </select>
               </label>
               {num("字距", "letterSpacing", layer.letterSpacing)}

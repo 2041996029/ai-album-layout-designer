@@ -1,0 +1,64 @@
+{
+  "verifiedAtUTC": "2026-10-22T17:04:22.057248+00:00",
+  "unitTestsPassed": 180,
+  "browserTestsPassed": 71,
+  "typecheck": true,
+  "productionBuild": true,
+  "filterManifestCheck": true,
+  "programC1ArtifactsVerified": [
+    "png",
+    "jpeg",
+    "pdf"
+  ],
+  "newFeatures": [
+    "MJTPL local import",
+    "private transactional theme library",
+    "native alpha mask and resource provenance",
+    "single-page and whole-book application",
+    "96 original spreads across 12 collections",
+    "PNG/JPEG/PDF export"
+  ],
+  "originalCollectionCount": 12,
+  "newOriginalSpreadCount": 96,
+  "preservedLegacySpreadCount": 41,
+  "totalBundledSpreads": 137,
+  "realSamples": {
+    "packagesInspected": 6,
+    "pagesInspected": 105,
+    "photoSlotsInspected": 362,
+    "compatibleWholeBookPages": 103,
+    "compatiblePhotoSlots": 357,
+    "representativePagesVisuallyCompared": 6,
+    "allPagesPixelEquivalentClaimed": false
+  },
+  "blockedSourcePages": [
+    {
+      "theme": "天赐良缘",
+      "page": 4,
+      "reason": "Missing corresponding text raster and usable embedded font"
+    },
+    {
+      "theme": "天赐良缘",
+      "page": 14,
+      "reason": "Missing corresponding text raster and usable embedded font"
+    }
+  ],
+  "unreadOverExecutorTransferLimit": [
+    "温暖如你.mjtpl",
+    "蜂蜜熊仔.mjtpl",
+    "彩虹乐园.mjtpl",
+    "奔赴新程.mjtpl",
+    "纯爱永恒.zip"
+  ],
+  "compatibility": [
+    "MJTPL formatVersion1 / scene schemaVersion3",
+    "Unsupported text layouts retain individual raster appearance with explicit warning",
+    "JPEG EXIF currently explicitly unsupported",
+    "Actual source scene placeholders can differ from source preview UI"
+  ],
+  "reviewFindingsFixed": [
+    "Concurrent resource mutation during template apply is serialized with a real-browser regression",
+    "Cancel import only appears for an actual import operation"
+  ],
+  "privateSourceAssetsPublished": false
+}

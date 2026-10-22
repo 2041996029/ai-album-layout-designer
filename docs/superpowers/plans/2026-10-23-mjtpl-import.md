@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript、React、fflate、idb、Fabric、fontkit、Vitest、Playwright；复用现有依赖，不接外部 AI。
 
-**Spec:** `docs/superpowers/specs/2026-10-23-mjtpl-theme-library-design.md`；2026-10-23 最新用户确认“1可以”，仅执行导入部分，96 个原创版式不在本计划。
+**Spec:** `docs/superpowers/specs/2026-10-23-mjtpl-theme-library-design.md`；2026-10-23 最新用户确认“1可以”，最新用户要求同时执行导入与96原创版式，新增任务9。
 
 ## Global Constraints
 
@@ -17,7 +17,7 @@
 - 不能因为照片数量不匹配就静默换成通用网格。
 - 不把栅格文字宣称为可编辑文字。
 - 保留 C2 已有锁定、必选、禁止漏片/重复、过期候选阻止和导出完整性检查。
-- 现有 36 个基础固定版式保留；不开发原创主题、不新增账号/云存储/AI。
+- 现有36个基础固定版式保留；新增96原创版式，不新增账号/云存储/AI。
 - 无脚本执行与外部 URL 读取。项目仍采用 schemaVersion 1 / px96 / sRGB；导入扩展带独立版本号。
 - 实施选择的首期上限：压缩包 256 MiB、解压总量 512 MiB、单条目 64 MiB、10000 条目、50 个跨页、每跨页 100 个递归图层、20 个字体；图像沿用 80MP。超限报错，不截断。
 - 项目照片上限 500 不变；为装饰/蒙版/文字栅格另设 2000 个资源额度。旧资源无角色字段时按照片处理。
@@ -157,3 +157,15 @@ type ConvertedTheme = {theme:ImportedTheme; files:ReadonlyMap<string,Uint8Array>
 规格导入部分覆盖：解析/边界→1；格式/字体→2；蒙版与导出一致→3；本地存储/删除/去重→4；主题预览→5；换片/一次撤销→6；整本排版与完整性→7；真实样本/备份/部署→8。
 导入角色额度与现有500照片限制的冲突已在任务4/6处理；项目导出仅认可内置模板的冲突在任务7处理。
 本次不实施原创96个跨页；仍采用同一场景模型/渲染器，没有平行编辑器。所有未验证样本和不支持场景都有明确失败语义。
+
+### Task 9:96 original editable spreads
+
+- [ ] 新增12主题×8跨页，开篇1、双图2、三图2、四图2、收尾1；保留原41个签名。
+- [ ] 扩展 TemplateSlot 原生shape装饰、themeId/collectionName/pageRole/pageOrder；注册哈希，每套有真实不同构图。
+- [ ] 主题分组、照片数、原生文字/装饰预览；接入现有应用、C2同主题匹配。
+- [ ] 运行原有/新增template单元测试、浏览器应用撤销、构建，生成96版式总览。
+
+## Execution result
+
+2026-10-23：已实现导入与96原创跨页。180单元测试、71浏览器测试、构建、滤镜清单和原导出样片校验通过；正式入口与文件路径见 `docs/implementation/mjtpl-import/README.md`。
+验证脚本实际位于 `packages/template-import/verify-samples.ts`；附件与对照图保留本地。真实样本105页中103兼容页/357槽通过整本生成与命令创建；2页明确阻止。

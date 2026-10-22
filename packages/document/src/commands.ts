@@ -38,6 +38,7 @@ export type DocumentCommand =
       layers: Layer[];
       templateRef: TemplateRef;
       background?: string;
+      importedTemplate?: import("./imported-template").ImportedTemplateProof;
     }
   | { type: "set-background"; spreadId: string; color: string }
   | { type: "batch"; commands: DocumentCommand[] };
@@ -83,7 +84,7 @@ const baseFields = [
   "locked",
 ];
 const specific: Record<string, string[]> = {
-  image: ["assetId", "fitMode", "crop", "filter", "role"],
+  image: ["layoutPhotoRole", "assetId", "fitMode", "crop", "filter", "role"],
   text: [
     "text",
     "fontAssetId",
@@ -309,6 +310,9 @@ function mutate(doc: DocumentModel, c: DocumentCommand): void {
       if (!s) throw new Error("SPREAD_NOT_FOUND");
       s.layers = structuredClone(c.layers);
       s.templateRef = structuredClone(c.templateRef);
+      if (c.importedTemplate)
+        s.importedTemplate = structuredClone(c.importedTemplate);
+      else delete s.importedTemplate;
       if (c.background !== undefined) s.background = c.background;
       return;
     }

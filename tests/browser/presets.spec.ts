@@ -133,6 +133,7 @@ test("common style library previews imported photos and applies background, typo
   await photos(page);
   const before = await model(page);
   await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
+  await page.getByLabel("模板系列").selectOption("basic");
   await page.getByLabel("模板分类").selectOption("qipao");
   const region = page.getByRole("region", { name: "原创模板" });
   await expect(region.locator(".template-card")).toHaveCount(3);
@@ -168,5 +169,97 @@ test("common style library previews imported photos and applies background, typo
   await page.getByRole("button", { name: "智能排版", exact: true }).click();
   await expect(
     page.getByLabel("场景模板").locator('optgroup[label="JK 校园"] option'),
-  ).toHaveCount(3);
+  ).toHaveCount(11);
+});
+test("twelve original collections offer eight editable decorated spreads each", async ({
+  page,
+}) => {
+  await boot(page);
+  await photos(page);
+  await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
+  await page.getByLabel("模板系列").selectOption("themes");
+  for (const category of [
+    "japanese",
+    "jk",
+    "qipao",
+    "chinese",
+    "wedding",
+    "couple",
+    "family",
+    "travel",
+    "korean",
+    "hongkong",
+    "french",
+    "monochrome",
+  ]) {
+    await page.getByLabel("模板分类").selectOption(category);
+    await expect(page.locator(".template-card")).toHaveCount(8);
+    await expect(
+      page
+        .locator(".template-card")
+        .first()
+        .locator("svg rect,svg ellipse,svg line")
+        .first(),
+    ).toBeVisible();
+  }
+  await page.getByLabel("模板分类").selectOption("qipao");
+  await page
+    .getByRole("button", { name: /旗袍 · 海棠旧梦 \/ 02 相遇/ })
+    .click();
+  await page
+    .getByLabel("模板照片 photo_1")
+    .selectOption({ label: "first.jpg" });
+  await page
+    .getByLabel("模板照片 photo_2")
+    .selectOption({ label: "second.png" });
+  await page
+    .getByRole("button", { name: "应用到当前跨页", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "确认替换当前跨页", exact: true })
+    .click();
+  const after = await model(page);
+  expect(after.spreads[0].templateRef.id).toBe("theme_qipao_2");
+  expect(
+    after.spreads[0].layers.filter((l: any) => l.type === "image"),
+  ).toHaveLength(2);
+  expect(after.spreads[0].layers.some((l: any) => l.type === "shape")).toBe(
+    true,
+  );
+  await page.getByRole("button", { name: "撤销", exact: true }).click();
+  expect((await model(page)).spreads[0].layers).toHaveLength(0);
+});
+test("original collection opens eight theme pages and applies with existing local fonts", async ({
+  page,
+}) => {
+  await boot(page);
+  await photos(page);
+  await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
+  await page.getByLabel("模板系列").selectOption("themes");
+  await page.getByLabel("模板分类").selectOption("qipao");
+  await page.getByRole("button", { name: /旗袍 · 海棠旧梦 \/ 01 序/ }).click();
+  await page
+    .getByRole("button", { name: "使用整套主题（8 跨页）", exact: true })
+    .click();
+  await expect(page.locator(".theme-page-grid article")).toHaveCount(8);
+  await expect
+    .poll(() =>
+      page
+        .locator(".theme-large-preview")
+        .evaluate((img: HTMLImageElement) => img.naturalWidth),
+    )
+    .toBeGreaterThan(0);
+  await page.getByLabel("导入模板照片 1").selectOption({ label: "first.jpg" });
+  await page.getByRole("button", { name: "替换当前跨页", exact: true }).click();
+  await expect(page.getByText("已应用当前跨页，可以一次撤销。")).toBeVisible();
+  const saved = await model(page);
+  expect(
+    saved.spreads[0].layers.filter((l: any) => l.type === "image"),
+  ).toHaveLength(1);
+  expect(saved.spreads[0].layers.some((l: any) => l.type === "shape")).toBe(
+    true,
+  );
+  expect(saved.spreads[0].importedTemplate.sourceLayers.length).toBeGreaterThan(
+    1,
+  );
 });

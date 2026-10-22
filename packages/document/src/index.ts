@@ -3,3 +3,4 @@ export * from "./validate";
 export * from "./canonical";
 export * from "./commands";
 export * from "./template";
+export * from "./imported-template";

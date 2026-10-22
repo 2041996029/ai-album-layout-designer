@@ -130,6 +130,22 @@ export function App() {
       port={store}
       renderLibrary={(ctx) => <LibraryPanel {...ctx} />}
       renderExport={({ save }) => <ExportPanel store={store} save={save} />}
+      onCreateTemplateProject={async (pageSize, resources) => {
+        const doc: DocumentModel = {
+          schemaVersion: 1,
+          projectId: "prj_" + crypto.randomUUID().replaceAll("-", ""),
+          revision: 1,
+          unit: "px96",
+          colorSpace: "srgb",
+          pageSize,
+          printProfile: { bleedMm: 3, safeMm: 5 },
+          cover: { front: [], back: [] },
+          spreads: [{ id: "spread_1", background: "#ffffff", layers: [] }],
+        };
+        const value = await store.create(doc, resources);
+        localStorage.setItem("album-active", doc.projectId);
+        setSaved(value);
+      }}
       onRecover={async (file) => {
         const next = await importProject(
           new Uint8Array(await file.arrayBuffer()),

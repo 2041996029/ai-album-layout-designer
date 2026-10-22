@@ -1,10 +1,15 @@
 import { zipSync, strToU8 } from "fflate";
-import { sha256 } from "@album/document";
+async function sha256(bytes: Uint8Array): Promise<string> {
+  const hash = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes));
+  return [...new Uint8Array(hash)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 /** Synthetic packages only: never commit private MJTPL sample data. */
-export async function buildMjtpl() {
+export async function buildMjtpl(rotationDeg = 15, width = 61, height = 30.5) {
   const png = Uint8Array.from(
     Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAaX2RaAAAAAASUVORK5CYII=",
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGP4DwQACfsD/fteaysAAAAASUVORK5CYII=",
       "base64",
     ),
   );
@@ -13,8 +18,8 @@ export async function buildMjtpl() {
   const scene = {
     schemaVersion: 3,
     pageId: "page-1",
-    width: 61,
-    height: 30.5,
+    width,
+    height,
     unit: "cm",
     background: "#FFFFFFFF",
     nodes: [
@@ -22,7 +27,7 @@ export async function buildMjtpl() {
         id: "node-1",
         type: "photo",
         slotId: "slot-1",
-        transform: { x: 0, y: 0, width: 1, height: 1, rotationDeg: 15 },
+        transform: { x: 0, y: 0, width: 1, height: 1, rotationDeg },
         effects: { opacity: 0.5 },
         assetRef: { assetId: "image", relativePath: ref.path, sha256: hash },
         photoMask: { type: "assetAlpha" },
@@ -41,8 +46,8 @@ export async function buildMjtpl() {
         {
           pageId: "page-1",
           name: "Page",
-          width: 61,
-          height: 30.5,
+          width,
+          height,
           unit: "cm",
           preview: ref,
           scenePath: "pages/scene.json",

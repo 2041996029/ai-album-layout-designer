@@ -1,3 +1,12 @@
+import { isUserPhoto } from "@album/assets";
+import { canonicalJson } from "@album/document";
+import { generateThemeCandidates, createLayoutCommand } from "@album/layout";
+import {
+  prepareThemePage,
+  stageThemeResources,
+} from "../templates/apply-theme";
+import { assertManifest } from "@album/storage";
+import type { ConvertedTheme } from "@album/template-import";
 import { LayoutWizard } from "../layout/LayoutWizard";
 import { Modal } from "../components/Modal";
 import { useState, useEffect, useRef, type ReactNode } from "react";
@@ -43,6 +52,10 @@ export interface EditorProps {
   resources: ResourceManifest;
   port: ResourcePort;
   onExport?: (save: () => Promise<SaveResult>) => void;
+  onCreateTemplateProject?: (
+    pageSize: { width: number; height: number },
+    resources: ResourceManifest,
+  ) => Promise<void>;
   onRecover?: (file: File) => Promise<void>;
   onProjectExport?: (
     doc: DocumentModel,
@@ -55,6 +68,16 @@ export interface EditorProps {
     execute: Execute;
     resources: ResourceManifest;
     port: ResourcePort;
+    createTemplateProject?: (pageSize: {
+      width: number;
+      height: number;
+    }) => Promise<void>;
+    applyImportedTheme: (
+      converted: ConvertedTheme,
+      pageIds: string[],
+      bindings: Record<string, string> | string[],
+      book: boolean,
+    ) => Promise<boolean>;
   }) => ReactNode;
   renderExport?: (context: { save: () => Promise<SaveResult> }) => ReactNode;
 }
@@ -83,6 +106,8 @@ export function Editor(p: EditorProps) {
     [textEdit, setTextEdit] = useState<KnownLayer>(),
     [tab, setTab] = useState("photos");
   const [layoutOpen, setLayoutOpen] = useState(false);
+  const editGeneration = useRef(0);
+  const resourceOperation = useRef(false);
   const resourceRef = useRef(manifest);
   resourceRef.current = manifest;
   const [autosave] = useState(
@@ -125,6 +150,7 @@ export function Editor(p: EditorProps) {
     return () => {
       queueMicrotask(() => {
         if (life.current === token) {
+          editGeneration.current++;
           autosave.dispose();
           importController.current?.abort();
         }
@@ -150,6 +176,7 @@ export function Editor(p: EditorProps) {
     if (command.type === "batch" && !command.commands.length) return false;
     try {
       const next = history.execute(command);
+      editGeneration.current++;
       setDoc(next);
       autosave.markDirty();
       setMessage("");
@@ -157,6 +184,106 @@ export function Editor(p: EditorProps) {
     } catch (e) {
       setMessage(errorText(e));
       return false;
+    }
+  };
+  const applyImportedTheme = async (
+    converted: ConvertedTheme,
+    pageIds: string[],
+    bindings: Record<string, string> | string[],
+    book: boolean,
+  ): Promise<boolean> => {
+    if (resourceOperation.current) throw Error("请等待当前资源操作完成");
+    resourceOperation.current = true;
+    setBusy(true);
+    try {
+      const resourcesBefore = canonicalJson(resourceRef.current);
+      const before = history.current,
+        epoch = editGeneration.current;
+      const validPhotos = resourceRef.current.assets.filter(
+        (a) => isUserPhoto(a) && a.status === "ready" && a.license.usable,
+      );
+      const ids = Array.isArray(bindings) ? bindings : Object.values(bindings);
+      if (ids.some((id) => !validPhotos.some((a) => a.id === id)))
+        throw Error("ASSET_MISSING");
+      let command: DocumentCommand;
+      if (book) {
+        if (!Array.isArray(bindings)) throw Error("INVALID_BINDINGS");
+        const counts = pageIds.map(
+          (id) =>
+            converted.theme.pages.find((p) => p.id === id)?.photoSlots.length ??
+            0,
+        );
+        const input = {
+          projectId: before.projectId,
+          baseRevision: before.revision,
+          photos: bindings.map((id) => {
+            const a = validPhotos.find((a) => a.id === id)!;
+            return { assetId: id, width: a.width, height: a.height };
+          }),
+          constraints: {
+            spreadCount: pageIds.length,
+            minPhotosPerSpread: Math.min(...counts),
+            maxPhotosPerSpread: Math.max(...counts),
+            selectionPolicy: "all" as const,
+            duplicatePolicy: "forbid" as const,
+            orderPolicy: "user" as const,
+          },
+          templateRef: {
+            id: converted.theme.id,
+            version: 1,
+            sha256: converted.theme.sourceHash,
+          },
+          templatePageIds: pageIds,
+          algorithmVersion: "local-layout-v1",
+          seed: 1,
+        };
+        const candidates = await generateThemeCandidates(
+          input,
+          before,
+          converted.theme,
+          pageIds,
+        );
+        command = createLayoutCommand(input, candidates[0], before);
+      } else {
+        if (Array.isArray(bindings)) throw Error("INVALID_BINDINGS");
+        command = await prepareThemePage(
+          converted.theme,
+          pageIds[0],
+          bindings,
+          before,
+          surfaceId,
+        );
+      }
+      const nextLayers =
+        command.type === "apply-layout"
+          ? command.spreads.flatMap((s) => s.layers)
+          : command.type === "apply-template"
+            ? command.layers
+            : [];
+      const merged = await stageThemeResources(
+        converted,
+        nextLayers,
+        resourceRef.current,
+        p.store,
+      );
+      assertManifest(merged);
+      if (
+        epoch !== editGeneration.current ||
+        canonicalJson(resourceRef.current) !== resourcesBefore ||
+        canonicalJson(history.current) !== canonicalJson(before)
+      )
+        throw Error("STALE_LAYOUT");
+      const applied = execute(command);
+      if (applied) {
+        resourceRef.current = merged;
+        setManifest(merged);
+        setSelected([]);
+        if (book) setSurface(history.current.spreads[0].id);
+      }
+      return applied;
+    } finally {
+      resourceOperation.current = false;
+      setBusy(false);
     }
   };
   const patch = (value: Record<string, unknown>, ids = selected) => {
@@ -178,6 +305,7 @@ export function Editor(p: EditorProps) {
   };
   const undo = () => {
     const next = history.undo();
+    editGeneration.current++;
     setDoc(next);
     changePage(
       surfaceId.startsWith("cover:") ||
@@ -190,6 +318,7 @@ export function Editor(p: EditorProps) {
   };
   const redo = () => {
     const next = history.redo();
+    editGeneration.current++;
     setDoc(next);
     changePage(
       surfaceId.startsWith("cover:") ||
@@ -353,13 +482,18 @@ export function Editor(p: EditorProps) {
   };
   const replacePhoto = (asset: AssetRecord) => {
     if (single?.type !== "image") return;
-    patch({ assetId: asset.id, crop: { x: 0, y: 0, width: 1, height: 1 } });
+    patch({
+      assetId: asset.id,
+      crop: { x: 0, y: 0, width: 1, height: 1 },
+      layoutPhotoRole: "selection",
+    });
   };
   const importFiles = async (files: File[]) => {
-    if (busy) {
-      setMessage("请等待当前导入完成");
+    if (resourceOperation.current) {
+      setMessage("请等待当前资源操作完成");
       return;
     }
+    resourceOperation.current = true;
     const controller = new AbortController();
     importController.current = controller;
     failed.current = [];
@@ -375,7 +509,7 @@ export function Editor(p: EditorProps) {
             setProgress("重复照片已跳过");
             continue;
           }
-          if (current.assets.length >= 500)
+          if (current.assets.filter(isUserPhoto).length >= 500)
             throw new Error("最多 500 张照片，请移除未使用素材");
           await p.store.putAsset(imported.record, imported);
           current = {
@@ -394,10 +528,15 @@ export function Editor(p: EditorProps) {
       }
     } finally {
       setHasRetry(failed.current.length > 0);
+      resourceOperation.current = false;
       setBusy(false);
     }
   };
   const removeAsset = (asset: AssetRecord) => {
+    if (resourceOperation.current) {
+      setMessage("请等待当前资源操作完成");
+      return;
+    }
     const count = allLayers(doc)
       .filter(isImageLayer)
       .filter((l) => l.assetId === asset.id).length;
@@ -763,7 +902,7 @@ export function Editor(p: EditorProps) {
           </nav>
           {tab === "photos" ? (
             <AssetPanel
-              assets={manifest.assets}
+              assets={manifest.assets.filter(isUserPhoto)}
               port={p.port}
               onImport={(files) => void importFiles(files)}
               onAdd={addPhoto}
@@ -782,6 +921,17 @@ export function Editor(p: EditorProps) {
               execute,
               resources: manifest,
               port: p.port,
+              applyImportedTheme,
+              createTemplateProject: p.onCreateTemplateProject
+                ? async (pageSize) => {
+                    const result = await save();
+                    if (!result.ok) throw Error("请先备份当前作品后重试。");
+                    await p.onCreateTemplateProject!(
+                      pageSize,
+                      resourceRef.current,
+                    );
+                  }
+                : undefined,
             })
           )}
           <div className="local-note">
@@ -937,6 +1087,50 @@ export function Editor(p: EditorProps) {
             layer={single}
             fonts={manifest.fonts}
             patch={patch}
+            onConvertImportedText={() => {
+              if (!single || single.type !== "image" || !single.importedText)
+                return;
+              if (
+                !window.confirm(
+                  "将使用本地中文字体重新排版。字形、字号和换行可能变化，可撤销。",
+                )
+              )
+                return;
+              const original = single.importedText as { text?: string };
+              const index = layers.findIndex((l) => l.id === single.id);
+              if (index < 0) {
+                setMessage("请先解组后转换文字。");
+                return;
+              }
+              const textLayer = {
+                ...base(),
+                x: single.x,
+                y: single.y,
+                width: single.width,
+                height: single.height,
+                id: single.id,
+                rotation: single.rotation,
+                opacity: single.opacity,
+                type: "text" as const,
+                text: original.text ?? "",
+                fontAssetId:
+                  manifest.fonts.find((f) => f.id === "noto-serif-sc")?.id ??
+                  manifest.fonts[0].id,
+                fontSize: Math.max(8, Math.min(28, single.height / 1.4)),
+                fontWeight: 400,
+                lineHeight: 1.3,
+                letterSpacing: 0,
+                fill: "#333333",
+                critical: true,
+              };
+              execute({
+                type: "batch",
+                commands: [
+                  { type: "delete-layer", layerId: single.id },
+                  { type: "insert-layer", surfaceId, layer: textLayer, index },
+                ],
+              });
+            }}
             onCrop={() => {
               if (single?.type === "image") setCrop(structuredClone(single));
             }}

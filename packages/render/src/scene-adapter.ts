@@ -362,6 +362,7 @@ export async function createScene(
                 opacity,
               );
             } else if (isTextLayer(layer)) {
+              if(!next.manifest.fonts.find(f=>f.id===layer.fontAssetId)?.faces.some(f=>f.weight===layer.fontWeight)) throw new RenderError("FONT_WEIGHT_MISSING","The requested real font weight is unavailable.");
               const font = fontCache.get(layer.fontAssetId)!;
               const measure = createTextMeasure(
                 context,

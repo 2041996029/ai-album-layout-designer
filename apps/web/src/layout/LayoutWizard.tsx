@@ -1,3 +1,4 @@
+import { isUserPhoto } from "@album/assets";
 import { templateCategories } from "../editor/template-categories";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -37,7 +38,7 @@ export function LayoutWizard({
   }));
   const [ids, setIds] = useState(() =>
     resources.assets
-      .filter((a) => a.status === "ready" && a.license.usable)
+      .filter((a) => isUserPhoto(a) && a.status === "ready" && a.license.usable)
       .map((a) => a.id),
   );
   const [selected, setSelected] = useState(() => new Set(ids)),
