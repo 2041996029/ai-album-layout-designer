@@ -27,6 +27,8 @@ export interface BaseLayer extends Rect {
 export interface ImageLayer extends BaseLayer {
   type: "image";
   assetId: string;
+  alphaMask?: { version: 1; assetId: string };
+  templateSlot?: { version: 1; slotId: string };
   crop: Rect;
   fitMode?: "cover" | "contain";
   role?: string;

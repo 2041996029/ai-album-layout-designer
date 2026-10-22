@@ -76,6 +76,7 @@ export async function renderImage(
   port: ResourcePort,
   signal: AbortSignal,
   pixelScale = 1,
+  maskRecord?: AssetRecord,
 ): Promise<PipelineImage> {
   signal.throwIfAborted();
   if (record.status !== "ready" || !record.license.usable)
@@ -105,6 +106,7 @@ export async function renderImage(
     signal,
     (b) => b.close(),
   );
+  let maskBitmap: ImageBitmap | undefined;
   let source: HTMLCanvasElement | undefined,
     output: HTMLCanvasElement | undefined;
   try {
@@ -165,6 +167,51 @@ export async function renderImage(
       (d.width * width) / layer.width,
       (d.height * height) / layer.height,
     );
+    if (layer.alphaMask) {
+      if (
+        !maskRecord ||
+        maskRecord.id !== layer.alphaMask.assetId ||
+        maskRecord.status !== "ready" ||
+        !maskRecord.license.usable
+      )
+        throw new ResourceError(
+          "RESOURCE_MISSING",
+          "Slot alpha mask is unavailable or unlicensed.",
+        );
+      const maskBytes = await abortable(
+        port.read(maskRecord.id, "normalized"),
+        signal,
+      );
+      signal.throwIfAborted();
+      if ((await sha256(maskBytes)) !== maskRecord.variants.normalized.sha256)
+        throw new ResourceError(
+          "HASH_MISMATCH",
+          "Slot alpha differs from pinned resource.",
+        );
+      const maskInfo = inspectImage(maskBytes);
+      if (
+        maskInfo.width !== maskRecord.width ||
+        maskInfo.height !== maskRecord.height
+      )
+        throw new ResourceError(
+          "INVALID_IMAGE",
+          "Slot alpha dimensions differ from manifest.",
+        );
+      maskBitmap = await abortable(
+        createImageBitmap(
+          new Blob([new Uint8Array(maskBytes)], { type: maskInfo.mimeType }),
+          { imageOrientation: "from-image" },
+        ),
+        signal,
+        (b) => b.close(),
+      );
+      signal.throwIfAborted();
+      // Mask is in frame coordinates, independent of photo crop and filters.
+      // destination-in uses only alpha; sample photo RGB never enters output.
+      out.globalCompositeOperation = "destination-in";
+      out.drawImage(maskBitmap, 0, 0, width, height);
+      out.globalCompositeOperation = "source-over";
+    }
     const result = output;
     output = undefined;
     let disposed = false;
@@ -179,6 +226,7 @@ export async function renderImage(
     };
   } finally {
     bitmap.close();
+    maskBitmap?.close();
     if (source) {
       source.width = 0;
       source.height = 0;

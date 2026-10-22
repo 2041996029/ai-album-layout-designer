@@ -344,6 +344,11 @@ export async function createScene(
                 next.port,
                 signal,
                 next.pixelScale * scale,
+                layer.alphaMask
+                  ? next.manifest.assets.find(
+                      (a) => a.id === layer.alphaMask!.assetId,
+                    )
+                  : undefined,
               );
               releases.push(() => image.dispose());
               signal.throwIfAborted();

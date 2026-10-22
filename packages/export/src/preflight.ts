@@ -219,7 +219,15 @@ export async function preflight(
         const a = snapshot.resources.assets.find(
           (a) => a.id === (r.layer as any).assetId,
         );
-        return a ? a.width * a.height : 0;
+        const maskId = isImageLayer(r.layer)
+          ? r.layer.alphaMask?.assetId
+          : undefined;
+        const mask = maskId
+          ? snapshot.resources.assets.find((a) => a.id === maskId)
+          : undefined;
+        return (
+          (a ? a.width * a.height : 0) + (mask ? mask.width * mask.height : 0)
+        );
       }),
   );
   const surfacePixels = Math.max(
@@ -328,6 +336,49 @@ export async function preflight(
               : "ASSET_MISSING";
           await add(code, path, String(error), { layerId: layer.id });
           continue;
+        }
+        if (layer.alphaMask) {
+          const maskPath = path + "/alphaMask";
+          const mask = snapshot.resources.assets.find(
+            (a) => a.id === layer.alphaMask!.assetId,
+          );
+          if (!mask || mask.status !== "ready")
+            await add("ASSET_MISSING", maskPath, "槽位蒙版不可用。", {
+              layerId: layer.id,
+            });
+          else if (!mask.license.usable)
+            await add(
+              "ASSET_UNLICENSED",
+              maskPath,
+              "槽位蒙版使用授权不可用。",
+              { layerId: layer.id },
+            );
+          else {
+            try {
+              for (const variant of ["original", "normalized"] as const) {
+                const bytes = await read(port, mask.id, variant, signal);
+                signal.throwIfAborted();
+                if ((await sha256(bytes)) !== mask.variants[variant].sha256)
+                  throw new Error("HASH_MISMATCH");
+                const header = inspectImage(bytes);
+                if (
+                  variant === "normalized" &&
+                  (header.width !== mask.width || header.height !== mask.height)
+                )
+                  throw new Error("ASSET_DIMENSIONS_MISMATCH");
+              }
+            } catch (error) {
+              signal.throwIfAborted();
+              const code =
+                error instanceof Error &&
+                ["HASH_MISMATCH", "ASSET_DIMENSIONS_MISMATCH"].includes(
+                  error.message,
+                )
+                  ? error.message
+                  : "ASSET_MISSING";
+              await add(code, maskPath, String(error), { layerId: layer.id });
+            }
+          }
         }
         const ppi = effectivePpi(layer, asset, scale);
         if (ppi < 200)
