@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "renderBuild": "c1-cpu-fabric-v1",
+  "projectId": "prj_abc3a0d0e46d48a3afff8ca63b3f3344",
+  "revision": 3,
+  "snapshotHash": "1688e2feaf1c581542cb1bd92d5d83fd540054233b23e08ffae13bab24884eea",
+  "docHash": "cba1dd6b997a1b27869eb1cb4d15b6e2636cee58ef81d802f30e711715e6f020",
+  "options": {
+    "format": "png",
+    "dpi": 72,
+    "view": "spread",
+    "pageIds": [
+      "spread_1"
+    ],
+    "includeCover": false,
+    "bleedMm": 3,
+    "jpegMatte": "#ffffff"
+  },
+  "createdAt": "2026-10-22T11:30:27.495Z",
+  "surfaces": [
+    {
+      "id": "spread_1",
+      "sourceSpreadId": "spread_1",
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 1200,
+        "height": 600
+      },
+      "bleedPx96": 11.338582677165356,
+      "background": "#FFFFFF",
+      "pixelWidth": 917,
+      "pixelHeight": 467,
+      "fileStem": "0001-spread-01",
+      "trimWidthMm": 317.5,
+      "trimHeightMm": 158.75,
+      "bleedMm": 3,
+      "trimBoxMm": {
+        "x": 3,
+        "y": 3,
+        "width": 317.5,
+        "height": 158.75
+      }
+    }
+  ],
+  "resources": {
+    "assets": [
+      {
+        "id": "image-1650149221e4e662dbfed826a41d46fa0caf36690ec4d385bf44b123f1de8b88",
+        "version": 1,
+        "sha256": "1650149221e4e662dbfed826a41d46fa0caf36690ec4d385bf44b123f1de8b88",
+        "normalizedSha256": "1650149221e4e662dbfed826a41d46fa0caf36690ec4d385bf44b123f1de8b88"
+      },
+      {
+        "id": "image-8b9431249812403851cae10e6e58b69d234ea60dc8a70eaf564c68e1b6f4c5ae",
+        "version": 1,
+        "sha256": "8b9431249812403851cae10e6e58b69d234ea60dc8a70eaf564c68e1b6f4c5ae",
+        "normalizedSha256": "8b9431249812403851cae10e6e58b69d234ea60dc8a70eaf564c68e1b6f4c5ae"
+      },
+      {
+        "id": "image-271cd417bd374670d709d47597f1359c34d390748d37b4a43d60e5a5d6be09d9",
+        "version": 1,
+        "sha256": "271cd417bd374670d709d47597f1359c34d390748d37b4a43d60e5a5d6be09d9",
+        "normalizedSha256": "271cd417bd374670d709d47597f1359c34d390748d37b4a43d60e5a5d6be09d9"
+      }
+    ],
+    "fonts": [
+      {
+        "id": "noto-sans-sc",
+        "version": 1,
+        "sha256": "41314067140a1e003cf4e235b177fdec114656b736263694ad18b3cbf29c5fcd"
+      },
+      {
+        "id": "noto-serif-sc",
+        "version": 1,
+        "sha256": "8dc89b74795c28bd2d795635815df023acbe2f7ed9769e6a769f829e677f896c"
+      }
+    ]
+  },
+  "files": [
+    {
+      "filename": "0001-spread-01.png",
+      "mime": "image/png",
+      "sha256": "e3c4b431d37eff92f723b34bca7dcb8a41ebfc784f8f9828cd79e42df3b5cc62",
+      "surfaceId": "spread_1",
+      "pixelWidth": 917,
+      "pixelHeight": 467,
+      "byteLength": 13456
+    }
+  ]
+}

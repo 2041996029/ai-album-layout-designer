@@ -261,6 +261,9 @@ export async function importProject(
       projectId: "prj_" + crypto.randomUUID().replaceAll("-", ""),
       revision: 1,
       sourceProjectId: doc.projectId,
+      ...(doc.layoutContext != null
+        ? { layoutSourceProjectId: doc.layoutSourceProjectId ?? doc.projectId }
+        : {}),
       sourceRevision: doc.revision,
     },
     manifest.resources,

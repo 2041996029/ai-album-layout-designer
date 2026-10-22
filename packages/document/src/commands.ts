@@ -1,3 +1,4 @@
+import { isVerifiedLayoutCommand } from "./layout-authorization";
 import type {
   DocumentModel,
   Layer,
@@ -7,7 +8,15 @@ import type {
 } from "./model";
 import { isGroupLayer, isKnownLayer, walkLayers } from "./model";
 import { parseDocument } from "./validate";
+import { canonicalJson } from "./canonical";
 export type DocumentCommand =
+  | {
+      type: "apply-layout";
+      expectedDocument: string;
+      spreads: Spread[];
+      assignmentManifest: unknown;
+      layoutContext: unknown;
+    }
   | { type: "group-layers"; layerIds: string[]; groupId: string }
   | { type: "ungroup-layer"; layerId: string }
   | {
@@ -271,6 +280,27 @@ function mutate(doc: DocumentModel, c: DocumentCommand): void {
         const [s] = doc.spreads.splice(index, 1);
         doc.spreads.splice(dest, 0, s);
       }
+      return;
+    }
+    case "apply-layout": {
+      if (canonicalJson(doc) !== c.expectedDocument)
+        throw new Error("STALE_LAYOUT");
+      if (!isVerifiedLayoutCommand(c))
+        throw new Error("UNVERIFIED_LAYOUT_COMMAND");
+      for (const spread of doc.spreads) {
+        const next = c.spreads.find((s) => s.id === spread.id);
+        for (const root of spread.layers)
+          if ([...walkLayers([root])].some((l) => l.locked === true)) {
+            if (
+              canonicalJson(root) !==
+              canonicalJson(next?.layers.find((l) => l.id === root.id) ?? null)
+            )
+              throw new Error("LAYER_LOCKED");
+          }
+      }
+      doc.spreads = structuredClone(c.spreads);
+      doc.assignmentManifest = structuredClone(c.assignmentManifest);
+      doc.layoutContext = structuredClone(c.layoutContext);
       return;
     }
     case "apply-template": {

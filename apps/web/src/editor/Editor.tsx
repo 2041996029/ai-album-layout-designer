@@ -1,3 +1,4 @@
+import { LayoutWizard } from "../layout/LayoutWizard";
 import { Modal } from "../components/Modal";
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import {
@@ -81,6 +82,7 @@ export function Editor(p: EditorProps) {
     [crop, setCrop] = useState<ImageLayer>(),
     [textEdit, setTextEdit] = useState<KnownLayer>(),
     [tab, setTab] = useState("photos");
+  const [layoutOpen, setLayoutOpen] = useState(false);
   const resourceRef = useRef(manifest);
   resourceRef.current = manifest;
   const [autosave] = useState(
@@ -583,6 +585,27 @@ export function Editor(p: EditorProps) {
   };
   return (
     <div className="editor-app">
+      {layoutOpen && (
+        <LayoutWizard
+          doc={doc}
+          resources={manifest}
+          port={p.port}
+          revisionToken={
+            autosave.lastResult?.ok
+              ? autosave.lastResult.value.doc.revision
+              : doc.revision
+          }
+          onClose={() => setLayoutOpen(false)}
+          onApply={(command) => {
+            const applied = execute(command);
+            if (applied) {
+              setSelected([]);
+              setSurface(history.current.spreads[0].id);
+            }
+            return applied;
+          }}
+        />
+      )}
       <header className="topbar">
         <a className="brand" href="#" onClick={(e) => e.preventDefault()}>
           <span className="brand-mark">拾</span>
@@ -613,6 +636,16 @@ export function Editor(p: EditorProps) {
               }}
             />
           </label>
+          <button
+            disabled={busy || !manifest.assets.length}
+            onClick={async () => {
+              const result = await save();
+              if (result.ok) setLayoutOpen(true);
+              else setMessage("请先解决保存冲突后再排版。");
+            }}
+          >
+            智能排版
+          </button>
           <button className="save-button" onClick={() => void save()}>
             保存
           </button>

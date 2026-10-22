@@ -354,3 +354,69 @@ it("honors a lower environment memory budget instead of silently lowering output
   expect(report.blockers.map((b) => b.code)).toContain("MEMORY_BUDGET");
   expect(report.surfaces[0].pixelWidth).toBe(7157);
 });
+it("checks supported C2 assignments against actual layers and input hash", async () => {
+  const { prepareLayout, generateCandidates, createLayoutCommand } =
+    await import("@album/layout");
+  const { templateVersions, applyCommand } = await import("@album/document");
+  const doc = parseDocument(structuredClone(fixture)),
+    t = templateVersions.find((t) => t.id === "tpl_travel")!;
+  const input = {
+    projectId: doc.projectId,
+    baseRevision: doc.revision,
+    photos: [{ assetId: "photo1", width: 1000, height: 800 }],
+    constraints: {
+      spreadCount: 1,
+      minPhotosPerSpread: 1,
+      maxPhotosPerSpread: 4,
+      selectionPolicy: "all" as const,
+      duplicatePolicy: "forbid" as const,
+      orderPolicy: "user" as const,
+    },
+    templateRef: { id: t.id, version: t.version, sha256: t.sha256 },
+    algorithmVersion: "local-layout-v1",
+    seed: 1,
+  };
+  const p = await prepareLayout(input),
+    candidate = generateCandidates(p, doc, t, [])[0];
+  const next = applyCommand(doc, createLayoutCommand(input, candidate, doc));
+  const check = async (d: typeof next) => {
+    const snap = await freezeSnapshot(
+      {
+        doc: d,
+        docHash: await hashDocument(d),
+        resources: { assets: [], fonts: [] },
+        savedAt: "2026-10-22T00:00:00Z",
+      },
+      {
+        format: "png",
+        dpi: 72,
+        view: "spread",
+        pageIds: [d.spreads[0].id],
+        includeCover: false,
+        bleedMm: 0,
+        jpegMatte: "#ffffff",
+      },
+      "2026-10-22T00:01:00Z",
+    );
+    return preflight(
+      snap,
+      {
+        read: async () => {
+          throw new Error("missing");
+        },
+      },
+      new AbortController().signal,
+    );
+  };
+  const valid = await check(next);
+  expect(valid.blockers.map((b) => b.code)).not.toContain(
+    "UNSUPPORTED_LAYOUT_MANIFEST",
+  );
+  expect(valid.blockers.map((b) => b.code)).not.toContain(
+    "LAYOUT_INTEGRITY_FAILED",
+  );
+  next.spreads[0].layers = [];
+  expect((await check(next)).blockers.map((b) => b.code)).toContain(
+    "LAYOUT_INTEGRITY_FAILED",
+  );
+});

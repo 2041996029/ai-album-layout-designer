@@ -1,4 +1,8 @@
 import {
+  validateDocumentAssignment,
+  validateLayoutContextHash,
+} from "@album/layout";
+import {
   validateDocument,
   isGroupLayer,
   isImageLayer,
@@ -114,11 +118,17 @@ export async function preflight(
   };
   for (const issue of validateDocument(snapshot.doc))
     await add(issue.code, issue.path, issue.message);
-  if (snapshot.doc.assignmentManifest != null)
+  for (const code of validateDocumentAssignment(snapshot.doc))
     await add(
-      "UNSUPPORTED_LAYOUT_MANIFEST",
+      code,
       "/assignmentManifest",
-      "C1尚未验证整本排版清单，不能跳过完整性检查。",
+      "排版照片清单与当前文档不一致，请重新排版或恢复照片。",
+    );
+  if (!(await validateLayoutContextHash(snapshot.doc)))
+    await add(
+      "LAYOUT_INTEGRITY_FAILED",
+      "/layoutContext",
+      "排版输入校验失败，请重新生成方案。",
     );
   const referenced = new Map<
     string,

@@ -1,3 +1,5 @@
+> C2 整本排版开发：实现说明与测试边界见 [C2 研发记录](docs/implementation/c2/README.md)。
+
 # ai-album-layout-designer
 面向摄影师／影楼与个人的 AI 相册排版设计工具。首期网页完整编辑，微信小程序快速成册，为 App 预留接口。
 
