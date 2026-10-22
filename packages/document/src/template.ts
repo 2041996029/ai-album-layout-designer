@@ -1,3 +1,4 @@
+import styles from "../templates/styles-v1.json";
 import wedding from "../templates/wedding-v1.json";
 import travel from "../templates/travel-v1.json";
 import family from "../templates/family-v1.json";
@@ -17,6 +18,9 @@ export interface TemplateSlot {
   fontWeight?: number;
   fontSize?: number;
   editableFields?: string[];
+  fill?: string;
+  letterSpacing?: number;
+  textAlign?: "left" | "center" | "right";
 }
 export interface TemplateVersion {
   id: string;
@@ -48,6 +52,7 @@ export const templateVersions: readonly TemplateVersion[] = freeze([
   family,
   portrait,
   ink,
+  ...styles,
 ] as TemplateVersion[]);
 export const templateRefs: readonly TemplateRef[] = freeze(
   templateVersions.map(({ id, version, sha256 }) => ({ id, version, sha256 })),
@@ -129,9 +134,9 @@ export function instantiateTemplate(
           fontSize: slot.fontSize!,
           fontWeight: slot.fontWeight!,
           lineHeight: 1.3,
-          letterSpacing: 0,
-          fill: "#253d3b",
-          textAlign: "left",
+          letterSpacing: slot.letterSpacing ?? 0,
+          fill: slot.fill ?? "#253d3b",
+          textAlign: slot.textAlign ?? "left",
           critical: true,
         };
   });
@@ -140,8 +145,10 @@ export function applyTemplateCommand(
   spreadId: string,
   layers: Layer[],
   templateRef: TemplateRef,
+  background?: string,
 ): DocumentCommand {
   return {
+    ...(background ? { background } : {}),
     type: "apply-template",
     spreadId,
     layers: structuredClone(layers),

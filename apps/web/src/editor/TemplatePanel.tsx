@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   templateVersions,
   instantiateTemplate,
@@ -11,39 +11,79 @@ import { uid } from "./types";
 export type LibraryContext = Parameters<
   NonNullable<EditorProps["renderLibrary"]>
 >[0];
-const categories: Record<string, string> = {
-  wedding: "婚礼",
-  travel: "旅行",
-  family: "亲子",
-  portrait: "写真",
-  ink: "国风",
-};
-function Preview({ template: t }: { template: TemplateVersion }) {
+import { templateCategories as categories } from "./template-categories";
+function Preview({
+  template: t,
+  urls,
+}: {
+  template: TemplateVersion;
+  urls: string[];
+}) {
+  let index = 0;
   return (
     <svg
       aria-label={`${t.name}结构预览`}
       role="img"
       viewBox={`0 0 ${t.pageSize.width * 2} ${t.pageSize.height}`}
-      style={{
-        width: "100%",
-        background: t.background,
-        border: "1px solid #d8d3c9",
-        margin: "8px 0",
-      }}
+      className="template-preview"
+      style={{ background: t.background }}
     >
-      {t.slots.map((s) => (
-        <rect
-          key={s.slotId}
-          {...s.frame}
-          fill={s.kind === "image" ? "#b7d3ce" : "#708c83"}
-          rx="10"
-        />
-      ))}
+      {t.slots.map((s) =>
+        s.kind === "image" ? (
+          <g key={s.slotId}>
+            <rect
+              {...s.frame}
+              fill={["#d6d0c3", "#b2bcb1", "#c0b2a7", "#9daaaa"][index % 4]}
+            />
+            {urls.length ? (
+              <image
+                {...s.frame}
+                href={urls[index++ % urls.length]}
+                preserveAspectRatio="xMidYMid slice"
+              />
+            ) : (
+              <g>
+                <path
+                  d={`M${s.frame.x} ${s.frame.y + s.frame.height} L${s.frame.x + s.frame.width * 0.65} ${s.frame.y + s.frame.height * 0.3} L${s.frame.x + s.frame.width} ${s.frame.y + s.frame.height}Z`}
+                  fill="#ffffff"
+                  opacity=".18"
+                />
+                <text
+                  x={s.frame.x + 24}
+                  y={s.frame.y + 40}
+                  fontSize="20"
+                  fill="#ffffff"
+                >
+                  {String(++index).padStart(2, "0")}
+                </text>
+              </g>
+            )}
+          </g>
+        ) : (
+          <text
+            key={s.slotId}
+            x={s.frame.x + (s.textAlign === "right" ? s.frame.width : 0)}
+            y={s.frame.y + (s.fontSize ?? 24)}
+            fontSize={s.fontSize}
+            fontWeight={s.fontWeight}
+            fill={s.fill ?? "#253d3b"}
+            letterSpacing={s.letterSpacing ?? 0}
+            textAnchor={s.textAlign === "right" ? "end" : "start"}
+            fontFamily={
+              s.fontAssetId === "noto-serif-sc"
+                ? "Noto Serif SC, serif"
+                : "Noto Sans SC, sans-serif"
+            }
+          >
+            {s.defaultText}
+          </text>
+        ),
+      )}
       <path
         d={`M${t.pageSize.width} 0V${t.pageSize.height}`}
-        stroke="#b0b7af"
-        strokeWidth="5"
-        strokeDasharray="15 12"
+        stroke="#777"
+        opacity=".12"
+        strokeWidth="2"
       />
     </svg>
   );
@@ -59,6 +99,39 @@ export function TemplatePanel(ctx: LibraryContext) {
       (a) => a.status === "ready" && a.license.usable,
     ),
     spread = ctx.doc.spreads.find((s) => s.id === ctx.surfaceId);
+  const [urls, setUrls] = useState<string[]>([]);
+  const previewIds = assets
+    .slice(0, 4)
+    .map((a) => a.id)
+    .join("|");
+  useEffect(() => {
+    let active = true;
+    const owned: string[] = [];
+    setUrls([]);
+    void Promise.all(
+      previewIds
+        ? previewIds.split("|").map(async (id) => {
+            try {
+              const bytes = await ctx.port.read(id, "preview");
+              const url = URL.createObjectURL(
+                new Blob([new Uint8Array(bytes)], { type: "image/png" }),
+              );
+              owned.push(url);
+              return url;
+            } catch {
+              return "";
+            }
+          })
+        : [],
+    ).then((values) => {
+      if (active) setUrls(values.filter(Boolean));
+      else owned.forEach(URL.revokeObjectURL);
+    });
+    return () => {
+      active = false;
+      owned.forEach(URL.revokeObjectURL);
+    };
+  }, [previewIds, ctx.port]);
   function apply() {
     if (!template || !spread) return;
     setError("");
@@ -95,11 +168,16 @@ export function TemplatePanel(ctx: LibraryContext) {
       });
       if (
         ctx.execute(
-          applyTemplateCommand(ctx.surfaceId, layers, {
-            id: template.id,
-            version: template.version,
-            sha256: template.sha256,
-          }),
+          applyTemplateCommand(
+            ctx.surfaceId,
+            layers,
+            {
+              id: template.id,
+              version: template.version,
+              sha256: template.sha256,
+            },
+            template.background,
+          ),
         )
       ) {
         setConfirm(false);
@@ -119,8 +197,14 @@ export function TemplatePanel(ctx: LibraryContext) {
     }
   }
   return (
-    <section aria-label="原创模板" style={{ padding: 16 }}>
-      <h3>原创模板</h3>
+    <section aria-label="原创模板" className="template-library">
+      <div className="panel-heading">
+        <h3>风格模板</h3>
+        <small>36 套新设计</small>
+      </div>
+      <p className="panel-hint">
+        选择一种气质，让照片自然成册。每款包含可编辑照片与文字。
+      </p>
       <label>
         模板分类{" "}
         <select
@@ -140,18 +224,24 @@ export function TemplatePanel(ctx: LibraryContext) {
           ))}
         </select>
       </label>
-      <div>
-        {templateVersions
+      <p className="panel-hint">
+        {urls.length
+          ? "使用已导入照片预览构图；应用时可为每个照片框重新选片。"
+          : "导入照片后可查看实片预览；下方为版式示意。"}
+      </p>
+      <div className="template-grid">
+        {[...templateVersions]
+          .sort(
+            (a, b) =>
+              Number(b.id.startsWith("style_")) -
+              Number(a.id.startsWith("style_")),
+          )
           .filter((t) => category === "all" || t.category === category)
           .map((t) => (
             <button
               key={t.id}
-              style={{
-                display: "block",
-                width: "100%",
-                margin: "8px 0",
-                textAlign: "left",
-              }}
+              className={`template-card ${template?.id === t.id ? "is-selected" : ""}`}
+              aria-pressed={template?.id === t.id}
               onClick={() => {
                 setTemplate(t);
                 setBindings({});
@@ -160,8 +250,13 @@ export function TemplatePanel(ctx: LibraryContext) {
                 setConfirm(false);
               }}
             >
-              {t.name}
-              <Preview template={t} />
+              <Preview template={t} urls={urls} />
+              <span className="template-card-title">{t.name}</span>
+              <small>
+                {t.slots.filter((s) => s.kind === "image").length} 张照片 ·{" "}
+                {categories[t.category]}
+                {t.id.startsWith("style_") ? "" : " · 旧版"}
+              </small>
             </button>
           ))}
       </div>

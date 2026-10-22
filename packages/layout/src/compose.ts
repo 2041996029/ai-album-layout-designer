@@ -52,7 +52,6 @@ export function composeSpread(
     throw new Error("TEMPLATE_UNAVAILABLE");
   const width = d.pageSize.width * 2,
     height = d.pageSize.height;
-  const imageSlots = t.slots.filter((s) => s.kind === "image");
   const lockedIds = new Set(p.input.constraints.lockedLayerIds ?? []);
   return a.spreads.map((allocation, page) => {
     const old = d.spreads.find((s) => s.id === allocation.spreadId);
@@ -87,6 +86,20 @@ export function composeSpread(
       occupiedIds.add(id);
       return id;
     };
+    // Prefer the fixed composition for this style and actual allocated count.
+    const composition = t.id.startsWith("style_")
+      ? (templateVersions.find(
+          (v) =>
+            v.id.startsWith("style_") &&
+            v.category === t.category &&
+            v.version === t.version &&
+            v.slots.filter((s) => s.kind === "image").length ===
+              remaining.length,
+        ) ?? t)
+      : t;
+    const compositionSlots = composition.slots.filter(
+      (s) => s.kind === "image",
+    );
     let layers: Layer[] = [];
     const sameAspect =
       Math.abs(width / height - (t.pageSize.width * 2) / t.pageSize.height) <
@@ -94,16 +107,16 @@ export function composeSpread(
     if (
       !fixed &&
       remaining.length &&
-      remaining.length === imageSlots.length &&
+      remaining.length === compositionSlots.length &&
       sameAspect &&
       !retained.length &&
-      variant === 0
+      (variant === 0 || t.id.startsWith("style_"))
     ) {
       const bindings = Object.fromEntries(
-        imageSlots.map((slot, i) => [slot.slotId, remaining[i]]),
+        compositionSlots.map((slot, i) => [slot.slotId, remaining[i]]),
       );
       const scale = height / t.pageSize.height;
-      layers = instantiateTemplate(t, bindings, nextId);
+      layers = instantiateTemplate(composition, bindings, nextId);
       for (const l of layers)
         if (isKnownLayer(l)) {
           l.x *= scale;
@@ -162,6 +175,7 @@ export function composeSpread(
         )
       )
         continue;
+      if (t.id.startsWith("style_") && variant === 1) l.fitMode = "contain";
       l.layoutPhotoRole = "selection";
       l.layoutInputHash = p.inputHash;
       const photo = p.input.photos.find((v) => v.assetId === l.assetId);
@@ -236,7 +250,10 @@ export function composeSpread(
     const imageLayers = layers.filter(isImageLayer),
       area = imageLayers.reduce((sum, l) => sum + l.width * l.height, 0),
       declaredArea =
-        imageSlots.reduce((sum, s) => sum + s.frame.width * s.frame.height, 0) /
+        compositionSlots.reduce(
+          (sum, s) => sum + s.frame.width * s.frame.height,
+          0,
+        ) /
         (t.pageSize.width * 2 * t.pageSize.height);
     const indices = allocation.assetIds.map((id) =>
       p.orderedAssetIds.indexOf(id),

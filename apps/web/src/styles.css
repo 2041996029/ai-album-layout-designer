@@ -1794,3 +1794,59 @@ script[type="application/json"] {
     position: static;
   }
 }
+
+/* Fixed photo-book style library */
+.template-library {
+  padding: 18px 16px;
+}
+.template-library > label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 8px;
+}
+.template-grid {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 22px;
+}
+.template-grid .template-card {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  background: #faf9f6;
+  border: 1px solid #deded5;
+  border-radius: 10px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.template-grid .template-card:hover {
+  border-color: #728273;
+  box-shadow: 0 3px 14px #253d3b12;
+}
+.template-grid .template-card.is-selected {
+  border-color: #425c4c;
+  box-shadow: 0 0 0 1px #425c4c;
+}
+.template-preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #00000008;
+}
+.template-card-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 10px 2px 5px;
+  color: #303b33;
+}
+.template-card small {
+  display: block;
+  margin: 0 2px 2px;
+  font-size: 11px;
+  color: #797d73;
+}

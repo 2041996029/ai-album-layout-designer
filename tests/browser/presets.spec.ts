@@ -42,7 +42,7 @@ test("five template categories preview without changes, require explicit binding
   await page.getByRole("button", { name: "圆形", exact: true }).click();
   const before = await model(page);
   await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
-  expect(await page.getByLabel("模板分类").locator("option").count()).toBe(6);
+  expect(await page.getByLabel("模板分类").locator("option").count()).toBe(15);
   for (const value of ["wedding", "travel", "family", "portrait", "ink"]) {
     await page.getByLabel("模板分类").selectOption(value);
     await expect(page.getByRole("region", { name: "原创模板" })).toBeVisible();
@@ -125,4 +125,48 @@ test("33 filters batch selected photos and preserve text; strength is one undo s
       .filter((l: any) => l.type === "image")
       .every((l: any) => l.filter === null),
   ).toBe(true);
+});
+test("common style library previews imported photos and applies background, typography and undo", async ({
+  page,
+}) => {
+  await boot(page);
+  await photos(page);
+  const before = await model(page);
+  await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
+  await page.getByLabel("模板分类").selectOption("qipao");
+  const region = page.getByRole("region", { name: "原创模板" });
+  await expect(region.locator(".template-card")).toHaveCount(3);
+  await expect(
+    region.locator(".template-card").first().locator("svg image"),
+  ).toHaveCount(2);
+  await region.getByRole("button", { name: /旗袍 · 海棠旧梦 \/ 2图/ }).click();
+  await page
+    .getByLabel("模板照片 photo_1")
+    .selectOption({ label: "first.jpg" });
+  await page
+    .getByLabel("模板照片 photo_2")
+    .selectOption({ label: "second.png" });
+  await page
+    .getByRole("button", { name: "应用到当前跨页", exact: true })
+    .click();
+  await page.getByRole("button", { name: "确认替换当前跨页" }).click();
+  const after = await model(page);
+  expect(after.spreads[0].background).toBe("#f2e8db");
+  expect(after.spreads[0].templateRef.id).toBe("style_qipao_2");
+  expect(
+    after.spreads[0].layers.filter((l: any) => l.type === "text")[0],
+  ).toMatchObject({ text: "海棠旧梦", fill: "#723e37" });
+  expect(
+    after.spreads[0].layers.filter((l: any) => l.type === "text")[0]
+      .letterSpacing,
+  ).toBeCloseTo((5 * before.pageSize.width) / 1133.858268);
+  await page.getByRole("button", { name: "撤销", exact: true }).click();
+  expect((await model(page)).spreads).toEqual(before.spreads);
+  await page.getByLabel("模板分类").selectOption("jk");
+  await expect(region.locator(".template-card")).toHaveCount(3);
+  await region.screenshot({ path: "/workspace/style-template-library.png" });
+  await page.getByRole("button", { name: "智能排版", exact: true }).click();
+  await expect(
+    page.getByLabel("场景模板").locator('optgroup[label="JK 校园"] option'),
+  ).toHaveCount(3);
 });

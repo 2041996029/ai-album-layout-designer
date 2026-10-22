@@ -37,6 +37,7 @@ export type DocumentCommand =
       spreadId: string;
       layers: Layer[];
       templateRef: TemplateRef;
+      background?: string;
     }
   | { type: "set-background"; spreadId: string; color: string }
   | { type: "batch"; commands: DocumentCommand[] };
@@ -308,6 +309,7 @@ function mutate(doc: DocumentModel, c: DocumentCommand): void {
       if (!s) throw new Error("SPREAD_NOT_FOUND");
       s.layers = structuredClone(c.layers);
       s.templateRef = structuredClone(c.templateRef);
+      if (c.background !== undefined) s.background = c.background;
       return;
     }
     case "set-background": {

@@ -93,3 +93,30 @@ it("rejects invalid geometry before using scores", async () => {
   expect(r.hardViolations).toContain("FRAME_OUT_OF_BOUNDS");
   expect(r.score.total).toBe(-1);
 });
+it("uses matching fixed style geometry when allocated photo count differs from selected variant", async () => {
+  const { d, a, p: base } = await setup(4);
+  const t = templateVersions.find((t) => t.id === "style_jk_2")!;
+  const sibling = templateVersions.find((t) => t.id === "style_jk_4")!;
+  const p = await prepareLayout({
+    ...base.input,
+    templateRef: { id: t.id, version: t.version, sha256: t.sha256 },
+  });
+  const r = composeSpread(p, a, d, t, [])[0];
+  expect(
+    composeSpread(p, a, d, t, [], 1)[0].layers.filter((l) => l.type === "text"),
+  ).toHaveLength(2);
+  expect(r.layers.filter((l) => l.type === "text")).toHaveLength(2);
+  const scale = d.pageSize.height / sibling.pageSize.height;
+  expect(r.layers.filter(isImageLayer).map((l) => l.width)).toEqual(
+    sibling.slots
+      .filter((s) => s.kind === "image")
+      .map((s) => s.frame.width * scale),
+  );
+  expect(r.layers.filter(isImageLayer).map((l) => l.assetId)).toEqual([
+    "p0",
+    "p1",
+    "p2",
+    "p3",
+  ]);
+  expect(r.hardViolations).toEqual([]);
+});

@@ -1,3 +1,4 @@
+import { templateCategories } from "../editor/template-categories";
 import { useEffect, useRef, useState } from "react";
 import {
   canonicalJson,
@@ -161,10 +162,16 @@ export function LayoutWizard({
                 value={templateId}
                 onChange={(e) => setTemplate(e.target.value)}
               >
-                {templateVersions.map((t) => (
-                  <option value={t.id} key={t.id}>
-                    {t.name}
-                  </option>
+                {Object.entries(templateCategories).map(([category, label]) => (
+                  <optgroup key={category} label={label}>
+                    {templateVersions
+                      .filter((t) => t.category === category)
+                      .map((t) => (
+                        <option value={t.id} key={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                  </optgroup>
                 ))}
               </select>
             </label>

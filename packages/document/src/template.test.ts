@@ -11,8 +11,8 @@ import {
   applyCommand,
 } from "./index";
 import { History } from "../../../apps/web/src/state/history";
-it("registers five original immutable template hashes with licensed geometry and local fonts", async () => {
-  expect(templateVersions.map((t) => t.category)).toEqual([
+it("preserves five original immutable template hashes with licensed geometry and local fonts", async () => {
+  expect(templateVersions.slice(0, 5).map((t) => t.category)).toEqual([
     "wedding",
     "travel",
     "family",

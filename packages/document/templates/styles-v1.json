@@ -1,0 +1,3458 @@
+[
+  {
+    "id": "style_japanese_2",
+    "version": 1,
+    "category": "japanese",
+    "name": "日系 · 光与日常 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f6f3ea",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 283.464567,
+          "width": 929.76378,
+          "height": 634.96063
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1349.291339,
+          "y": 136.062992,
+          "width": 737.007874,
+          "height": 873.070866
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "光与日常",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#565d48",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "DAYLIGHT / やさしい日々",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#565d48",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "9e177d3d37307f55ffdf4dc881ba9a066288b97c908629dae0325215d897fa43"
+  },
+  {
+    "id": "style_japanese_3",
+    "version": 1,
+    "category": "japanese",
+    "name": "日系 · 光与日常 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f6f3ea",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 158.740158,
+          "width": 929.76378,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1247.244095,
+          "y": 181.417323,
+          "width": 430.866142,
+          "height": 612.283465
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1723.464567,
+          "y": 340.15748,
+          "width": 430.866142,
+          "height": 612.283465
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "光与日常",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#565d48",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "DAYLIGHT / やさしい日々",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#565d48",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "97c1fa96677c4417adf98038976748d2121019a97514910e421f3cc5308cd305"
+  },
+  {
+    "id": "style_japanese_4",
+    "version": 1,
+    "category": "japanese",
+    "name": "日系 · 光与日常 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f6f3ea",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 589.606299,
+          "width": 952.440945,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 158.740158,
+          "width": 453.543307,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1723.464567,
+          "y": 158.740158,
+          "width": 453.543307,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "光与日常",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#565d48",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "DAYLIGHT / やさしい日々",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#565d48",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "e0f7fcf45ef69caa651360f1c8415e43c57fc4f4831d613a7e9712f4cfc3c089"
+  },
+  {
+    "id": "style_jk_2",
+    "version": 1,
+    "category": "jk",
+    "name": "JK 校园 · 放课后 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#eef2f5",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 79.370079,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 793.700788
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 249.448819,
+          "width": 827.716536,
+          "height": 714.330709
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "放课后",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#293c5b",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "AFTER SCHOOL / 青春日记",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#293c5b",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "74aa62301c090bd243fcdc84591d51dd2f04d6a025cffdd536399ae173f12597"
+  },
+  {
+    "id": "style_jk_3",
+    "version": 1,
+    "category": "jk",
+    "name": "JK 校园 · 放课后 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#eef2f5",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 192.755906,
+          "width": 442.204725,
+          "height": 702.992126
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 578.267717,
+          "y": 306.141732,
+          "width": 442.204725,
+          "height": 702.992126
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1281.259843,
+          "y": 158.740158,
+          "width": 850.393701,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "放课后",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#293c5b",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "AFTER SCHOOL / 青春日记",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#293c5b",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "7b14ebc07c0b6f7b539f4813c3ed5a2149bda4721c29fc06d631dc62ba7bd0dc"
+  },
+  {
+    "id": "style_jk_4",
+    "version": 1,
+    "category": "jk",
+    "name": "JK 校园 · 放课后 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#eef2f5",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 113.385827,
+          "y": 158.740158,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 578.267717,
+          "y": 260.787402,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 158.740158,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1734.80315,
+          "y": 260.787402,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "放课后",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#293c5b",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "AFTER SCHOOL / 青春日记",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#293c5b",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "b2a638ceecb7a0545b9d71f0a9c50d426598bceebc06e30bddbc89fb7d0fbeb4"
+  },
+  {
+    "id": "style_qipao_2",
+    "version": 1,
+    "category": "qipao",
+    "name": "旗袍 · 海棠旧梦 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f2e8db",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 158.740158,
+          "y": 192.755906,
+          "width": 782.362205,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 759.68504
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "海棠旧梦",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#723e37",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "THE ORIENT / 一袭芳华",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#723e37",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "c39efe621aa5e962dee6028116bfc882abf69cf0832419d164493a263d6840a5"
+  },
+  {
+    "id": "style_qipao_3",
+    "version": 1,
+    "category": "qipao",
+    "name": "旗袍 · 海棠旧梦 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f2e8db",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 136.062992,
+          "y": 158.740158,
+          "width": 816.377953,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 158.740158,
+          "width": 861.732284,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 589.606299,
+          "width": 861.732284,
+          "height": 396.850394
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "海棠旧梦",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#723e37",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "THE ORIENT / 一袭芳华",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#723e37",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "84158cbaa88190cfad1bcb6a890e370868760457daee67c44b15f37c69d023f2"
+  },
+  {
+    "id": "style_qipao_4",
+    "version": 1,
+    "category": "qipao",
+    "name": "旗袍 · 海棠旧梦 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f2e8db",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 170.07874,
+          "width": 453.543307,
+          "height": 771.023622
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 589.606299,
+          "y": 170.07874,
+          "width": 453.543307,
+          "height": 771.023622
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 170.07874,
+          "width": 952.440945,
+          "height": 362.834646
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 578.267717,
+          "width": 952.440945,
+          "height": 362.834646
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "海棠旧梦",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#723e37",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "THE ORIENT / 一袭芳华",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#723e37",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "bb912e14f14e3162acc5ef002588a490558c40ab1f132844cd4d70b2cf817f54"
+  },
+  {
+    "id": "style_chinese_2",
+    "version": 1,
+    "category": "chinese",
+    "name": "国风汉服 · 山水之间 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#eeeee4",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 283.464567,
+          "width": 929.76378,
+          "height": 634.96063
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1349.291339,
+          "y": 136.062992,
+          "width": 737.007874,
+          "height": 873.070866
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "山水之间",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#455c53",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "山 川 · 草 木 · 人 间",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#455c53",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "feccb68916b70bd034267300fd63a876a6105c9222839a123ec5ff39cf6696e8"
+  },
+  {
+    "id": "style_chinese_3",
+    "version": 1,
+    "category": "chinese",
+    "name": "国风汉服 · 山水之间 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#eeeee4",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 158.740158,
+          "width": 929.76378,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1247.244095,
+          "y": 181.417323,
+          "width": 430.866142,
+          "height": 612.283465
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1723.464567,
+          "y": 340.15748,
+          "width": 430.866142,
+          "height": 612.283465
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "山水之间",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#455c53",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "山 川 · 草 木 · 人 间",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#455c53",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "e2fd7c7ded9c9046e0800090c569c10fd2f0d845de3e756213a6cd06b245e215"
+  },
+  {
+    "id": "style_chinese_4",
+    "version": 1,
+    "category": "chinese",
+    "name": "国风汉服 · 山水之间 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#eeeee4",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 589.606299,
+          "width": 952.440945,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 158.740158,
+          "width": 453.543307,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1723.464567,
+          "y": 158.740158,
+          "width": 453.543307,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "山水之间",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#455c53",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "山 川 · 草 木 · 人 间",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#455c53",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "ead757f5a5e4faa8fe78ffd84b42b8731cb97da5a9b91a828f2661ed49b57bbc"
+  },
+  {
+    "id": "style_wedding_2",
+    "version": 1,
+    "category": "wedding",
+    "name": "婚礼 · 誓言之书 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#faf6f0",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 79.370079,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 793.700788
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 249.448819,
+          "width": 827.716536,
+          "height": 714.330709
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "誓言之书",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#7c6457",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "OUR VOWS / 此刻与永远",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#7c6457",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "9a9244934b4b84758d2cd165ad3fcb894822cb3802a5ea098041072f6a66aaec"
+  },
+  {
+    "id": "style_wedding_3",
+    "version": 1,
+    "category": "wedding",
+    "name": "婚礼 · 誓言之书 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#faf6f0",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 192.755906,
+          "width": 442.204725,
+          "height": 702.992126
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 578.267717,
+          "y": 306.141732,
+          "width": 442.204725,
+          "height": 702.992126
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1281.259843,
+          "y": 158.740158,
+          "width": 850.393701,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "誓言之书",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#7c6457",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "OUR VOWS / 此刻与永远",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#7c6457",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "d66d5dbd1e035bbb6887461449ce13a1d1076881e41c9977500c0881da1dafbc"
+  },
+  {
+    "id": "style_wedding_4",
+    "version": 1,
+    "category": "wedding",
+    "name": "婚礼 · 誓言之书 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#faf6f0",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 113.385827,
+          "y": 158.740158,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 578.267717,
+          "y": 260.787402,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 158.740158,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1734.80315,
+          "y": 260.787402,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "誓言之书",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#7c6457",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "OUR VOWS / 此刻与永远",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#7c6457",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "c0a71985be3e43a1fd906b3d1fcb2d243ed1597076715a6de939f04a3b7891bd"
+  },
+  {
+    "id": "style_couple_2",
+    "version": 1,
+    "category": "couple",
+    "name": "情侣 · 两个人的诗 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f8efed",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 158.740158,
+          "y": 192.755906,
+          "width": 782.362205,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 759.68504
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "两个人的诗",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#8b5a57",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "TOGETHER / 与你同行",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#8b5a57",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "fe69ca111d0d64c149bece320a60ae135a15c1e70ebf1ed438e36c6dacb75eaa"
+  },
+  {
+    "id": "style_couple_3",
+    "version": 1,
+    "category": "couple",
+    "name": "情侣 · 两个人的诗 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f8efed",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 136.062992,
+          "y": 158.740158,
+          "width": 816.377953,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 158.740158,
+          "width": 861.732284,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 589.606299,
+          "width": 861.732284,
+          "height": 396.850394
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "两个人的诗",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#8b5a57",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "TOGETHER / 与你同行",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#8b5a57",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "e1d8faffd774f6869f501a3d2b9ebe7e60f4bb99a877746301be902f8fedbab3"
+  },
+  {
+    "id": "style_couple_4",
+    "version": 1,
+    "category": "couple",
+    "name": "情侣 · 两个人的诗 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f8efed",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 170.07874,
+          "width": 453.543307,
+          "height": 771.023622
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 589.606299,
+          "y": 170.07874,
+          "width": 453.543307,
+          "height": 771.023622
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 170.07874,
+          "width": 952.440945,
+          "height": 362.834646
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 578.267717,
+          "width": 952.440945,
+          "height": 362.834646
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "两个人的诗",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#8b5a57",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "TOGETHER / 与你同行",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#8b5a57",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "9e544c3c6680dc9d6d4b3d276870db78ec747c832d1e587319edd179bf61a8fe"
+  },
+  {
+    "id": "style_family_2",
+    "version": 1,
+    "category": "family",
+    "name": "亲子 · 小小的你 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f8f2df",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 283.464567,
+          "width": 929.76378,
+          "height": 634.96063
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1349.291339,
+          "y": 136.062992,
+          "width": 737.007874,
+          "height": 873.070866
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "小小的你",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#687047",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "LITTLE MOMENTS / 慢慢长大",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#687047",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "9ab332810ef0d3b292c98ee5b6f3a5051d546aa85a7a219d8211ab9d3e0da567"
+  },
+  {
+    "id": "style_family_3",
+    "version": 1,
+    "category": "family",
+    "name": "亲子 · 小小的你 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f8f2df",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 158.740158,
+          "width": 929.76378,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1247.244095,
+          "y": 181.417323,
+          "width": 430.866142,
+          "height": 612.283465
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1723.464567,
+          "y": 340.15748,
+          "width": 430.866142,
+          "height": 612.283465
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "小小的你",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#687047",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "LITTLE MOMENTS / 慢慢长大",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#687047",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "016d5df6ad5d31a94c2966cd4aed7376e35f664129879162930886b1a6214e96"
+  },
+  {
+    "id": "style_family_4",
+    "version": 1,
+    "category": "family",
+    "name": "亲子 · 小小的你 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f8f2df",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 589.606299,
+          "width": 952.440945,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 158.740158,
+          "width": 453.543307,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1723.464567,
+          "y": 158.740158,
+          "width": 453.543307,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "小小的你",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#687047",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "LITTLE MOMENTS / 慢慢长大",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#687047",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "ac37bc3a3646e464ed985f741b05b26405e4b3ef5afb5bf77b2ff7c1a0f06a93"
+  },
+  {
+    "id": "style_travel_2",
+    "version": 1,
+    "category": "travel",
+    "name": "旅行 · 远方来信 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f1efe7",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 79.370079,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 793.700788
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 249.448819,
+          "width": 827.716536,
+          "height": 714.330709
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "远方来信",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#50635c",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "POSTCARDS / 山海有期",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#50635c",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "d4e535ada6b018eea1025dcfdf67b9dc1616cd857f4a2ef0c89d27bc4e81da98"
+  },
+  {
+    "id": "style_travel_3",
+    "version": 1,
+    "category": "travel",
+    "name": "旅行 · 远方来信 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f1efe7",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 192.755906,
+          "width": 442.204725,
+          "height": 702.992126
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 578.267717,
+          "y": 306.141732,
+          "width": 442.204725,
+          "height": 702.992126
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1281.259843,
+          "y": 158.740158,
+          "width": 850.393701,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "远方来信",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#50635c",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "POSTCARDS / 山海有期",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#50635c",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "6e058a29fe96ea18a5358c912fc4321ea9c4f4a51705ee926e99783891f9357c"
+  },
+  {
+    "id": "style_travel_4",
+    "version": 1,
+    "category": "travel",
+    "name": "旅行 · 远方来信 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f1efe7",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 113.385827,
+          "y": 158.740158,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 578.267717,
+          "y": 260.787402,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 158.740158,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1734.80315,
+          "y": 260.787402,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "远方来信",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#50635c",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "POSTCARDS / 山海有期",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#50635c",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "23af77cd03c1acd4f7898fe4be27db868abccf5fbb3fe94a7cb864d16e3c13f4"
+  },
+  {
+    "id": "style_korean_2",
+    "version": 1,
+    "category": "korean",
+    "name": "韩系 · 素色时光 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f1eeeb",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 158.740158,
+          "y": 192.755906,
+          "width": 782.362205,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 759.68504
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "素色时光",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#645c58",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "SOFT DAYS / 自在如你",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#645c58",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "05b976826f62169889c45463d8138e913d3d3371ba77cc750fd5622684dce1bb"
+  },
+  {
+    "id": "style_korean_3",
+    "version": 1,
+    "category": "korean",
+    "name": "韩系 · 素色时光 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f1eeeb",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 136.062992,
+          "y": 158.740158,
+          "width": 816.377953,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 158.740158,
+          "width": 861.732284,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 589.606299,
+          "width": 861.732284,
+          "height": 396.850394
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "素色时光",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#645c58",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "SOFT DAYS / 自在如你",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#645c58",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "9057b81003fcef963736ce2e385acb740a22527a884a177bd3cc11c516d9b1e5"
+  },
+  {
+    "id": "style_korean_4",
+    "version": 1,
+    "category": "korean",
+    "name": "韩系 · 素色时光 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f1eeeb",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 170.07874,
+          "width": 453.543307,
+          "height": 771.023622
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 589.606299,
+          "y": 170.07874,
+          "width": 453.543307,
+          "height": 771.023622
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 170.07874,
+          "width": 952.440945,
+          "height": 362.834646
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 578.267717,
+          "width": 952.440945,
+          "height": 362.834646
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "素色时光",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#645c58",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "SOFT DAYS / 自在如你",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#645c58",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "7940464cca07ab6c6479c233a115f2aa3acd7cb27e3b7b34399584f1e827a927"
+  },
+  {
+    "id": "style_hongkong_2",
+    "version": 1,
+    "category": "hongkong",
+    "name": "复古港风 · 花样年华 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#302c2b",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 283.464567,
+          "width": 929.76378,
+          "height": 634.96063
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1349.291339,
+          "y": 136.062992,
+          "width": 737.007874,
+          "height": 873.070866
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "花样年华",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#eedbc0",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "IN THE MOOD / 光影留声",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#eedbc0",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "73a68abe488f06c410eb59993469d9341f209c91a6607bc40ec53b062aba4f3d"
+  },
+  {
+    "id": "style_hongkong_3",
+    "version": 1,
+    "category": "hongkong",
+    "name": "复古港风 · 花样年华 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#302c2b",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 158.740158,
+          "width": 929.76378,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1247.244095,
+          "y": 181.417323,
+          "width": 430.866142,
+          "height": 612.283465
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1723.464567,
+          "y": 340.15748,
+          "width": 430.866142,
+          "height": 612.283465
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "花样年华",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#eedbc0",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "IN THE MOOD / 光影留声",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#eedbc0",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "0b325cab27987bb571585a85069a01036f0257cc96fe79272518ff4dd562fce8"
+  },
+  {
+    "id": "style_hongkong_4",
+    "version": 1,
+    "category": "hongkong",
+    "name": "复古港风 · 花样年华 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#302c2b",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 589.606299,
+          "width": 952.440945,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 158.740158,
+          "width": 453.543307,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1723.464567,
+          "y": 158.740158,
+          "width": 453.543307,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "花样年华",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#eedbc0",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "IN THE MOOD / 光影留声",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#eedbc0",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "55837a991bbe6389521080e5ff50d049b44d5019baa1eb8a1a9c295e5881b9dd"
+  },
+  {
+    "id": "style_french_2",
+    "version": 1,
+    "category": "french",
+    "name": "法式 · 午后花园 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f2efe6",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 79.370079,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 793.700788
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 249.448819,
+          "width": 827.716536,
+          "height": 714.330709
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "午后花园",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#766657",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "JARDIN / 浪漫日常",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#766657",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "3c87e9b25b33b9fa27fe51f44fd0edb412f9ba065636c2e7a43e23fe59f005b4"
+  },
+  {
+    "id": "style_french_3",
+    "version": 1,
+    "category": "french",
+    "name": "法式 · 午后花园 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f2efe6",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 192.755906,
+          "width": 442.204725,
+          "height": 702.992126
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 578.267717,
+          "y": 306.141732,
+          "width": 442.204725,
+          "height": 702.992126
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1281.259843,
+          "y": 158.740158,
+          "width": 850.393701,
+          "height": 816.377953
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "午后花园",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#766657",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "JARDIN / 浪漫日常",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#766657",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "94e33d4f45fcdb99fcca2022a6c38a901c6a87ca1232bce0dccd8ebafd6187d8"
+  },
+  {
+    "id": "style_french_4",
+    "version": 1,
+    "category": "french",
+    "name": "法式 · 午后花园 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f2efe6",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 113.385827,
+          "y": 158.740158,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 578.267717,
+          "y": 260.787402,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 158.740158,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1734.80315,
+          "y": 260.787402,
+          "width": 419.527559,
+          "height": 748.346457
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "午后花园",
+        "fontAssetId": "noto-serif-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#766657",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "JARDIN / 浪漫日常",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#766657",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "9ded453d28241b916b297a6d00c4611997fe6cc404176ee18e300006a5686674"
+  },
+  {
+    "id": "style_monochrome_2",
+    "version": 1,
+    "category": "monochrome",
+    "name": "黑白写真 · 无声肖像 / 2图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f3f3f0",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 158.740158,
+          "y": 192.755906,
+          "width": 782.362205,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 158.740158,
+          "width": 952.440945,
+          "height": 759.68504
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "无声肖像",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#303132",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "PORTRAITS / 关于此刻",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#303132",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "3d41668ed336e8a369d32ce0744368bd1b3b0cabbd0bc69a2848b24572853788"
+  },
+  {
+    "id": "style_monochrome_3",
+    "version": 1,
+    "category": "monochrome",
+    "name": "黑白写真 · 无声肖像 / 3图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f3f3f0",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 136.062992,
+          "y": 158.740158,
+          "width": 816.377953,
+          "height": 827.716536
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 158.740158,
+          "width": 861.732284,
+          "height": 385.511811
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1269.92126,
+          "y": 589.606299,
+          "width": 861.732284,
+          "height": 396.850394
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "无声肖像",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#303132",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "PORTRAITS / 关于此刻",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#303132",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "5e6ee1b22ccd761ce6e32779ec9f7f3b54c4cfd9f8a1be31493de924c439bb73"
+  },
+  {
+    "id": "style_monochrome_4",
+    "version": 1,
+    "category": "monochrome",
+    "name": "黑白写真 · 无声肖像 / 4图",
+    "unit": "px96",
+    "pageSize": {
+      "width": 1133.858268,
+      "height": 1133.858268
+    },
+    "view": "spread",
+    "background": "#f3f3f0",
+    "origin": "project-original-design",
+    "state": "registered",
+    "licenseRef": "LicenseRef-Project-Original-Templates",
+    "licenseText": "本项目原创固定版式，允许本产品用户用于相册编辑和导出。不包含第三方照片；字体按 OFL 授权。",
+    "source": "scripts/build-style-templates.ts",
+    "slots": [
+      {
+        "slotId": "photo_1",
+        "kind": "image",
+        "frame": {
+          "x": 90.708661,
+          "y": 170.07874,
+          "width": 453.543307,
+          "height": 771.023622
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_2",
+        "kind": "image",
+        "frame": {
+          "x": 589.606299,
+          "y": 170.07874,
+          "width": 453.543307,
+          "height": 771.023622
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_3",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 170.07874,
+          "width": 952.440945,
+          "height": 362.834646
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "photo_4",
+        "kind": "image",
+        "frame": {
+          "x": 1224.566929,
+          "y": 578.267717,
+          "width": 952.440945,
+          "height": 362.834646
+        },
+        "fitMode": "cover",
+        "bindingRequired": true
+      },
+      {
+        "slotId": "title",
+        "kind": "text",
+        "frame": {
+          "x": 113.385827,
+          "y": 1048.818898,
+          "width": 941.102362,
+          "height": 51.023622
+        },
+        "defaultText": "无声肖像",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 28,
+        "letterSpacing": 5,
+        "fill": "#303132",
+        "editableFields": [
+          "text"
+        ]
+      },
+      {
+        "slotId": "caption",
+        "kind": "text",
+        "frame": {
+          "x": 1247.244095,
+          "y": 1060.157481,
+          "width": 907.086614,
+          "height": 34.015748
+        },
+        "defaultText": "PORTRAITS / 关于此刻",
+        "fontAssetId": "noto-sans-sc",
+        "fontWeight": 400,
+        "fontSize": 15,
+        "letterSpacing": 2,
+        "fill": "#303132",
+        "textAlign": "right",
+        "editableFields": [
+          "text"
+        ]
+      }
+    ],
+    "sha256": "f52100f3c14e4b08f4f8f8325a7bc97a631326f63312be7f0d8b6fa81409aab9"
+  }
+]
