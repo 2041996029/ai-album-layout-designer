@@ -198,8 +198,13 @@ test("twelve original collections offer eight editable decorated spreads each", 
   const after = await model(page);
   expect(after.spreads[0].templateRef.id).toMatch(/^mjpage_/);
   expect(
-    after.spreads[0].layers.filter((l: any) => l.type === "image"),
+    after.spreads
+      .flatMap((s: any) => s.layers)
+      .filter(
+        (l: any) => l.type === "image" && l.layoutPhotoRole === "selection",
+      ),
   ).toHaveLength(2);
+  expect(after.spreads).toHaveLength(8);
   expect(after.spreads[0].layers.some((l: any) => l.type === "shape")).toBe(
     true,
   );
@@ -296,7 +301,11 @@ test("theme automatic filling never repeats missing photos and respects locked c
   await page.locator(".template-card").click();
   const filled = await model(page);
   expect(
-    filled.spreads[0].layers.filter((l: any) => l.type === "image"),
+    filled.spreads
+      .flatMap((s: any) => s.layers)
+      .filter(
+        (l: any) => l.type === "image" && l.layoutPhotoRole === "selection",
+      ),
   ).toHaveLength(2);
   await page
     .locator(".theme-page-grid")

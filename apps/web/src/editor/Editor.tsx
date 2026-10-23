@@ -1,6 +1,6 @@
 import { fitAlbumText } from "./fit-album-text";
 import { PhotoCropStage } from "./PhotoCropStage";
-import { planThemeBook } from "../templates/auto-book";
+import { planSelectedThemeBook } from "../templates/auto-book";
 import { initialPhotoCrop, movePhotoCrop } from "./photo-crop";
 import { restorePhotoFit } from "./restore-photo-fit";
 import { isUserPhoto } from "@album/assets";
@@ -209,7 +209,6 @@ export function Editor(p: EditorProps) {
     pageIds: string[],
     bindings: Record<string, string> | string[],
     book: boolean,
-    replaceBook = false,
   ): Promise<boolean> => {
     if (resourceOperation.current) throw Error("请等待当前资源操作完成");
     resourceOperation.current = true;
@@ -241,7 +240,7 @@ export function Editor(p: EditorProps) {
           }),
           constraints: {
             spreadCount: pageIds.length,
-            minPhotosPerSpread: Math.min(...counts),
+            minPhotosPerSpread: 0,
             maxPhotosPerSpread: Math.max(...counts),
             selectionPolicy: "all" as const,
             duplicatePolicy: "forbid" as const,
@@ -261,7 +260,7 @@ export function Editor(p: EditorProps) {
           before,
           converted.theme,
           pageIds,
-          { replaceBook },
+          { replaceBook: true, allowEmptySlots: true },
         );
         command = createLayoutCommand(input, candidates[0], before);
       } else {
@@ -314,12 +313,17 @@ export function Editor(p: EditorProps) {
         a.license.usable &&
         (selectedPhotoIds === undefined || selectedPhotoIds.includes(a.id)),
     );
-    const pages = planThemeBook(theme.theme.pages, selectedAssets.length);
+    const pages = planSelectedThemeBook(
+      theme.theme.pages,
+      theme.theme.pages
+        .filter((p) => !p.issues.some((i) => i.severity === "blocker"))
+        .map((p) => p.id),
+      selectedAssets.length,
+    );
     const result = await applyImportedTheme(
       theme,
       pages,
       selectedAssets.map((a) => a.id),
-      true,
       true,
     );
     if (result)

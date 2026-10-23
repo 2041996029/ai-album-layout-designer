@@ -185,7 +185,7 @@ test("whole-book imported layout exports real PNG JPEG and PDF with its pinned m
   await page
     .getByRole("button", { name: "确认应用整本主题", exact: true })
     .click();
-  await expect(page.getByText("已应用整本主题，可以一次撤销。")).toBeVisible();
+  await expect(page.getByText(/已将所选版式应用到 1 个跨页，整本内页已替换/)).toBeVisible();
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("status").first()).toHaveText("已保存至此浏览器");
   const results = await page.evaluate(async () => {

@@ -50,3 +50,34 @@ export function planThemeBook(
     remaining += cycle;
   }
 }
+
+/** Keep the user's complete page selection, including pages with empty photo slots. */
+export function planSelectedThemeBook(
+  pages: readonly Page[],
+  selectedIds: readonly string[],
+  photoCount: number,
+): string[] {
+  if (!selectedIds.length) throw Error("请先选择用于整本排版的跨页。");
+  if (!Number.isInteger(photoCount) || photoCount < 1 || photoCount > 500)
+    throw Error("请先选择照片（最多 500 张）。");
+  const selected = selectedIds.map((id) => {
+    const page = pages.find((p) => p.id === id);
+    if (!page || page.issues.some((i) => i.severity === "blocker"))
+      throw Error("UNSUPPORTED_TEMPLATE_PAGE");
+    return page;
+  });
+  const result = [...selectedIds];
+  let capacity = selected.reduce((sum, p) => sum + p.photoSlots.length, 0);
+  if (!capacity) throw Error("请选用包含照片框的跨页。");
+  let cursor = 0;
+  while (capacity < photoCount) {
+    if (result.length >= 50)
+      throw Error("排版超过 50 个跨页，请增加每页照片数或减少选片。");
+    const page = selected[cursor++ % selected.length];
+    if (!page.photoSlots.length) continue;
+    result.push(page.id);
+    capacity += page.photoSlots.length;
+  }
+  if (result.length > 50) throw Error("排版最多支持 50 个跨页。");
+  return result;
+}

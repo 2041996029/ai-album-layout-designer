@@ -40,3 +40,22 @@ it("can repaginate when a complete theme would leave an impossible remainder", (
     ),
   ).toBe(6);
 });
+
+it("honors every checked page and only appends pages when photos exceed capacity", async () => {
+  const { planSelectedThemeBook } = await import("./auto-book");
+  const selected = pages.map((p) => p.id);
+  expect(planSelectedThemeBook(pages, selected, 6)).toEqual(selected);
+  const expanded = planSelectedThemeBook(pages, selected, 27);
+  expect(expanded.slice(0, 8)).toEqual(selected);
+  expect(expanded.length).toBeGreaterThan(8);
+  expect(
+    expanded.reduce(
+      (n, id) => n + pages.find((p) => p.id === id)!.photoSlots.length,
+      0,
+    ),
+  ).toBeGreaterThanOrEqual(27);
+  expect(planSelectedThemeBook(pages, ["page_3", "page_0"], 2)).toEqual([
+    "page_3",
+    "page_0",
+  ]);
+});

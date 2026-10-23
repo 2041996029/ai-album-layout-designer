@@ -197,3 +197,52 @@ it("rejects blocked source pages before composition", async () => {
     generateThemeCandidates(input, d, theme, ["page_0"]),
   ).rejects.toThrow("UNSUPPORTED_TEMPLATE_PAGE");
 });
+
+it("creates every requested page with sparse photos and never imports demonstration assets", async () => {
+  const { d, theme, input } = setup(Array(8).fill(2));
+  input.photos = input.photos.slice(0, 6);
+  input.constraints.minPhotosPerSpread = 0;
+  const [candidate] = await generateThemeCandidates(
+    input,
+    d,
+    theme,
+    input.templatePageIds!,
+    { replaceBook: true, allowEmptySlots: true },
+  );
+  expect(candidate.spreads).toHaveLength(8);
+  expect(
+    candidate.spreads.map((s) => s.layers.filter(isImageLayer).length),
+  ).toEqual([1, 1, 1, 1, 1, 1, 0, 0]);
+  expect(
+    candidate.assignmentManifest.placements.map((p) => p.assetId).sort(),
+  ).toEqual(input.photos.map((p) => p.assetId).sort());
+  expect(candidate.assignmentManifest.violations).toEqual([]);
+  expect(() => createLayoutCommand(input, candidate, d)).not.toThrow();
+});
+
+it("replaces trailing populated pages while keeping locked content protected", async () => {
+  const full = setup([1, 1, 1]);
+  const [existing] = await generateThemeCandidates(
+    full.input,
+    full.d,
+    full.theme,
+    full.input.templatePageIds!,
+  );
+  const { theme, input } = setup([1]);
+  const before = { ...full.d, spreads: structuredClone(existing.spreads) };
+  const [replacement] = await generateThemeCandidates(
+    input,
+    before,
+    theme,
+    input.templatePageIds!,
+    { replaceBook: true, allowEmptySlots: true },
+  );
+  expect(replacement.spreads).toHaveLength(1);
+  before.spreads[2].layers[0].locked = true;
+  await expect(
+    generateThemeCandidates(input, before, theme, input.templatePageIds!, {
+      replaceBook: true,
+      allowEmptySlots: true,
+    }),
+  ).rejects.toThrow("LOCKED_LAYER_CHANGED");
+});

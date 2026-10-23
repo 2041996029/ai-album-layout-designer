@@ -5,6 +5,7 @@ import { isUserPhoto } from "@album/assets";
 import type { ConvertedTheme, ImportedTheme } from "@album/template-import";
 import type { LibraryContext } from "../editor/TemplatePanel";
 import { importTheme } from "./import-controller";
+import { planSelectedThemeBook } from "./auto-book";
 import { ThemePreview } from "./ThemePreview";
 export const themeErrorText = (error: unknown) => {
   const code = error instanceof Error ? error.message : String(error);
@@ -109,8 +110,8 @@ export function ThemeLibraryPanel(
       if (sequence.current === token) {
         choose(value);
         if (ctx.autoLayoutTheme) {
-          await ctx.autoLayoutTheme(value);
-          setProgress("已按此主题完成整本排版，可一次撤销。");
+          if (await ctx.autoLayoutTheme(value))
+            setProgress("已按此主题完成整本排版，可一次撤销。");
           return;
         }
         const target = [...value.theme.pages]
@@ -183,7 +184,13 @@ export function ThemeLibraryPanel(
     setBusy(true);
     setError("");
     try {
-      const ids = book ? selectedPages : [page.id];
+      const ids = book
+        ? planSelectedThemeBook(
+            theme!.pages,
+            selectedPages,
+            selectedPhotos.length,
+          )
+        : [page.id];
       if (!ids.length) throw Error("请先选择要用于整本的跨页。");
       if (
         ids.some((id) =>
@@ -202,7 +209,7 @@ export function ThemeLibraryPanel(
       if (ok) {
         setProgress(
           book
-            ? "已应用整本主题，可以一次撤销。"
+            ? `已将所选版式应用到 ${ids.length} 个跨页，整本内页已替换，缺页已新增；${selectedPhotos.length} 张照片已排入，空余照片位留白，可一次撤销。`
             : "已应用当前跨页，可以一次撤销。",
         );
         setConfirmBook(false);
@@ -297,18 +304,8 @@ export function ThemeLibraryPanel(
         <>
           <h4>{theme.name}</h4>
           <button
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                if (await ctx.autoLayoutTheme(converted!))
-                  setProgress("已按此主题完成整本排版，可一次撤销。");
-              } catch (e) {
-                setError(themeErrorText(e));
-              } finally {
-                setBusy(false);
-              }
-            }}
+            disabled={busy || !selectedPages.length || !selectedPhotos.length}
+            onClick={() => void apply(true)}
           >
             用此模板智能排整本
           </button>
@@ -326,6 +323,10 @@ export function ThemeLibraryPanel(
             全选跨页
           </button>
           <button onClick={() => setSelectedPages([])}>取消全选跨页</button>
+          <p className="panel-hint">
+            已勾选 {selectedPages.length}{" "}
+            个跨页。整本排版会替换全部内页并自动新增缺页；照片不足时留白，照片较多时自动追加跨页，不重复照片。点击下方单个版式仅替换当前页。
+          </p>
           <div className="theme-page-grid">
             {theme.pages.map((p, index) => (
               <article key={p.id}>
@@ -530,11 +531,13 @@ export function ThemeLibraryPanel(
               ))}
             </div>
             <p className="panel-hint">
-              照片数量须与照片槽一致；不自动漏片或重复。已有锁定内容会保留，无法匹配时会提示。未选跨页之外的非空作品页不会被静默删除。
+              按勾选的跨页替换整本内页并新增缺页，照片不足时留白，不重复照片。照片超过容量时自动追加所选版式。锁定内容无法匹配时会提示，整次操作可以撤销。
             </p>
             {!confirmBook ? (
               <button
-                disabled={busy || !slots || slots !== selectedPhotos.length}
+                disabled={
+                  busy || !selectedPages.length || !selectedPhotos.length
+                }
                 onClick={() => setConfirmBook(true)}
               >
                 预备整本排版

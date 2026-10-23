@@ -176,13 +176,11 @@ test("smart layout uses an imported template and stages its private mask before 
   await page.getByRole("button", { name: "我的模板", exact: true }).click();
   const { buildMjtpl } = await import("../fixtures/mjtpl/build");
   const fixture = await buildMjtpl();
-  await page
-    .getByLabel("导入 MJTPL 模板")
-    .setInputFiles({
-      name: "private.mjtpl",
-      mimeType: "application/octet-stream",
-      buffer: Buffer.from(fixture.bytes),
-    });
+  await page.getByLabel("导入 MJTPL 模板").setInputFiles({
+    name: "private.mjtpl",
+    mimeType: "application/octet-stream",
+    buffer: Buffer.from(fixture.bytes),
+  });
   await expect(
     page.getByText("已导入「Synthetic」，共 1 个版式。"),
   ).toBeVisible({ timeout: 30000 });
@@ -219,4 +217,43 @@ test("smart layout uses an imported template and stages its private mask before 
     );
   }, image.alphaMask.assetId);
   expect(present).toBe(true);
+});
+
+test("all checked theme pages replace the whole saved book and add missing spreads", async ({
+  page,
+}) => {
+  await boot(page);
+  await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
+  await page
+    .getByRole("button", { name: /日系 · 木漏れ日.*8 种跨页版式/ })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "全选跨页", exact: true }),
+  ).toBeVisible();
+  // Start with a smaller book (the selected designs are extended to fit six photos).
+  await page.getByRole("button", { name: "取消全选跨页", exact: true }).click();
+  const checks = page.getByRole("checkbox", { name: /^加入整本 / });
+  await checks.nth(2).check();
+  await checks.nth(3).check();
+  await page
+    .getByRole("button", { name: "用此模板智能排整本", exact: true })
+    .click();
+  await expect.poll(async () => (await model(page)).spreads.length).toBe(3);
+  const before = await model(page);
+  await page.getByRole("button", { name: "全选跨页", exact: true }).click();
+  await page
+    .getByRole("button", { name: "用此模板智能排整本", exact: true })
+    .click();
+  await expect.poll(async () => (await model(page)).spreads.length).toBe(8);
+  const after = await model(page);
+  expect(
+    new Set(after.spreads.map((s: any) => s.importedTemplate.pageId)).size,
+  ).toBe(8);
+  const photos = after.spreads
+    .flatMap((s: any) => s.layers)
+    .filter((l: any) => l.layoutPhotoRole === "selection");
+  expect(photos).toHaveLength(6);
+  expect(new Set(photos.map((l: any) => l.assetId)).size).toBe(6);
+  await page.getByRole("button", { name: "撤销", exact: true }).click();
+  expect((await model(page)).spreads).toEqual(before.spreads);
 });

@@ -41,7 +41,7 @@ export async function generateThemeCandidates(
   before: DocumentModel,
   theme: ImportedTheme,
   selectedPageIds: readonly string[],
-  options: { replaceBook?: boolean } = {},
+  options: { replaceBook?: boolean; allowEmptySlots?: boolean } = {},
 ): Promise<LayoutCandidate[]> {
   // Snapshot theme and page order before any asynchronous hashing.
   theme = structuredClone(theme);
@@ -91,14 +91,26 @@ export async function generateThemeCandidates(
   const ordered = p.orderedAssetIds.filter(
     (id) => !c.excludedAssetIds?.includes(id),
   );
+  const capacity = pages.reduce((sum, page) => sum + page.photoSlots.length, 0);
   if (
-    ordered.length !==
-    pages.reduce((sum, page) => sum + page.photoSlots.length, 0)
+    ordered.length > capacity ||
+    (!options.allowEmptySlots && ordered.length !== capacity)
   )
     throw new Error("THEME_CAPACITY_MISMATCH");
   const width = before.pageSize.width * 2,
     height = before.pageSize.height;
   const spreads: Spread[] = [];
+  // Fill one slot per page before adding secondary photos; never drop selected pages.
+  const allocations = pages.map(() => 0);
+  let remaining = ordered.length;
+  for (let round = 0; remaining > 0; round++) {
+    for (let i = 0; i < pages.length && remaining > 0; i++) {
+      if (round < pages[i].photoSlots.length) {
+        allocations[i]++;
+        remaining--;
+      }
+    }
+  }
   let cursor = 0;
   for (let index = 0; index < pages.length; index++) {
     const page = pages[index],
@@ -112,7 +124,7 @@ export async function generateThemeCandidates(
       Math.abs(width / height - page.width / page.height) > 1e-6
     )
       throw new Error("PAGE_ASPECT_MISMATCH");
-    const assigned = ordered.slice(cursor, cursor + page.photoSlots.length);
+    const assigned = ordered.slice(cursor, cursor + allocations[index]);
     cursor += assigned.length;
     const fixed =
       old &&
@@ -134,16 +146,26 @@ export async function generateThemeCandidates(
       spreads.push(structuredClone(old));
       continue;
     }
-    const proof = await createImportedPageProof(theme, page),
+    // Empty slots contain no demonstration asset. Record the actual sparse composition
+    // in its proof so geometry and export checks still validate the rendered page.
+    const empty = new Set(
+      page.photoSlots.slice(assigned.length).map((slot) => slot.layerId),
+    );
+    const omitEmpty = (layers: Layer[]): Layer[] =>
+      layers
+        .filter((l) => !empty.has(l.id))
+        .map((l) =>
+          isGroupLayer(l) ? { ...l, children: omitEmpty(l.children) } : l,
+        );
+    const sourcePage = { ...page, layers: omitEmpty(page.layers) };
+    const proof = await createImportedPageProof(theme, sourcePage),
       scale = width / page.width;
     const slots = new Map(
-      page.photoSlots.map((slot, i) => [
-        slot.layerId,
-        { slot, assetId: assigned[i] },
-      ]),
+      page.photoSlots
+        .slice(0, assigned.length)
+        .map((slot, i) => [slot.layerId, { slot, assetId: assigned[i] }]),
     );
-    if (slots.size !== page.photoSlots.length)
-      throw new Error("INVALID_THEME_SLOTS");
+    if (slots.size !== assigned.length) throw new Error("INVALID_THEME_SLOTS");
     const seen = new Set<string>();
     let n = 0;
     const transform = (layers: Layer[]): Layer[] =>
@@ -181,7 +203,7 @@ export async function generateThemeCandidates(
         }
         return layer;
       });
-    const layers = transform(page.layers);
+    const layers = transform(sourcePage.layers);
     if (seen.size !== slots.size) throw new Error("INVALID_THEME_SLOTS");
     spreads.push({
       ...old,
