@@ -128,7 +128,7 @@ test("33 filters batch selected photos and preserve text; strength is one undo s
 });
 test("common style library previews imported photos and applies background, typography and undo", async ({
   page,
-}) => {
+}, testInfo) => {
   await boot(page);
   await photos(page);
   const before = await model(page);
@@ -165,7 +165,7 @@ test("common style library previews imported photos and applies background, typo
   expect((await model(page)).spreads).toEqual(before.spreads);
   await page.getByLabel("模板分类").selectOption("jk");
   await expect(region.locator(".template-card")).toHaveCount(3);
-  await region.screenshot({ path: "/workspace/style-template-library.png" });
+  await region.screenshot({ path: testInfo.outputPath("style-template-library.png") });
   await page.getByRole("button", { name: "智能排版", exact: true }).click();
   await expect(
     page.getByLabel("场景模板").locator('optgroup[label="JK 校园"] option'),
