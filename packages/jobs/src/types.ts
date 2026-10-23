@@ -1,5 +1,6 @@
 import type { PoolClient } from "pg";
 import type { ConfigRelease } from "../../../apps/api/src/config/types";
+import type { components } from "../../contracts/src/api";
 
 export type JobState =
   | "queued"
@@ -15,15 +16,7 @@ export type SubmissionState =
 export type JobRecord = {
   jobId: string;
   workspaceId: string;
-  kind:
-    | "export"
-    | "generation"
-    | "layout"
-    | "storage_migration"
-    | "privacy_export"
-    | "config_test"
-    | "reconciliation"
-    | "backup_restore_drill";
+  kind: components["schemas"]["Job"]["kind"];
   state: JobState;
   configReleaseId: string;
   attempt: number;

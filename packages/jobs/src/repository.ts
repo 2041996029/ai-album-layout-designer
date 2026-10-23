@@ -443,16 +443,38 @@ export class JobRepository {
     jobId: string,
   ): Promise<JobRecord> {
     return this.transaction(async (tx) => {
-      const membership = (
+      const context = (
         await tx.query(
-          "SELECT m.role FROM workspace_members m JOIN workspaces w ON w.id=m.workspace_id JOIN users u ON u.id=m.user_id WHERE m.workspace_id=$1 AND m.user_id=$2 AND m.state='active' AND w.state='active' AND u.status='active' FOR SHARE OF m,w,u",
-          [wid, actor.userId],
+          "SELECT w.kind FROM workspaces w JOIN users u ON u.id=$2 JOIN auth_sessions s ON s.user_id=u.id WHERE w.id=$1 AND w.state='active' AND u.status='active' AND s.id=$3 AND s.client_kind=$4 AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() FOR SHARE OF w,u,s",
+          [wid, actor.userId, actor.sessionId, actor.client],
         )
       ).rows[0];
-      if (!membership) fail("NOT_FOUND", 404);
-      if (membership.role === "viewer") fail("FORBIDDEN", 403);
+      if (!context) fail("NOT_FOUND", 404);
+      if (context.kind !== "platform") {
+        const membership = (
+          await tx.query(
+            "SELECT role FROM workspace_members WHERE workspace_id=$1 AND user_id=$2 AND state='active' FOR SHARE",
+            [wid, actor.userId],
+          )
+        ).rows[0];
+        if (!membership) fail("NOT_FOUND", 404);
+        if (membership.role === "viewer") fail("FORBIDDEN", 403);
+      }
       let row = await this.lock(tx, jobId, wid);
       if (!row) fail("NOT_FOUND", 404);
+      if (context.kind === "platform") {
+        // Workspace kind is the boundary, so privacy_export cannot bypass this gate.
+        const required: Partial<Record<JobRecord["kind"], string>> = {
+          config_test: "platform.config.test",
+          reconciliation: "platform.ops.reconcile",
+          backup_restore_drill: "platform.ops.backup.verify",
+          storage_migration: "platform.storage.migrate",
+        };
+        const permission =
+          required[row.kind as JobRecord["kind"]] ?? "platform.ops.jobs.manage";
+        if (!actor.platformPermissions.includes(permission))
+          fail("FORBIDDEN", 403);
+      }
       if (terminal(row.state)) return record(row);
       if (row.state === "queued" || row.state === "retry_wait") {
         await tx.query(
@@ -522,6 +544,16 @@ export class JobRepository {
     return this.transaction(async (tx) => {
       const row = await this.live(tx, lease);
       if (!row) return false;
+      // A definite error from a confirmation request says nothing about the original
+      // paid request. Generic errors cannot authorize another submission or release.
+      if (
+        ["submitting", "accepted", "unknown"].includes(
+          row.provider_submission_state,
+        )
+      ) {
+        await this.unknown(tx, row);
+        return true;
+      }
       if (!error.definite) {
         await this.unknown(tx, row);
         return true;
@@ -599,6 +631,9 @@ export class JobRepository {
     delay: number,
     requireLive = false,
   ) {
+    // No resubmission surface exists without verified original-request resolution.
+    if (row.provider_submission_state !== "not_submitted")
+      fail("JOB_CONFIRMATION_REQUIRED", 409);
     const changed = await tx.query(
       "UPDATE jobs SET state='retry_wait',stage='retry_wait',provider_submission_state='not_submitted',provider_request_id=NULL,lease_owner=NULL,lease_expires_at=NULL,next_attempt_at=clock_timestamp()+$2*interval '1 second',error_code=$3,revision=revision+1 WHERE id=$1 AND (NOT $4 OR lease_expires_at>clock_timestamp()) RETURNING id",
       [row.id, delay, code, requireLive],

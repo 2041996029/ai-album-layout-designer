@@ -1,8 +1,17 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+} from "vitest";
 import { readFile } from "node:fs/promises";
 import { Pool, type PoolClient } from "pg";
 import { Queue } from "bullmq";
 import { createDatabase, digest, id, type Actor } from "@album/server-core";
+import type { components } from "../../contracts/src/api";
 import {
   createJob,
   JobRepository,
@@ -10,6 +19,8 @@ import {
   OutboxDispatcher,
   type ExecutionPolicy,
   type JobLease,
+  type JobRecord,
+  type CreateJobInput,
 } from "./index";
 
 const enabled =
@@ -33,11 +44,11 @@ describe.skipIf(!enabled)(
       db.database.transaction(work);
     const rows = async (sql: string, args: unknown[] = []) =>
       tx(async (client) => (await client.query(sql, args)).rows);
-    async function workspace() {
+    async function workspace(kind: "personal" | "platform" = "personal") {
       const workspaceId = id();
       await rows(
-        "INSERT INTO workspaces(id,owner_user_id,kind,name) VALUES($1,$2,'personal','Test')",
-        [workspaceId, user],
+        "INSERT INTO workspaces(id,owner_user_id,kind,name) VALUES($1,$2,$3,'Test')",
+        [workspaceId, user, kind],
       );
       await rows(
         "INSERT INTO workspace_members(id,workspace_id,user_id,role) VALUES($1,$2,$3,'owner')",
@@ -45,15 +56,18 @@ describe.skipIf(!enabled)(
       );
       return workspaceId;
     }
-    async function input(workspaceId = wid) {
+    async function input(
+      workspaceId = wid,
+      kind: components["schemas"]["Job"]["kind"] = "layout",
+    ) {
       const snapshotId = id();
       await rows(
-        `INSERT INTO job_snapshots(id,workspace_id,kind,config_release_id,schema_version,normalized_spec_hash,manifest_hash,manifest,entitlement_snapshot,warnings_acknowledged) VALUES($1,$2,'layout',$3,1,$4,$4,'{}','{}','[]')`,
-        [snapshotId, workspaceId, release, digest("input")],
+        `INSERT INTO job_snapshots(id,workspace_id,kind,config_release_id,schema_version,normalized_spec_hash,manifest_hash,manifest,entitlement_snapshot,warnings_acknowledged) VALUES($1,$2,$5,$3,1,$4,$4,'{}','{}','[]')`,
+        [snapshotId, workspaceId, release, digest("input"), kind],
       );
       return {
         workspaceId,
-        kind: "layout" as const,
+        kind,
         configReleaseId: release,
         inputHash: digest("input"),
         payload: { revision: 1 },
@@ -131,6 +145,10 @@ describe.skipIf(!enabled)(
         client: "web",
         platformPermissions: [],
       };
+      await rows(
+        "INSERT INTO auth_sessions(id,user_id,client_kind,refresh_hash,csrf_hash,expires_at) VALUES($1,$2,'web',$3,$4,clock_timestamp()+interval '1 hour')",
+        [actor.sessionId, user, digest(id()), digest(id())],
+      );
       policy = {
         deployment: { global: 10, workspace: 10 },
         release: { global: 10, workspace: 10 },
@@ -548,6 +566,91 @@ describe.skipIf(!enabled)(
       expect(await repository.claimJob(job.jobId, id(), clock())).toBeNull();
       expect(await dispatcher.dispatchOutbox(100)).toBe(0);
     });
+    it.each([
+      ["config_test", "platform.config.test"],
+      ["reconciliation", "platform.ops.reconcile"],
+      ["backup_restore_drill", "platform.ops.backup.verify"],
+      ["storage_migration", "platform.storage.migrate"],
+      ["privacy_export", "platform.ops.jobs.manage"],
+    ] as const)(
+      "requires the corresponding platform permission for %s independently of ordinary membership",
+      async (kind, permission) => {
+        const platform = await workspace("platform");
+        const value = await input(platform, kind);
+        const job = await tx((client) => createJob(client, value, id()));
+        await expect(
+          repository.requestCancel(actor, platform, job.jobId),
+        ).rejects.toMatchObject({ status: 403 });
+        await expect(
+          repository.requestCancel(
+            { ...actor, platformPermissions: ["platform.ops.jobs.read"] },
+            platform,
+            job.jobId,
+          ),
+        ).rejects.toMatchObject({ status: 403 });
+        expect(
+          (await rows("SELECT state FROM jobs WHERE id=$1", [job.jobId]))[0]
+            .state,
+        ).toBe("queued");
+        expect(
+          await rows(
+            "SELECT id FROM outbox WHERE aggregate_id=$1 AND event_type='job.terminal'",
+            [job.jobId],
+          ),
+        ).toHaveLength(0);
+        await rows("DELETE FROM workspace_members WHERE workspace_id=$1", [
+          platform,
+        ]);
+        const operator = { ...actor, platformPermissions: [permission] };
+        expect(
+          (await repository.requestCancel(operator, platform, job.jobId)).state,
+        ).toBe("cancelled");
+        await expect(
+          repository.requestCancel(actor, platform, job.jobId),
+        ).rejects.toMatchObject({ status: 403 });
+      },
+    );
+    it.each(["revoked-session", "suspended-user"])(
+      "rejects platform cancellation with a %s despite matching platform permission",
+      async (mode) => {
+        const platform = await workspace("platform");
+        const job = await tx(async (client) =>
+          createJob(client, await input(platform, "config_test"), id()),
+        );
+        if (mode === "revoked-session")
+          await rows(
+            "UPDATE auth_sessions SET revoked_at=clock_timestamp() WHERE id=$1",
+            [actor.sessionId],
+          );
+        else
+          await rows("UPDATE users SET status='suspended' WHERE id=$1", [user]);
+        await expect(
+          repository.requestCancel(
+            { ...actor, platformPermissions: ["platform.config.test"] },
+            platform,
+            job.jobId,
+          ),
+        ).rejects.toMatchObject({ status: 404 });
+        expect(
+          (await rows("SELECT state FROM jobs WHERE id=$1", [job.jobId]))[0]
+            .state,
+        ).toBe("queued");
+      },
+    );
+    it.each(["asset_analysis", "deletion"] as const)(
+      "accepts authoritative %s jobs through the shared typed creation API",
+      async (kind) => {
+        expectTypeOf<JobRecord["kind"]>().toEqualTypeOf<
+          components["schemas"]["Job"]["kind"]
+        >();
+        const value: CreateJobInput = await input(wid, kind);
+        const job = await tx((client) => createJob(client, value, id()));
+        expect(job.kind).toBe(kind);
+        expect(
+          (await repository.claimJob(job.jobId, id(), clock()))?.job.kind,
+        ).toBe(kind);
+      },
+    );
     it("permits exactly one terminal event under concurrent cancellation and success", async () => {
       const job = await create();
       const lease = (await repository.claimJob(job.jobId, id(), clock()))!;
@@ -678,6 +781,122 @@ describe.skipIf(!enabled)(
       expect(
         await repository.finishJob(next, { state: "succeeded", result: {} }),
       ).toBe(true);
+    });
+    it.each(["submitting", "accepted", "unknown"] as const)(
+      "keeps %s original requests in confirmation after a definite confirmation transport error",
+      async (submission) => {
+        const job = await create();
+        let lease = (await repository.claimJob(
+          job.jobId,
+          "submitter",
+          clock(),
+        ))!;
+        await repository.markSubmission(
+          lease,
+          "submitting",
+          "original-request",
+        );
+        if (submission === "accepted")
+          await repository.markSubmission(
+            lease,
+            "accepted",
+            "original-request",
+          );
+        if (submission === "unknown") {
+          await repository.failAttempt(lease, {
+            code: "NETWORK_TIMEOUT",
+            retryable: true,
+            definite: false,
+          });
+          await expire(lease);
+          await repository.recoverExpiredJobs(100);
+          lease = (await repository.claimJob(job.jobId, "confirmer", clock()))!;
+        }
+        await repository.failAttempt(lease, {
+          code: "UPSTREAM_TEMPORARY",
+          retryable: true,
+          definite: true,
+        });
+        expect(
+          (
+            await rows(
+              "SELECT state,stage,provider_submission_state,provider_request_id,next_attempt_at FROM jobs WHERE id=$1",
+              [job.jobId],
+            )
+          )[0],
+        ).toEqual({
+          state: "running",
+          stage: "confirming_upstream",
+          provider_submission_state: "unknown",
+          provider_request_id: "original-request",
+          next_attempt_at: null,
+        });
+        expect(
+          (
+            await rows(
+              "SELECT provider_request_id,submission_state FROM job_attempts WHERE job_id=$1",
+              [job.jobId],
+            )
+          )[0],
+        ).toEqual({
+          provider_request_id: "original-request",
+          submission_state: "unknown",
+        });
+        await expire(lease);
+        await dispatcher.dispatchOutbox(100);
+        expect((await queue.getWaiting())[0].data.mode).toBe("confirm");
+        const confirmation = (await repository.claimJob(
+          job.jobId,
+          "next-confirmer",
+          clock(),
+        ))!;
+        expect(confirmation.job.attempt).toBe(1);
+        expect(confirmation.fence).toBe(1);
+        expect(
+          await repository.markSubmission(
+            confirmation,
+            "submitting",
+            "new-request",
+          ),
+        ).toBe(false);
+        expect(
+          await rows("SELECT id FROM job_attempts WHERE job_id=$1", [
+            job.jobId,
+          ]),
+        ).toHaveLength(1);
+      },
+    );
+    it("does not terminalize a cancelled paid request because its confirmation query failed", async () => {
+      const job = await create();
+      const lease = (await repository.claimJob(job.jobId, id(), clock()))!;
+      let terminalHooks = 0;
+      repository = new JobRepository(
+        db.database,
+        async () => policy,
+        async () => {
+          terminalHooks++;
+        },
+      );
+      await repository.markSubmission(lease, "submitting", "original-request");
+      await repository.requestCancel(actor, wid, job.jobId);
+      await repository.failAttempt(lease, {
+        code: "UPSTREAM_TEMPORARY",
+        retryable: true,
+        definite: true,
+      });
+      expect(
+        (
+          await rows(
+            "SELECT state,provider_submission_state,provider_request_id FROM jobs WHERE id=$1",
+            [job.jobId],
+          )
+        )[0],
+      ).toEqual({
+        state: "cancel_requested",
+        provider_submission_state: "unknown",
+        provider_request_id: "original-request",
+      });
+      expect(terminalHooks).toBe(0);
     });
   },
 );
