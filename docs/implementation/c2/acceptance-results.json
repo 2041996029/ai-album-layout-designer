@@ -1,0 +1,63 @@
+{
+  "module": "C2",
+  "status": "local-verification-passed",
+  "verifiedAt": "2026-10-22T19:31:51.662985+08:00",
+  "baseCommit": "65a1a96",
+  "environment": {
+    "node": "24.19.0",
+    "npm": "11.9.0",
+    "chromium": "154.0.8037.57",
+    "browserPath": "/usr/bin/chromium"
+  },
+  "checks": {
+    "typecheck": "passed",
+    "unit": {
+      "passed": 147,
+      "failed": 0,
+      "files": 20
+    },
+    "browser": {
+      "passed": 58,
+      "failed": 0,
+      "duration": "2.7m"
+    },
+    "productionBuild": "passed",
+    "pagesSubdirectoryIncludingWorker": "passed",
+    "filterManifestUnchanged": "passed",
+    "c1ArtifactsShaDimensionsDpiPdfBoxes": "passed",
+    "c2PngZipManifestShaDimensions": "passed",
+    "gitDiffCheck": "passed"
+  },
+  "review": {
+    "freshContext": true,
+    "importantFindings": 5,
+    "fixed": 5,
+    "criticalFindings": 0,
+    "deferredMinors": 0,
+    "fixRegressionRedAssertions": 6,
+    "secondIndependentReview": false
+  },
+  "performanceObservations": [
+    {
+      "photos": 50,
+      "spreads": 17,
+      "lockedImageLayers": 0,
+      "computeAndUiMs": 754,
+      "firstPreviewMs": 1096
+    },
+    {
+      "photos": 200,
+      "spreads": 50,
+      "lockedImageLayers": 1,
+      "computeAndUiMs": 1186,
+      "firstPreviewMs": 1898
+    }
+  ],
+  "limits": [
+    "Performance uses 160x100 synthetic photos; 200-photo case locks one image, not all 200.",
+    "No commercial visual blind-review or 80MP/500-photo performance certification.",
+    "Local rule engine only; no external AI, payments, login or cloud storage activated.",
+    "Existing large shared renderer chunk warning retained.",
+    "Live github.io browser access is restricted by environment network policy; successful deployment is tracked separately."
+  ]
+}

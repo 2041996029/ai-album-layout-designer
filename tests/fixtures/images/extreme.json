@@ -1,0 +1,12 @@
+{
+  "name": "extreme",
+  "width": 10000,
+  "height": 1,
+  "colors": [
+    "red",
+    "green",
+    "blue",
+    "yellow"
+  ],
+  "channelTolerance": 0
+}

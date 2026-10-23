@@ -369,6 +369,13 @@ paths:
       security:
       - QrPollToken: []
       parameters:
+      - name: X-Browser-Nonce
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 32
+          maxLength: 256
       - name: qrSessionId
         in: path
         required: true
@@ -12850,6 +12857,21 @@ components:
         createdAt:
           type: string
           format: date-time
+        defaults:
+          type: object
+          properties:
+            pageWidthMm:
+              type: number
+              exclusiveMinimum: 0
+              maximum: 2000
+            pageHeightMm:
+              type: number
+              exclusiveMinimum: 0
+              maximum: 2000
+            notificationsEnabled:
+              type: boolean
+          required: [pageWidthMm, pageHeightMm, notificationsEnabled]
+          additionalProperties: false
       required:
       - id
       - name
@@ -13223,6 +13245,8 @@ components:
     Asset:
       type: object
       properties:
+        editorResource:
+          $ref: '#/components/schemas/EditorAssetRecord'
         id:
           type: string
           minLength: 1
@@ -13737,6 +13761,8 @@ components:
     ProjectDocument:
       type: object
       properties:
+        resources:
+          $ref: '#/components/schemas/EditorResourceManifest'
         project:
           $ref: '#/components/schemas/Project'
         document:
@@ -13960,9 +13986,17 @@ components:
       - $ref: '#/components/schemas/ReplaceDocument'
       discriminator:
         propertyName: type
+        mapping:
+          setText: '#/components/schemas/SetText'
+          setCrop: '#/components/schemas/SetCrop'
+          replaceAsset: '#/components/schemas/ReplaceAsset'
+          reorderSpreads: '#/components/schemas/ReorderSpreads'
+          replaceDocument: '#/components/schemas/ReplaceDocument'
     ProjectPatch:
       type: object
       properties:
+        resources:
+          $ref: '#/components/schemas/EditorResourceManifest'
         commandId:
           type: string
           minLength: 1
@@ -21069,6 +21103,303 @@ components:
       additionalProperties: false
       description: Bind a required template image slot to a ready immutable asset owned by the target workspace.
         Unique slotId; no external URL or platform placeholder may remain in instantiated required slot.
+    EditorResourceManifest:
+      type: object
+      properties:
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/EditorAssetRecord"
+          maxItems: 2500
+        fonts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+                maxLength: 128
+              version:
+                type: integer
+                minimum: 1
+                maximum: 9007199254740991
+              sha256:
+                type: string
+                pattern: ^[0-9a-f]{64}$
+              family:
+                type: string
+              source:
+                type: object
+                properties:
+                  kind:
+                    enum:
+                      - import
+                      - bundled
+                  name:
+                    type: string
+                  url:
+                    type: string
+                required:
+                  - kind
+                  - name
+                additionalProperties: false
+              license:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                  usable:
+                    type: boolean
+                  source:
+                    type: string
+                  text:
+                    type: string
+                required:
+                  - id
+                  - usable
+                additionalProperties: false
+              status:
+                enum:
+                  - ready
+                  - missing
+                  - unlicensed
+              faces:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      minLength: 1
+                      maxLength: 128
+                    sha256:
+                      type: string
+                      pattern: ^[0-9a-f]{64}$
+                    byteLength:
+                      type: integer
+                      minimum: 1
+                      maximum: 9007199254740991
+                    file:
+                      type: string
+                    weight:
+                      enum:
+                        - 400
+                        - 700
+                    style:
+                      const: normal
+                    codePoints:
+                      type: array
+                      maxItems: 1114112
+                      items:
+                        type: integer
+                        minimum: 0
+                        maximum: 1114111
+                  required:
+                    - id
+                    - sha256
+                    - byteLength
+                    - file
+                    - weight
+                    - style
+                    - codePoints
+                  additionalProperties: false
+                maxItems: 500
+            required:
+              - id
+              - version
+              - sha256
+              - family
+              - source
+              - license
+              - status
+              - faces
+            additionalProperties: false
+          maxItems: 20
+      required:
+        - assets
+        - fonts
+      additionalProperties: false
+
+    EditorAssetRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        width:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        height:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        mimeType:
+          enum:
+            - image/png
+            - image/jpeg
+        source:
+          type: object
+          properties:
+            kind:
+              enum:
+                - import
+                - bundled
+            name:
+              type: string
+            url:
+              type: string
+          required:
+            - kind
+            - name
+          additionalProperties: false
+        license:
+          type: object
+          properties:
+            id:
+              type: string
+              minLength: 1
+              maxLength: 128
+            usable:
+              type: boolean
+            source:
+              type: string
+            text:
+              type: string
+          required:
+            - id
+            - usable
+          additionalProperties: false
+        status:
+          enum:
+            - ready
+            - missing
+            - unlicensed
+        usage:
+          enum:
+            - photo
+            - decoration
+            - mask
+            - text-raster
+        variants:
+          type: object
+          properties:
+            original:
+              type: object
+              properties:
+                sha256:
+                  type: string
+                  pattern: ^[0-9a-f]{64}$
+                byteLength:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                mimeType:
+                  enum:
+                    - image/png
+                    - image/jpeg
+                width:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                height:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+              required:
+                - sha256
+                - byteLength
+                - mimeType
+                - width
+                - height
+              additionalProperties: false
+            normalized:
+              type: object
+              properties:
+                sha256:
+                  type: string
+                  pattern: ^[0-9a-f]{64}$
+                byteLength:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                mimeType:
+                  enum:
+                    - image/png
+                    - image/jpeg
+                width:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                height:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+              required:
+                - sha256
+                - byteLength
+                - mimeType
+                - width
+                - height
+              additionalProperties: false
+            preview:
+              type: object
+              properties:
+                sha256:
+                  type: string
+                  pattern: ^[0-9a-f]{64}$
+                byteLength:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                mimeType:
+                  enum:
+                    - image/png
+                    - image/jpeg
+                width:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                height:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+              required:
+                - sha256
+                - byteLength
+                - mimeType
+                - width
+                - height
+              additionalProperties: false
+          required:
+            - original
+            - normalized
+            - preview
+          additionalProperties: false
+      required:
+        - id
+        - version
+        - sha256
+        - width
+        - height
+        - mimeType
+        - source
+        - license
+        - status
+        - variants
+      additionalProperties: false
+
   parameters:
     IdempotencyKey:
       name: Idempotency-Key

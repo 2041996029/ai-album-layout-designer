@@ -1,0 +1,32 @@
+{
+  "snapshotHash": "443866c629bb7bc1da6f908958bac3bf3dfbeaedebb9fea3c6497b01b86bd821",
+  "blockers": [],
+  "warnings": [],
+  "surfaces": [
+    {
+      "id": "sample_spread_1",
+      "sourceSpreadId": "sample_spread_1",
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 2267.716536,
+        "height": 1133.858268
+      },
+      "bleedPx96": 11.338582677165356,
+      "background": "#faf7ef",
+      "pixelWidth": 7157,
+      "pixelHeight": 3614,
+      "fileStem": "0001-spread-01",
+      "trimWidthMm": 600.0000001499999,
+      "trimHeightMm": 300.00000007499995,
+      "bleedMm": 3,
+      "trimBoxMm": {
+        "x": 3,
+        "y": 3,
+        "width": 600.0000001499999,
+        "height": 300.00000007499995
+      }
+    }
+  ],
+  "estimatedBytes": 595362504
+}

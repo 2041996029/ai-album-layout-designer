@@ -1,0 +1,70 @@
+<view class="page">
+  <view class="heading">把照片，变成一本相册</view>
+  <view class="status" role="status">{{message}}</view>
+  <view wx:if="{{state.phase === 'select' || state.phase === 'upload' || state.phase === 'layout'}}" class="card">
+    <view class="section-title">1 · 选择照片</view>
+    <button bindtap="select" disabled="{{busy}}">{{state.selectedPhotoCount ? '继续选片' : '选择照片'}}</button>
+    <view class="muted">已选 {{state.selectedPhotoCount}} / 500 张 · JPEG、PNG原片</view>
+    <picker range="{{folderOptions}}" bindchange="chooseFolder"><view class="control">存放目录：{{folderName}}（点击选择）</view></picker>
+    <input placeholder="新建目录名称" value="{{newFolderName}}" bindinput="folderInput" maxlength="80" />
+    <button size="mini" bindtap="newFolder" disabled="{{busy || !newFolderName}}">新建目录</button>
+    <view wx:for="{{state.photos}}" wx:key="path" class="photo-row"><text>{{item.filename}}</text><text>{{item.status === 'ready' ? '已上传' : item.status === 'failed' ? '等待重试' : item.status === 'uploading' ? '上传中' : '待上传'}}</text><view wx:if="{{item.error}}" class="error">{{item.error}}</view></view>
+    <button wx:if="{{state.selectedPhotoCount}}" type="primary" bindtap="upload" disabled="{{busy}}">上传 / 重试未完成照片</button>
+  </view>
+  <view wx:if="{{state.phase === 'layout'}}" class="card">
+    <view class="section-title">2 · 选择主题和页数</view>
+    <input placeholder="相册名称" value="{{projectName}}" maxlength="120" bindinput="changeName" />
+    <picker range="{{templates}}" range-key="name" value="{{themeIndex}}" bindchange="chooseTheme"><view class="control">主题：{{templates[themeIndex].name || '等待已授权主题'}}</view></picker>
+    <view class="control">内页跨页数（1–50）<input type="number" value="{{spreadCount}}" bindchange="changeSpreadCount" /></view>
+    <button type="primary" bindtap="layout" disabled="{{busy || !layoutAvailable}}">开始排版</button>
+    <view wx:if="{{!layoutAvailable}}" class="muted">自动排版任务未配置</view>
+    <button bindtap="refreshCandidates" disabled="{{busy}}">刷新候选</button>
+    <view wx:for="{{candidates}}" wx:key="id" class="candidate">
+      <text>候选 {{index + 1}} · 评分 {{item.score}}</text>
+      <view wx:for="{{item.checks}}" wx:for-item="check" wx:key="constraintId">{{check.satisfied ? '✓' : '待检查'}} {{check.message}}</view>
+      <view wx:for="{{item.preview.spreads}}" wx:for-item="spread" wx:key="id" class="spread" style="background:{{spread.background}}">
+        <view wx:for="{{spread.layers}}" wx:for-item="layer" wx:key="id" class="layer" style="{{layer.style}};background:{{layer.fill}}">
+          <image wx:if="{{layer.type === 'image' && layer.url}}" src="{{layer.url}}" mode="scaleToFill" style="{{layer.imageStyle}}" />
+          <text wx:if="{{layer.type === 'text'}}">{{layer.text}}</text>
+        </view>
+      </view>
+      <view class="muted">候选简要预览；高级效果请在网页核对</view>
+      <button size="mini" data-id="{{item.id}}" bindtap="applyCandidate" disabled="{{busy}}">选择这一版</button>
+    </view>
+  </view>
+  <view wx:if="{{state.projectId && state.phase !== 'preview'}}" class="card">
+    <view class="section-title">3 · 轻编辑</view>
+    <button wx:if="{{!state.document}}" bindtap="refreshAlbum" disabled="{{busy}}">联网后重新载入（保留草稿）</button>
+    <view wx:for="{{slots}}" wx:key="layerId" class="slot">
+      <textarea wx:if="{{item.canText}}" value="{{item.text}}" data-index="{{index}}" bindinput="editText" maxlength="20000" placeholder="替换文字" />
+      <view wx:if="{{item.canCrop}}"><text>单图裁剪（0–1范围，右边与下边不超过1）</text><view class="crop">
+        <label>x <input type="digit" value="{{item.crop.x}}" data-index="{{index}}" data-field="x" bindchange="editCrop" /></label>
+        <label>y <input type="digit" value="{{item.crop.y}}" data-index="{{index}}" data-field="y" bindchange="editCrop" /></label>
+        <label>宽 <input type="digit" value="{{item.crop.width}}" data-index="{{index}}" data-field="width" bindchange="editCrop" /></label>
+        <label>高 <input type="digit" value="{{item.crop.height}}" data-index="{{index}}" data-field="height" bindchange="editCrop" /></label>
+      </view></view>
+    </view>
+    <view class="muted">可在电脑网页继续编辑</view>
+    <button type="primary" bindtap="save" disabled="{{busy || state.conflict || !state.pendingPatches.length}}">保存修改</button>
+    <button bindtap="preview" disabled="{{busy}}">预览已保存版本</button>
+  </view>
+  <view wx:if="{{state.conflict}}" class="card warning">
+    <view>该版本已由其他设备修改，本地草稿已保留。复制草稿后可重新加载云端版本。</view>
+    <button bindtap="copyDraft">复制恢复草稿</button>
+    <button bindtap="reload" disabled="{{busy}}">舍弃本地草稿，重新加载</button>
+  </view>
+  <view wx:if="{{state.phase === 'preview'}}" class="card">
+    <view class="muted">简要预览；字体、滤镜与高级图层请在电脑网页核对</view>
+    <view wx:for="{{preview.spreads}}" wx:for-item="spread" wx:key="id" class="spread" style="background:{{spread.background}}">
+      <view wx:for="{{spread.layers}}" wx:for-item="layer" wx:key="id" class="layer" style="{{layer.style}};background:{{layer.fill}}">
+        <image wx:if="{{layer.type === 'image' && layer.url}}" src="{{layer.url}}" mode="scaleToFill" style="{{layer.imageStyle}}" />
+        <text wx:if="{{layer.type === 'text'}}">{{layer.text}}</text>
+      </view>
+    </view>
+    <view wx:if="{{preview.unsupported}}" class="warning">高级图层已保留，完整效果请在电脑网页查看</view>
+    <button bindtap="backToEdit">返回轻编辑</button>
+    <button bindtap="exportAlbum" disabled="{{!exportAvailable}}">创建导出任务</button>
+    <view wx:if="{{!exportAvailable}}" class="muted">导出任务未配置</view>
+  </view>
+  <button bindtap="tasks" disabled="{{busy}}">查看任务中心</button>
+</view>

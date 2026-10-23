@@ -1,0 +1,337 @@
+{
+  "kernelVersion": "cpu-srgb-v1",
+  "operationVersion": 1,
+  "sourceCsvSha256": "55ad0b28a0f94eb3e4ef0023219be067aea84d8c967c60c3656a3c172b542765",
+  "items": [
+    {
+      "id": "F01",
+      "name": "清透日光",
+      "category": "自然",
+      "recipeVersion": 1,
+      "operationsInOrder": "exposure:0.10;saturation:0.06;contrast:0.04",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F02",
+      "name": "自然鲜活",
+      "category": "自然",
+      "recipeVersion": 1,
+      "operationsInOrder": "saturation:0.18;contrast:0.08",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F03",
+      "name": "柔和晨光",
+      "category": "自然",
+      "recipeVersion": 1,
+      "operationsInOrder": "exposure:0.18;contrast:-0.12;temperature:0.08",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F04",
+      "name": "清冷空气",
+      "category": "自然",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:-0.16;saturation:-0.06;contrast:0.06",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F05",
+      "name": "暖调纪实",
+      "category": "自然",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:0.18;saturation:0.05;contrast:0.05",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F06",
+      "name": "低饱和留白",
+      "category": "自然",
+      "recipeVersion": 1,
+      "operationsInOrder": "saturation:-0.30;contrast:-0.10;exposure:0.12",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F07",
+      "name": "胶片暖阳",
+      "category": "胶片",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:0.22;contrast:-0.06;gamma:1.08;grain:0.03",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F08",
+      "name": "青橙纪实",
+      "category": "胶片",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:-0.08;tint:0.07;saturation:0.12;contrast:0.18",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F09",
+      "name": "褪色旧片",
+      "category": "胶片",
+      "recipeVersion": 1,
+      "operationsInOrder": "saturation:-0.28;contrast:-0.20;gamma:1.12;grain:0.04",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F10",
+      "name": "浓郁影院",
+      "category": "胶片",
+      "recipeVersion": 1,
+      "operationsInOrder": "contrast:0.28;saturation:-0.08;vignette:0.18",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F11",
+      "name": "怀旧茶褐",
+      "category": "胶片",
+      "recipeVersion": 1,
+      "operationsInOrder": "sepia:0.65;contrast:0.08;grain:0.025",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F12",
+      "name": "蓝调夜色",
+      "category": "胶片",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:-0.30;exposure:-0.20;contrast:0.16",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F13",
+      "name": "柔雾人像",
+      "category": "人像",
+      "recipeVersion": 1,
+      "operationsInOrder": "contrast:-0.15;gamma:1.10;saturation:-0.08",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F14",
+      "name": "蜜桃微光",
+      "category": "人像",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:0.10;tint:0.12;exposure:0.08",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F15",
+      "name": "奶油柔光",
+      "category": "人像",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:0.14;contrast:-0.18;gamma:1.14",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F16",
+      "name": "通透肤色",
+      "category": "人像",
+      "recipeVersion": 1,
+      "operationsInOrder": "exposure:0.12;saturation:-0.05;contrast:0.03",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F17",
+      "name": "午后暖肤",
+      "category": "人像",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:0.24;tint:0.04;contrast:-0.07",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F18",
+      "name": "清雅肖像",
+      "category": "人像",
+      "recipeVersion": 1,
+      "operationsInOrder": "saturation:-0.24;temperature:-0.05;gamma:1.05",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F19",
+      "name": "山岚冷翠",
+      "category": "风景",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:-0.18;tint:-0.10;contrast:0.12",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F20",
+      "name": "海盐蓝调",
+      "category": "风景",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:-0.25;saturation:0.13;gamma:1.04",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F21",
+      "name": "秋日金黄",
+      "category": "风景",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:0.30;sepia:0.16;saturation:0.12",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F22",
+      "name": "森林鲜绿",
+      "category": "风景",
+      "recipeVersion": 1,
+      "operationsInOrder": "tint:-0.18;saturation:0.22;contrast:0.12",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F23",
+      "name": "暮色霞光",
+      "category": "风景",
+      "recipeVersion": 1,
+      "operationsInOrder": "temperature:0.18;tint:0.18;exposure:-0.10",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F24",
+      "name": "经典黑白",
+      "category": "黑白",
+      "recipeVersion": 1,
+      "operationsInOrder": "grayscale:1;contrast:0.08",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F25",
+      "name": "高反差黑白",
+      "category": "黑白",
+      "recipeVersion": 1,
+      "operationsInOrder": "grayscale:1;contrast:0.35",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F26",
+      "name": "柔灰纪实",
+      "category": "黑白",
+      "recipeVersion": 1,
+      "operationsInOrder": "grayscale:1;contrast:-0.18;gamma:1.10",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F27",
+      "name": "银盐颗粒",
+      "category": "黑白",
+      "recipeVersion": 1,
+      "operationsInOrder": "grayscale:1;contrast:0.18;grain:0.06",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F28",
+      "name": "暗角黑白",
+      "category": "黑白",
+      "recipeVersion": 1,
+      "operationsInOrder": "grayscale:1;contrast:0.20;vignette:0.28",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F29",
+      "name": "棕墨纸感",
+      "category": "艺术",
+      "recipeVersion": 1,
+      "operationsInOrder": "sepia:0.80;saturation:-0.20;grain:0.02",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F30",
+      "name": "靛青双色",
+      "category": "艺术",
+      "recipeVersion": 1,
+      "operationsInOrder": "grayscale:1;duotone:#173D5C,#F5E8CB",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F31",
+      "name": "黑白墨韵",
+      "category": "艺术",
+      "recipeVersion": 1,
+      "operationsInOrder": "grayscale:1;contrast:0.30;gamma:0.90",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F32",
+      "name": "彩绘色调",
+      "category": "艺术",
+      "recipeVersion": 1,
+      "operationsInOrder": "posterize:8;saturation:0.20;contrast:0.08",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    },
+    {
+      "id": "F33",
+      "name": "复古双色",
+      "category": "艺术",
+      "recipeVersion": 1,
+      "operationsInOrder": "grayscale:1;duotone:#503B33,#F0D6A2",
+      "defaultStrength": 0.65,
+      "seed": 1729,
+      "visualReview": "required"
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "snapshotHash": "f6dd0ea091dab32408ef01c3c7bcea56c2ff72b43c08659e2fb12d62e3268e86",
+  "blockers": [],
+  "warnings": [],
+  "surfaces": [
+    {
+      "id": "cover:front",
+      "cover": "front",
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "bleedPx96": 11.338582677165356,
+      "background": "#ffffff",
+      "pixelWidth": 3614,
+      "pixelHeight": 3614,
+      "fileStem": "0001-front",
+      "trimWidthMm": 300.00000007499995,
+      "trimHeightMm": 300.00000007499995,
+      "bleedMm": 3,
+      "trimBoxMm": {
+        "x": 3,
+        "y": 3,
+        "width": 300.00000007499995,
+        "height": 300.00000007499995
+      }
+    },
+    {
+      "id": "sample_spread_1:left",
+      "sourceSpreadId": "sample_spread_1",
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "bleedPx96": 11.338582677165356,
+      "background": "#faf7ef",
+      "pixelWidth": 3614,
+      "pixelHeight": 3614,
+      "fileStem": "0002-page-01",
+      "trimWidthMm": 300.00000007499995,
+      "trimHeightMm": 300.00000007499995,
+      "bleedMm": 3,
+      "trimBoxMm": {
+        "x": 3,
+        "y": 3,
+        "width": 300.00000007499995,
+        "height": 300.00000007499995
+      }
+    },
+    {
+      "id": "sample_spread_1:right",
+      "sourceSpreadId": "sample_spread_1",
+      "clip": {
+        "x": 1133.858268,
+        "y": 0,
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "bleedPx96": 11.338582677165356,
+      "background": "#faf7ef",
+      "pixelWidth": 3614,
+      "pixelHeight": 3614,
+      "fileStem": "0003-page-02",
+      "trimWidthMm": 300.00000007499995,
+      "trimHeightMm": 300.00000007499995,
+      "bleedMm": 3,
+      "trimBoxMm": {
+        "x": 3,
+        "y": 3,
+        "width": 300.00000007499995,
+        "height": 300.00000007499995
+      }
+    },
+    {
+      "id": "sample_spread_2:left",
+      "sourceSpreadId": "sample_spread_2",
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "bleedPx96": 11.338582677165356,
+      "background": "#faf7ef",
+      "pixelWidth": 3614,
+      "pixelHeight": 3614,
+      "fileStem": "0004-page-03",
+      "trimWidthMm": 300.00000007499995,
+      "trimHeightMm": 300.00000007499995,
+      "bleedMm": 3,
+      "trimBoxMm": {
+        "x": 3,
+        "y": 3,
+        "width": 300.00000007499995,
+        "height": 300.00000007499995
+      }
+    },
+    {
+      "id": "sample_spread_2:right",
+      "sourceSpreadId": "sample_spread_2",
+      "clip": {
+        "x": 1133.858268,
+        "y": 0,
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "bleedPx96": 11.338582677165356,
+      "background": "#faf7ef",
+      "pixelWidth": 3614,
+      "pixelHeight": 3614,
+      "fileStem": "0005-page-04",
+      "trimWidthMm": 300.00000007499995,
+      "trimHeightMm": 300.00000007499995,
+      "bleedMm": 3,
+      "trimBoxMm": {
+        "x": 3,
+        "y": 3,
+        "width": 300.00000007499995,
+        "height": 300.00000007499995
+      }
+    },
+    {
+      "id": "cover:back",
+      "cover": "back",
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 1133.858268,
+        "height": 1133.858268
+      },
+      "bleedPx96": 11.338582677165356,
+      "background": "#ffffff",
+      "pixelWidth": 3614,
+      "pixelHeight": 3614,
+      "fileStem": "0006-back",
+      "trimWidthMm": 300.00000007499995,
+      "trimHeightMm": 300.00000007499995,
+      "bleedMm": 3,
+      "trimBoxMm": {
+        "x": 3,
+        "y": 3,
+        "width": 300.00000007499995,
+        "height": 300.00000007499995
+      }
+    }
+  ],
+  "estimatedBytes": 441709680
+}

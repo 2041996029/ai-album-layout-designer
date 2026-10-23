@@ -1,0 +1,16 @@
+export const templateCategories: Record<string, string> = {
+  japanese: "日系",
+  jk: "JK 校园",
+  qipao: "旗袍",
+  chinese: "国风汉服",
+  wedding: "婚礼",
+  couple: "情侣",
+  family: "亲子",
+  travel: "旅行",
+  korean: "韩系",
+  hongkong: "复古港风",
+  french: "法式",
+  monochrome: "黑白写真",
+  portrait: "基础写真",
+  ink: "基础国风",
+};

@@ -1,0 +1,101 @@
+{
+  "id": "tpl_family",
+  "version": 1,
+  "category": "family",
+  "name": "亲子 · 原创留白",
+  "unit": "px96",
+  "pageSize": {
+    "width": 1133.858268,
+    "height": 1133.858268
+  },
+  "view": "spread",
+  "background": "#FFFFFF",
+  "origin": "project-original-design",
+  "slots": [
+    {
+      "slotId": "photo_1",
+      "kind": "image",
+      "frame": {
+        "x": 60,
+        "y": 60,
+        "width": 1000,
+        "height": 380
+      },
+      "fitMode": "cover",
+      "bindingRequired": true
+    },
+    {
+      "slotId": "photo_2",
+      "kind": "image",
+      "frame": {
+        "x": 1130,
+        "y": 60,
+        "width": 1000,
+        "height": 380
+      },
+      "fitMode": "cover",
+      "bindingRequired": true
+    },
+    {
+      "slotId": "photo_3",
+      "kind": "image",
+      "frame": {
+        "x": 60,
+        "y": 480,
+        "width": 1000,
+        "height": 380
+      },
+      "fitMode": "cover",
+      "bindingRequired": true
+    },
+    {
+      "slotId": "photo_4",
+      "kind": "image",
+      "frame": {
+        "x": 1130,
+        "y": 480,
+        "width": 1000,
+        "height": 380
+      },
+      "fitMode": "cover",
+      "bindingRequired": true
+    },
+    {
+      "slotId": "title",
+      "kind": "text",
+      "frame": {
+        "x": 60,
+        "y": 940,
+        "width": 2100,
+        "height": 85
+      },
+      "defaultText": "亲子相册",
+      "fontCatalogName": "Noto Sans SC",
+      "fontWeight": 400,
+      "fontSize": 48,
+      "editableFields": ["text"],
+      "fontAssetId": "noto-sans-sc"
+    },
+    {
+      "slotId": "date",
+      "kind": "text",
+      "frame": {
+        "x": 60,
+        "y": 1040,
+        "width": 2100,
+        "height": 40
+      },
+      "defaultText": "日期",
+      "fontCatalogName": "Noto Sans SC",
+      "fontWeight": 400,
+      "fontSize": 24,
+      "editableFields": ["text"],
+      "fontAssetId": "noto-sans-sc"
+    }
+  ],
+  "state": "registered",
+  "licenseRef": "LicenseRef-Project-Original-Templates",
+  "licenseText": "本项目原创几何模板，允许本产品用户用于相册编辑和导出。模板不包含第三方照片；字体按各自 OFL 授权使用。",
+  "source": "docs/release-v1.0/content/template-seeds.json",
+  "sha256": "bbbc889421b5eaeba48463591f91cec7974c598cb5b0eb614e9c560915b29e1a"
+}

@@ -1,0 +1,55 @@
+.cloud-panel {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 20px;
+  background: #faf8f2;
+  border-bottom: 1px solid #ddd9ce;
+  font-size: 12px;
+  color: #4c5145;
+}
+.cloud-panel > button {
+  padding: 5px 12px;
+  border: 1px solid #d0d4c8;
+  border-radius: 6px;
+  background: white;
+}
+.cloud-content {
+  position: absolute;
+  right: 16px;
+  top: 40px;
+  width: min(540px, calc(100vw - 32px));
+  max-height: 78vh;
+  overflow: auto;
+  padding: 20px;
+  background: #fffefa;
+  box-shadow: 0 10px 40px #0003;
+  border: 1px solid #ddd9ce;
+  border-radius: 12px;
+}
+.cloud-content section {
+  margin: 16px 0;
+  padding: 12px 0;
+  border-bottom: 1px solid #e2dfd7;
+}
+.cloud-content button,
+.cloud-content select,
+.cloud-content input {
+  margin: 4px;
+  padding: 5px;
+  max-width: 100%;
+}
+.cloud-content label {
+  display: inline-block;
+}
+.cloud-content h2 {
+  font-size: 16px;
+}
+.cloud-content li {
+  margin: 6px 0;
+}
+.cloud-content [role="alert"] {
+  color: #a33426;
+}
