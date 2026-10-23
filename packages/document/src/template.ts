@@ -123,6 +123,7 @@ export function instantiateTemplate(
     ids.add(id);
     const base = {
       id,
+      templateSlot: { version: 1 as const, slotId: slot.slotId },
       ...slot.frame,
       rotation: slot.rotation ?? 0,
       opacity: slot.opacity ?? 1,

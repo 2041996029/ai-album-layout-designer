@@ -51,6 +51,8 @@ export interface EditorProps {
   store: RevisionStore & ResourceWriter;
   resources: ResourceManifest;
   port: ResourcePort;
+  importRef?: { current: ((files: File[]) => Promise<void>) | null };
+  onDocumentChange?: (doc: DocumentModel, resources: ResourceManifest) => void;
   onExport?: (save: () => Promise<SaveResult>) => void;
   onCreateTemplateProject?: (
     pageSize: { width: number; height: number },
@@ -105,6 +107,9 @@ export function Editor(p: EditorProps) {
     [crop, setCrop] = useState<ImageLayer>(),
     [textEdit, setTextEdit] = useState<KnownLayer>(),
     [tab, setTab] = useState("photos");
+  useEffect(() => {
+    p.onDocumentChange?.(doc, manifest);
+  }, [doc, manifest, p.onDocumentChange]);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const editGeneration = useRef(0);
   const resourceOperation = useRef(false);
@@ -532,6 +537,12 @@ export function Editor(p: EditorProps) {
       setBusy(false);
     }
   };
+  useEffect(() => {
+    if (p.importRef) p.importRef.current = importFiles;
+    return () => {
+      if (p.importRef) p.importRef.current = null;
+    };
+  });
   const removeAsset = (asset: AssetRecord) => {
     if (resourceOperation.current) {
       setMessage("请等待当前资源操作完成");

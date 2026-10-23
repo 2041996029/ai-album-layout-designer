@@ -89,3 +89,12 @@ it("rejects a modified registered template rather than preserving a stale signat
     ),
   ).toThrow("TEMPLATE_UNAVAILABLE");
 });
+it("retains signed template slot identities for cross-device edit permissions", () => {
+  const t = templateVersions[0],
+    layers = instantiateTemplate(t, { photo_1: "a", photo_2: "b" }, () =>
+      crypto.randomUUID(),
+    );
+  expect(
+    layers.map((l) => (l.templateSlot as { slotId: string }).slotId),
+  ).toEqual(t.slots.map((s) => s.slotId));
+});

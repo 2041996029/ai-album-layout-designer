@@ -1,0 +1,11 @@
+{
+  "pages": ["pages/album/index", "pages/tasks/index"],
+  "window": {
+    "navigationBarTitleText": "我的相册",
+    "navigationBarBackgroundColor": "#f7f3eb",
+    "backgroundColor": "#f7f3eb"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

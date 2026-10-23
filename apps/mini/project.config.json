@@ -1,0 +1,13 @@
+{
+  "description": "Native mini app; production AppID and request/upload/download domain allowlists require verified deployment.",
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
+  "appid": "touristappid",
+  "projectname": "album-mini",
+  "setting": {
+    "es6": true,
+    "useCompilerPlugins": ["typescript"],
+    "minified": true
+  },
+  "libVersion": "3.10.0"
+}

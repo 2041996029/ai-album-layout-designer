@@ -1,7 +1,8 @@
+import { CloudPanel } from "./cloud/CloudPanel";
 import { bundledAssetUrl } from "./bundled-url";
 import { LibraryPanel } from "./editor/LibraryPanel";
 import { ExportPanel } from "./export/ExportPanel";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ResourceManifest } from "@album/assets";
 import {
   IndexedDbRevisionStore,
@@ -62,8 +63,18 @@ export function download(
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export function App() {
+  const cloudImport = useRef<((files: File[]) => Promise<void>) | null>(null);
   const [saved, setSaved] = useState<SavedRevision>();
   const [error, setError] = useState("");
+  const [current, setCurrent] = useState<{
+    doc: DocumentModel;
+    resources: ResourceManifest;
+  }>();
+  const documentChanged = useCallback(
+    (doc: DocumentModel, resources: ResourceManifest) =>
+      setCurrent({ doc, resources }),
+    [],
+  );
   useEffect(() => {
     let active = true;
     startup ??= start().catch((e) => {
@@ -122,44 +133,59 @@ export function App() {
       </main>
     );
   return (
-    <Editor
-      key={saved.doc.projectId}
-      initial={saved.doc}
-      store={store}
-      resources={saved.resources}
-      port={store}
-      renderLibrary={(ctx) => <LibraryPanel {...ctx} />}
-      renderExport={({ save }) => <ExportPanel store={store} save={save} />}
-      onCreateTemplateProject={async (pageSize, resources) => {
-        const doc: DocumentModel = {
-          schemaVersion: 1,
-          projectId: "prj_" + crypto.randomUUID().replaceAll("-", ""),
-          revision: 1,
-          unit: "px96",
-          colorSpace: "srgb",
-          pageSize,
-          printProfile: { bleedMm: 3, safeMm: 5 },
-          cover: { front: [], back: [] },
-          spreads: [{ id: "spread_1", background: "#ffffff", layers: [] }],
-        };
-        const value = await store.create(doc, resources);
-        localStorage.setItem("album-active", doc.projectId);
-        setSaved(value);
-      }}
-      onRecover={async (file) => {
-        const next = await importProject(
-          new Uint8Array(await file.arrayBuffer()),
-          store,
-        );
-        localStorage.setItem("album-active", next.doc.projectId);
-        setSaved(next);
-      }}
-      onProjectExport={async (doc, resources) =>
-        download(
-          await exportDraftProject(doc, resources, store),
-          "拾光-可恢复项目.zip",
-        )
-      }
-    />
+    <>
+      <CloudPanel
+        onImport={async (file) => {
+          await cloudImport.current?.([file]);
+        }}
+        current={current ?? saved}
+        onOpen={(next) => {
+          setCurrent(next);
+          setSaved(next);
+          localStorage.setItem("album-active", next.doc.projectId);
+        }}
+      />
+      <Editor
+        importRef={cloudImport}
+        onDocumentChange={documentChanged}
+        key={saved.doc.projectId}
+        initial={saved.doc}
+        store={store}
+        resources={saved.resources}
+        port={store}
+        renderLibrary={(ctx) => <LibraryPanel {...ctx} />}
+        renderExport={({ save }) => <ExportPanel store={store} save={save} />}
+        onCreateTemplateProject={async (pageSize, resources) => {
+          const doc: DocumentModel = {
+            schemaVersion: 1,
+            projectId: "prj_" + crypto.randomUUID().replaceAll("-", ""),
+            revision: 1,
+            unit: "px96",
+            colorSpace: "srgb",
+            pageSize,
+            printProfile: { bleedMm: 3, safeMm: 5 },
+            cover: { front: [], back: [] },
+            spreads: [{ id: "spread_1", background: "#ffffff", layers: [] }],
+          };
+          const value = await store.create(doc, resources);
+          localStorage.setItem("album-active", doc.projectId);
+          setSaved(value);
+        }}
+        onRecover={async (file) => {
+          const next = await importProject(
+            new Uint8Array(await file.arrayBuffer()),
+            store,
+          );
+          localStorage.setItem("album-active", next.doc.projectId);
+          setSaved(next);
+        }}
+        onProjectExport={async (doc, resources) =>
+          download(
+            await exportDraftProject(doc, resources, store),
+            "拾光-可恢复项目.zip",
+          )
+        }
+      />
+    </>
   );
 }
