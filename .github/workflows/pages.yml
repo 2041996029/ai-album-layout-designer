@@ -41,7 +41,10 @@ jobs:
           enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
+          name: album-pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: apps/web/dist
       - name: Deploy website
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: album-pages-${{ github.run_id }}-${{ github.run_attempt }}
