@@ -30,6 +30,7 @@ test("imports local MJTPL, binds user photo, applies and undoes without exposing
   await expect(
     page.getByText("已导入「Synthetic」，共 1 个版式。"),
   ).toBeVisible({ timeout: 60000 });
+  await page.getByText("调整照片", { exact: true }).click();
   await page
     .getByLabel("导入模板照片 1")
     .selectOption({ label: "my-photo.png" });
@@ -96,6 +97,7 @@ test("serializes photo changes during slow theme application and offers no fake 
   await expect(
     page.getByText("已导入「Synthetic」，共 1 个版式。"),
   ).toBeVisible({ timeout: 30000 });
+  await page.getByText("调整照片", { exact: true }).click();
   await page.getByLabel("导入模板照片 1").selectOption({ label: "one.png" });
   await page.evaluate(async () => {
     const p = "/packages/storage/src/index.ts";

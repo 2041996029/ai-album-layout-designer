@@ -1,6 +1,8 @@
+import { photoPool, autoBindings } from "./library-photos";
 import { isUserPhoto } from "@album/assets";
 import { useEffect, useState } from "react";
 import {
+  walkLayers,
   templateVersions,
   instantiateTemplate,
   applyTemplateCommand,
@@ -127,19 +129,32 @@ function Preview({
 export function TemplatePanel(
   ctx: LibraryContext & { onUseCollection?: (themeId: string) => void },
 ) {
-  const [series, setSeries] = useState("all");
+  const [series, setSeries] = useState("themes");
   const [category, setCategory] = useState("all"),
     [template, setTemplate] = useState<TemplateVersion>(),
     [bindings, setBindings] = useState<Record<string, string>>({}),
     [error, setError] = useState(""),
-    [confirm, setConfirm] = useState(false),
     [message, setMessage] = useState("");
   const assets = ctx.resources.assets.filter(
       (a) => isUserPhoto(a) && a.status === "ready" && a.license.usable,
     ),
     spread = ctx.doc.spreads.find((s) => s.id === ctx.surfaceId);
+  const pool = photoPool(
+    assets,
+    [
+      ...ctx.doc.cover.front,
+      ...ctx.doc.cover.back,
+      ...ctx.doc.spreads.flatMap((s) => s.layers),
+    ],
+    ctx.selectedIds,
+  );
+  const themeGroups = [
+    ...new Set(
+      templateVersions.filter((t) => t.themeId).map((t) => t.themeId!),
+    ),
+  ].map((id) => templateVersions.filter((t) => t.themeId === id));
   const [urls, setUrls] = useState<string[]>([]);
-  const previewIds = assets
+  const previewIds = pool
     .slice(0, 4)
     .map((a) => a.id)
     .join("|");
@@ -171,10 +186,14 @@ export function TemplatePanel(
       owned.forEach(URL.revokeObjectURL);
     };
   }, [previewIds, ctx.port]);
-  function apply() {
+  function apply(chosen = template, assigned = bindings) {
+    const template = chosen,
+      bindings = assigned;
     if (!template || !spread) return;
     setError("");
     try {
+      if ([...walkLayers(spread.layers)].some((l) => l.locked))
+        throw new Error("当前跨页有锁定内容，请先解锁或选择其他跨页。");
       const scale = ctx.doc.pageSize.width / template.pageSize.width;
       if (
         Math.abs(scale - ctx.doc.pageSize.height / template.pageSize.height) >
@@ -227,7 +246,6 @@ export function TemplatePanel(
           ),
         )
       ) {
-        setConfirm(false);
         setMessage("已应用到当前跨页；可一次撤销。原片保持在照片素材中。");
       }
     } catch (e) {
@@ -243,6 +261,33 @@ export function TemplatePanel(
       );
     }
   }
+  function choose(t: TemplateVersion) {
+    const next = autoBindings(
+      t.slots.filter((s) => s.kind === "image").map((s) => s.slotId),
+      pool,
+    );
+    setTemplate(t);
+    setBindings(next);
+    setError("");
+    setMessage("");
+    if (
+      Object.keys(next).length <
+      t.slots.filter((s) => s.kind === "image").length
+    ) {
+      setError("照片不足，请先导入更多照片，或选择图数较少的版式。");
+      return;
+    }
+    apply(t, next);
+  }
+  const visible =
+    series === "basic"
+      ? templateVersions.filter((t) => !t.themeId)
+      : [
+          ...themeGroups.map((group) => group[0]),
+          ...(series === "all"
+            ? templateVersions.filter((t) => !t.themeId)
+            : []),
+        ];
   return (
     <section aria-label="原创模板" className="template-library">
       <div className="panel-heading">
@@ -250,7 +295,7 @@ export function TemplatePanel(
         <small>12 主题 · 96 跨页</small>
       </div>
       <p className="panel-hint">
-        选择一种气质，让照片自然成册。每款包含可编辑照片与文字。
+        选择风格，系统自动选版、填片。每套包含不同图数的可编辑版式。
       </p>
       <label>
         模板系列
@@ -260,7 +305,6 @@ export function TemplatePanel(
           onChange={(e) => {
             setSeries(e.target.value);
             setTemplate(undefined);
-            setConfirm(false);
           }}
         >
           <option value="all">全部模板</option>
@@ -276,7 +320,6 @@ export function TemplatePanel(
           onChange={(e) => {
             setCategory(e.target.value);
             setTemplate(undefined);
-            setConfirm(false);
           }}
         >
           <option value="all">全部</option>
@@ -289,41 +332,56 @@ export function TemplatePanel(
       </label>
       <p className="panel-hint">
         {urls.length
-          ? "使用已导入照片预览构图；应用时可为每个照片框重新选片。"
+          ? "点击主题，自动匹配版式并填入照片；可随时撤销。"
           : "导入照片后可查看实片预览；下方为版式示意。"}
       </p>
-      <div className="template-grid">
-        {[...templateVersions]
-          .sort(
-            (a, b) =>
-              (b.themeId ? 2 : Number(b.id.startsWith("style_"))) -
-              (a.themeId ? 2 : Number(a.id.startsWith("style_"))),
-          )
-          .filter(
-            (t) =>
-              series === "all" ||
-              (series === "themes" ? Boolean(t.themeId) : !t.themeId),
-          )
+      {template && (
+        <button className="wide" onClick={() => setTemplate(undefined)}>
+          ← 返回全部主题
+        </button>
+      )}
+      <div className="template-grid" hidden={Boolean(template)}>
+        {visible
           .filter((t) => category === "all" || t.category === category)
           .map((t) => (
             <button
               key={t.id}
-              className={`template-card ${template?.id === t.id ? "is-selected" : ""}`}
-              aria-pressed={template?.id === t.id}
+              className={`template-card ${(t.themeId ? template?.themeId === t.themeId : template?.id === t.id) ? "is-selected" : ""}`}
+              aria-pressed={
+                t.themeId
+                  ? template?.themeId === t.themeId
+                  : template?.id === t.id
+              }
               onClick={() => {
-                setTemplate(t);
-                setBindings({});
-                setError("");
-                setMessage("");
-                setConfirm(false);
+                const group = t.themeId
+                  ? templateVersions.filter((v) => v.themeId === t.themeId)
+                  : [t];
+                const fitting = group.filter(
+                  (v) =>
+                    v.slots.filter((s) => s.kind === "image").length <=
+                    pool.length,
+                );
+                const target =
+                  [...fitting].sort(
+                    (a, b) =>
+                      Math.abs(
+                        a.slots.filter((s) => s.kind === "image").length -
+                          pool.length,
+                      ) -
+                      Math.abs(
+                        b.slots.filter((s) => s.kind === "image").length -
+                          pool.length,
+                      ),
+                  )[0] ?? t;
+                choose(target);
               }}
             >
               <Preview template={t} urls={urls} />
-              <span className="template-card-title">{t.name}</span>
+              <span className="template-card-title">
+                {t.collectionName ?? t.name}
+              </span>
               <small>
-                {t.collectionName
-                  ? `${t.collectionName} · 第${t.pageOrder}/8页 · `
-                  : ""}
+                {t.collectionName ? `整套 8 跨页 · 1–4 图版式 · ` : ""}
                 {t.slots.filter((s) => s.kind === "image").length} 张照片 ·{" "}
                 {categories[t.category]}
                 {t.id.startsWith("style_") || t.themeId ? "" : " · 旧版"}
@@ -334,7 +392,26 @@ export function TemplatePanel(
       {!spread && <p>请选择内页跨页后应用模板。</p>}
       {template && (
         <div aria-label="模板预览">
-          <h4>{template.name}</h4>
+          <h4>{template.collectionName ?? template.name}</h4>
+          {template.themeId && (
+            <div className="theme-variants" aria-label="主题内版式">
+              {templateVersions
+                .filter((t) => t.themeId === template.themeId)
+                .map((t) => (
+                  <button
+                    key={t.id}
+                    aria-pressed={template.id === t.id}
+                    onClick={() => choose(t)}
+                  >
+                    <Preview template={t} urls={urls} />
+                    <span>
+                      {t.slots.filter((s) => s.kind === "image").length} 图 ·{" "}
+                      {t.name.split(" / ")[1] ?? t.pageOrder}
+                    </span>
+                  </button>
+                ))}
+            </div>
+          )}
           {template.themeId && ctx.onUseCollection && (
             <button
               className="wide"
@@ -343,55 +420,40 @@ export function TemplatePanel(
               使用整套主题（8 跨页）
             </button>
           )}
-          <p>
-            预览不修改作品；按当前项目尺寸等比适配。
-            {template.slots.filter((s) => s.kind === "image").length}{" "}
-            个照片槽，标题和日期可编辑。
+          <p className="panel-hint">
+            系统从 {pool.length} 张照片中自动填入 {Object.keys(bindings).length}{" "}
+            张，其余照片保留在素材栏。点击内部版式即可切换，支持一次撤销。
           </p>
-          <p>
-            待选照片 {assets.length} 张；已绑定{" "}
-            {new Set(Object.values(bindings).filter(Boolean)).size}{" "}
-            张，其余照片保留在素材栏，未自动入册。
-          </p>
-          {template.slots
-            .filter((s) => s.kind === "image")
-            .map((s) => (
-              <label
-                key={s.slotId}
-                style={{ display: "block", marginBottom: 8 }}
-              >
-                {s.slotId}{" "}
-                <select
-                  aria-label={`模板照片 ${s.slotId}`}
-                  value={bindings[s.slotId] ?? ""}
-                  onChange={(e) => {
-                    setBindings({ ...bindings, [s.slotId]: e.target.value });
-                    setConfirm(false);
-                  }}
+          <details>
+            <summary>调整照片</summary>
+            {template.slots
+              .filter((s) => s.kind === "image")
+              .map((s) => (
+                <label
+                  key={s.slotId}
+                  style={{ display: "block", marginBottom: 8 }}
                 >
-                  <option value="">请选择照片</option>
-                  {assets.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.source.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          <p>来源：项目原创几何；无附带第三方照片。字体按 OFL 授权。</p>
-          {!confirm ? (
-            <button disabled={!spread} onClick={() => setConfirm(true)}>
-              应用到当前跨页
+                  {s.slotId}{" "}
+                  <select
+                    aria-label={`模板照片 ${s.slotId}`}
+                    value={bindings[s.slotId] ?? ""}
+                    onChange={(e) => {
+                      setBindings({ ...bindings, [s.slotId]: e.target.value });
+                    }}
+                  >
+                    <option value="">请选择照片</option>
+                    {assets.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.source.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            <button disabled={!spread} onClick={() => apply()}>
+              应用调整
             </button>
-          ) : (
-            <div>
-              <p>将替换当前跨页的全部图层，其他跨页不变。</p>
-              <button disabled={!spread} onClick={apply}>
-                确认替换当前跨页
-              </button>
-              <button onClick={() => setConfirm(false)}>返回预览</button>
-            </div>
-          )}
+          </details>
         </div>
       )}
       {error && <p role="alert">{error}</p>}

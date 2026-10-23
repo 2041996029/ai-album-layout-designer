@@ -32,7 +32,7 @@ async function photos(page: Page) {
     page.getByRole("button", { name: "添加照片 second.png" }),
   ).toBeVisible({ timeout: 30000 });
 }
-test("five template categories preview without changes, require explicit binding, and apply/undo one target spread", async ({
+test("basic template click fills imported photos and applies/undoes one target spread", async ({
   page,
 }) => {
   await boot(page);
@@ -47,24 +47,9 @@ test("five template categories preview without changes, require explicit binding
     await page.getByLabel("模板分类").selectOption(value);
     await expect(page.getByRole("region", { name: "原创模板" })).toBeVisible();
   }
+  await page.getByLabel("模板系列").selectOption("basic");
   await page.getByLabel("模板分类").selectOption("wedding");
   await page.getByRole("button", { name: /婚礼 · 原创留白/ }).click();
-  expect((await model(page)).spreads).toEqual(before.spreads);
-  await page
-    .getByRole("button", { name: "应用到当前跨页", exact: true })
-    .click();
-  await page.getByRole("button", { name: "确认替换当前跨页" }).click();
-  await expect(page.getByRole("alert")).toHaveText("请为每个照片槽选择照片。");
-  await page
-    .getByLabel("模板照片 photo_1")
-    .selectOption({ label: "first.jpg" });
-  await page
-    .getByLabel("模板照片 photo_2")
-    .selectOption({ label: "second.png" });
-  await page
-    .getByRole("button", { name: "应用到当前跨页", exact: true })
-    .click();
-  await page.getByRole("button", { name: "确认替换当前跨页" }).click();
   const after = await model(page);
   expect(after.spreads[0]).toEqual(before.spreads[0]);
   expect(after.spreads[1].templateRef).toMatchObject({
@@ -89,7 +74,9 @@ test("33 filters batch selected photos and preserve text; strength is one undo s
   await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
   await page.getByRole("button", { name: "滤镜", exact: true }).click();
   await expect(
-    page.getByText("选中 2 个可编辑照片图层，文字和形状不受影响。"),
+    page.getByText(
+      "选中照片 · 2 张可编辑照片。锁定照片与装饰不受影响，可一次撤销。",
+    ),
   ).toBeVisible();
   expect(
     await page
@@ -141,16 +128,6 @@ test("common style library previews imported photos and applies background, typo
     region.locator(".template-card").first().locator("svg image"),
   ).toHaveCount(2);
   await region.getByRole("button", { name: /旗袍 · 海棠旧梦 \/ 2图/ }).click();
-  await page
-    .getByLabel("模板照片 photo_1")
-    .selectOption({ label: "first.jpg" });
-  await page
-    .getByLabel("模板照片 photo_2")
-    .selectOption({ label: "second.png" });
-  await page
-    .getByRole("button", { name: "应用到当前跨页", exact: true })
-    .click();
-  await page.getByRole("button", { name: "确认替换当前跨页" }).click();
   const after = await model(page);
   expect(after.spreads[0].background).toBe("#f2e8db");
   expect(after.spreads[0].templateRef.id).toBe("style_qipao_2");
@@ -165,7 +142,9 @@ test("common style library previews imported photos and applies background, typo
   expect((await model(page)).spreads).toEqual(before.spreads);
   await page.getByLabel("模板分类").selectOption("jk");
   await expect(region.locator(".template-card")).toHaveCount(3);
-  await region.screenshot({ path: testInfo.outputPath("style-template-library.png") });
+  await region.screenshot({
+    path: testInfo.outputPath("style-template-library.png"),
+  });
   await page.getByRole("button", { name: "智能排版", exact: true }).click();
   await expect(
     page.getByLabel("场景模板").locator('optgroup[label="JK 校园"] option'),
@@ -193,7 +172,7 @@ test("twelve original collections offer eight editable decorated spreads each", 
     "monochrome",
   ]) {
     await page.getByLabel("模板分类").selectOption(category);
-    await expect(page.locator(".template-card")).toHaveCount(8);
+    await expect(page.locator(".template-card")).toHaveCount(1);
     await expect(
       page
         .locator(".template-card")
@@ -203,21 +182,10 @@ test("twelve original collections offer eight editable decorated spreads each", 
     ).toBeVisible();
   }
   await page.getByLabel("模板分类").selectOption("qipao");
-  await page
-    .getByRole("button", { name: /旗袍 · 海棠旧梦 \/ 02 相遇/ })
-    .click();
-  await page
-    .getByLabel("模板照片 photo_1")
-    .selectOption({ label: "first.jpg" });
-  await page
-    .getByLabel("模板照片 photo_2")
-    .selectOption({ label: "second.png" });
-  await page
-    .getByRole("button", { name: "应用到当前跨页", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "确认替换当前跨页", exact: true })
-    .click();
+  await page.locator(".template-card").click();
+  await expect(page.getByLabel("主题内版式").getByRole("button")).toHaveCount(
+    8,
+  );
   const after = await model(page);
   expect(after.spreads[0].templateRef.id).toBe("theme_qipao_2");
   expect(
@@ -237,7 +205,7 @@ test("original collection opens eight theme pages and applies with existing loca
   await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
   await page.getByLabel("模板系列").selectOption("themes");
   await page.getByLabel("模板分类").selectOption("qipao");
-  await page.getByRole("button", { name: /旗袍 · 海棠旧梦 \/ 01 序/ }).click();
+  await page.locator(".template-card").click();
   await page
     .getByRole("button", { name: "使用整套主题（8 跨页）", exact: true })
     .click();
@@ -249,6 +217,7 @@ test("original collection opens eight theme pages and applies with existing loca
         .evaluate((img: HTMLImageElement) => img.naturalWidth),
     )
     .toBeGreaterThan(0);
+  await page.getByText("调整照片", { exact: true }).click();
   await page.getByLabel("导入模板照片 1").selectOption({ label: "first.jpg" });
   await page.getByRole("button", { name: "替换当前跨页", exact: true }).click();
   await expect(page.getByText("已应用当前跨页，可以一次撤销。")).toBeVisible();
@@ -262,4 +231,102 @@ test("original collection opens eight theme pages and applies with existing loca
   expect(saved.spreads[0].importedTemplate.sourceLayers.length).toBeGreaterThan(
     1,
   );
+});
+
+test("no photo selection applies filters across spreads, with one undo", async ({
+  page,
+}) => {
+  await boot(page);
+  await photos(page);
+  await page.getByRole("button", { name: "添加照片 first.jpg" }).click();
+  await page.getByRole("button", { name: "添加跨页", exact: true }).click();
+  await page.getByRole("button", { name: "添加照片 second.png" }).click();
+  await page.getByRole("button", { name: "文字", exact: true }).click();
+  const before = await model(page);
+  await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
+  await page.getByRole("button", { name: "滤镜", exact: true }).click();
+  await expect(page.getByText(/整本相册 · 2 张可编辑照片/)).toBeVisible();
+  await page.getByRole("button", { name: /^F07 / }).click();
+  const after = await model(page);
+  expect(
+    after.spreads
+      .flatMap((s: any) => s.layers)
+      .filter((l: any) => l.type === "image")
+      .every((l: any) => l.filter?.presetId === "F07"),
+  ).toBe(true);
+  await page.getByRole("button", { name: "撤销", exact: true }).click();
+  expect((await model(page)).spreads).toEqual(before.spreads);
+});
+test("selected photo gets filter alone; explicit album scope includes other spreads", async ({
+  page,
+}) => {
+  await boot(page);
+  await photos(page);
+  await page.getByRole("button", { name: "添加照片 first.jpg" }).click();
+  await page.getByRole("button", { name: "添加跨页", exact: true }).click();
+  await page.getByRole("button", { name: "添加照片 second.png" }).click();
+  await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
+  await page.getByRole("button", { name: "滤镜", exact: true }).click();
+  await page.getByRole("button", { name: /^F07 / }).click();
+  let saved = await model(page);
+  expect(saved.spreads[0].layers[0].filter ?? null).toBeNull();
+  expect(saved.spreads[1].layers[0].filter.presetId).toBe("F07");
+  await page.getByLabel("滤镜应用范围").selectOption("album");
+  await page.getByRole("button", { name: /^F08 / }).click();
+  saved = await model(page);
+  expect(saved.spreads[0].layers[0].filter.presetId).toBe("F08");
+  expect(saved.spreads[1].layers[0].filter.presetId).toBe("F08");
+});
+test("theme automatic filling never repeats missing photos and respects locked content", async ({
+  page,
+}, testInfo) => {
+  await boot(page);
+  await photos(page);
+  await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
+  await page.getByLabel("模板分类").selectOption("qipao");
+  await page.locator(".template-card").click();
+  const filled = await model(page);
+  expect(
+    filled.spreads[0].layers.filter((l: any) => l.type === "image"),
+  ).toHaveLength(2);
+  await page
+    .getByLabel("主题内版式")
+    .getByRole("button", { name: /4 图/ })
+    .first()
+    .click();
+  await expect(page.getByRole("alert")).toContainText("照片不足");
+  expect((await model(page)).spreads).toEqual(filled.spreads);
+  await page
+    .getByLabel("主题内版式")
+    .getByRole("button", { name: /2 图/ })
+    .first()
+    .click();
+  const before = await model(page),
+    image = before.spreads[0].layers.find((l: any) => l.type === "image");
+  await page
+    .getByRole("button", { name: `切换锁定 ${image.id}`, exact: true })
+    .click();
+  const locked = await model(page);
+  await page
+    .getByLabel("主题内版式")
+    .getByRole("button", { name: /1 图/ })
+    .first()
+    .click();
+  await expect(page.getByRole("alert")).toContainText("锁定");
+  expect((await model(page)).spreads).toEqual(locked.spreads);
+  await page
+    .getByRole("region", { name: "原创模板" })
+    .screenshot({ path: testInfo.outputPath("theme-interaction.png") });
+  await page.getByRole("button", { name: "滤镜", exact: true }).click();
+  await page.getByRole("button", { name: /^F07 / }).click();
+  const filtered = await model(page);
+  expect(
+    filtered.spreads[0].layers.find((l: any) => l.id === image.id).filter ??
+      null,
+  ).toBeNull();
+  expect(
+    filtered.spreads[0].layers
+      .filter((l: any) => l.type === "image" && !l.locked)
+      .every((l: any) => l.filter?.presetId === "F07"),
+  ).toBe(true);
 });

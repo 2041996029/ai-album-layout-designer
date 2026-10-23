@@ -9,9 +9,11 @@ import { recipes } from "@album/render";
 import type { LibraryContext } from "./TemplatePanel";
 export function FilterPanel(ctx: LibraryContext) {
   const [category, setCategory] = useState("全部"),
-    [strength, setStrength] = useState(65);
+    [strength, setStrength] = useState(65),
+    [scope, setScope] = useState("auto");
   const selected = new Set(ctx.selectedIds),
     images = new Map<string, ImageLayer>();
+  let hasPhotoSelection = false;
   const collect = (
     layers: import("@album/document").Layer[],
     inheritedSelected = false,
@@ -20,6 +22,12 @@ export function FilterPanel(ctx: LibraryContext) {
     for (const layer of layers) {
       const locked = ancestorLocked || layer.locked === true,
         chosen = inheritedSelected || selected.has(layer.id);
+      if (
+        chosen &&
+        isImageLayer(layer) &&
+        layer.layoutPhotoRole !== "decoration"
+      )
+        hasPhotoSelection = true;
       if (
         isImageLayer(layer) &&
         layer.layoutPhotoRole !== "decoration" &&
@@ -30,11 +38,17 @@ export function FilterPanel(ctx: LibraryContext) {
       if (isGroupLayer(layer)) collect(layer.children, chosen, locked);
     }
   };
-  collect([
+  const allLayers = [
     ...ctx.doc.cover.front,
     ...ctx.doc.cover.back,
     ...ctx.doc.spreads.flatMap((s) => s.layers),
-  ]);
+  ];
+  collect(allLayers);
+  const wholeAlbum = scope === "album" || !hasPhotoSelection;
+  if (wholeAlbum) {
+    images.clear();
+    collect(allLayers, true);
+  }
   function update(factory: (image: ImageLayer) => FilterRef | null) {
     if (!images.size) return;
     ctx.execute({
@@ -49,7 +63,21 @@ export function FilterPanel(ctx: LibraryContext) {
   return (
     <section aria-label="照片滤镜" style={{ padding: 16 }}>
       <h3>照片滤镜</h3>
-      <p>选中 {images.size} 个可编辑照片图层，文字和形状不受影响。</p>
+      <p className="panel-hint">
+        {wholeAlbum ? "整本相册" : "选中照片"} · {images.size}{" "}
+        张可编辑照片。锁定照片与装饰不受影响，可一次撤销。
+      </p>
+      <label>
+        应用范围{" "}
+        <select
+          aria-label="滤镜应用范围"
+          value={scope}
+          onChange={(e) => setScope(e.target.value)}
+        >
+          <option value="auto">自动：选中照片，否则整本</option>
+          <option value="album">整本相册</option>
+        </select>
+      </label>
       <button disabled={!images.size} onClick={() => update(() => null)}>
         原图（移除滤镜）
       </button>
@@ -102,7 +130,7 @@ export function FilterPanel(ctx: LibraryContext) {
           }}
         />
       </label>
-      <p style={{ fontSize: 12 }}>33 种预设 · 视觉风格待最终确认</p>
+      <p style={{ fontSize: 12 }}>33 种风格 · 点击即应用</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         {recipes
           .filter((r) => category === "全部" || r.category === category)

@@ -1962,3 +1962,43 @@ script[type="application/json"] {
 .theme-photo-selection label {
   overflow-wrap: anywhere;
 }
+
+/* Theme variants belong inside their collection rather than the main library. */
+.theme-variants {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.theme-variants button {
+  padding: 6px;
+  min-width: 0;
+  border: 1px solid var(--border, #d5d9df);
+  border-radius: 10px;
+  text-align: left;
+}
+.theme-variants button[aria-pressed="true"] {
+  border-color: #577e78;
+  box-shadow: 0 0 0 1px #577e78;
+}
+.theme-variants .template-preview {
+  width: 100%;
+  display: block;
+  border-radius: 5px;
+}
+.theme-variants span {
+  display: block;
+  font-size: 11px;
+  margin-top: 5px;
+}
+.template-library details {
+  margin: 14px 0;
+}
+.template-library summary,
+.theme-page-details summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.template-grid[hidden] {
+  display: none;
+}

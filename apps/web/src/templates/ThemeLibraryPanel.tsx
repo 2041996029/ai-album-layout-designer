@@ -1,3 +1,4 @@
+import { photoPool, autoBindings } from "../editor/library-photos";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { IndexedDbThemeLibrary } from "@album/storage";
 import { isUserPhoto } from "@album/assets";
@@ -42,6 +43,15 @@ export function ThemeLibraryPanel(
   const assets = ctx.resources.assets.filter(
     (a) => isUserPhoto(a) && a.status === "ready" && a.license.usable,
   );
+  const pool = photoPool(
+    assets,
+    [
+      ...ctx.doc.cover.front,
+      ...ctx.doc.cover.back,
+      ...ctx.doc.spreads.flatMap((s) => s.layers),
+    ],
+    ctx.selectedIds,
+  );
   const theme = converted?.theme,
     page = theme?.pages.find((p) => p.id === pageId);
   const refresh = () => library.list().then(setThemes);
@@ -72,8 +82,13 @@ export function ThemeLibraryPanel(
     setConverted(value);
     setPageId(value.theme.pages[0]?.id ?? "");
     setSelectedPages([]);
-    setBindings({});
-    setSelectedPhotos(assets.map((a) => a.id));
+    setBindings(
+      autoBindings(
+        value.theme.pages[0]?.photoSlots.map((s) => s.slotId) ?? [],
+        pool,
+      ),
+    );
+    setSelectedPhotos(pool.map((a) => a.id));
     setShowConverted(false);
     setConfirmBook(false);
   };
@@ -85,7 +100,29 @@ export function ThemeLibraryPanel(
     setError("");
     try {
       const value = await library.get(id);
-      if (sequence.current === token) choose(value);
+      if (sequence.current === token) {
+        choose(value);
+        const target = [...value.theme.pages]
+          .filter(
+            (p) =>
+              !p.issues.some((i) => i.severity === "blocker") &&
+              p.photoSlots.length <= pool.length,
+          )
+          .sort(
+            (a, b) =>
+              Math.abs(a.photoSlots.length - pool.length) -
+              Math.abs(b.photoSlots.length - pool.length),
+          )[0];
+        if (target) {
+          setPageId(target.id);
+          const next = autoBindings(
+            target.photoSlots.map((s) => s.slotId),
+            pool,
+          );
+          setBindings(next);
+          await apply(false, target, value, next);
+        }
+      }
     } catch (e) {
       setError(errorText(e));
     }
@@ -116,8 +153,20 @@ export function ThemeLibraryPanel(
       }
     }
   };
-  const apply = async (book: boolean) => {
+  const apply = async (
+    book: boolean,
+    target = page,
+    source = converted,
+    assigned = bindings,
+  ) => {
+    const page = target,
+      converted = source,
+      theme = source?.theme;
     if (!converted || !page || !ctx.applyImportedTheme) return;
+    if (!book && page.photoSlots.some((s) => !assigned[s.slotId])) {
+      setError("照片不足，请导入更多照片，或选择图数较少的版式。");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -134,7 +183,7 @@ export function ThemeLibraryPanel(
       const ok = await ctx.applyImportedTheme(
         converted,
         ids,
-        book ? selectedPhotos : bindings,
+        book ? selectedPhotos : assigned,
         book,
       );
       if (ok) {
@@ -239,11 +288,17 @@ export function ThemeLibraryPanel(
               <article key={p.id}>
                 <button
                   className={pageId === p.id ? "is-selected" : ""}
+                  disabled={busy}
                   onClick={() => {
                     setPageId(p.id);
-                    setBindings({});
+                    const next = autoBindings(
+                      p.photoSlots.map((s) => s.slotId),
+                      pool,
+                    );
+                    setBindings(next);
                     setShowConverted(false);
                     setError("");
+                    void apply(false, p, converted, next);
                   }}
                 >
                   <img src={urls[p.id]} alt={`${p.name}源预览`} />
@@ -340,25 +395,31 @@ export function ThemeLibraryPanel(
               </p>
             ))}
           </details>
-          {page.photoSlots.map((slot, index) => (
-            <label className="theme-binding" key={slot.slotId}>
-              照片 {index + 1}
-              <select
-                aria-label={`导入模板照片 ${index + 1}`}
-                value={bindings[slot.slotId] ?? ""}
-                onChange={(e) =>
-                  setBindings({ ...bindings, [slot.slotId]: e.target.value })
-                }
-              >
-                <option value="">请选择用户照片</option>
-                {assets.map((a) => (
-                  <option value={a.id} key={a.id}>
-                    {a.source.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
+          <p className="panel-hint">
+            点击版式自动填入照片并应用，支持一次撤销。
+          </p>
+          <details>
+            <summary>调整照片</summary>
+            {page.photoSlots.map((slot, index) => (
+              <label className="theme-binding" key={slot.slotId}>
+                照片 {index + 1}
+                <select
+                  aria-label={`导入模板照片 ${index + 1}`}
+                  value={bindings[slot.slotId] ?? ""}
+                  onChange={(e) =>
+                    setBindings({ ...bindings, [slot.slotId]: e.target.value })
+                  }
+                >
+                  <option value="">请选择用户照片</option>
+                  {assets.map((a) => (
+                    <option value={a.id} key={a.id}>
+                      {a.source.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </details>
           <p className="panel-hint">
             应用会替换当前跨页的图层；源样片不会作为你的选片入册。可以一次撤销。
           </p>
