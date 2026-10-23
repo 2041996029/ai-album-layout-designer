@@ -1,6 +1,7 @@
 import {
   type Actor,
   type Database,
+  digest,
   fail,
   id,
   runIdempotent,
@@ -68,7 +69,7 @@ export type SecretOptions = {
 export class SecretService {
   constructor(
     private db: Database,
-    private auth: Pick<AuthService, "assertActor">,
+    private auth: Pick<AuthService, "assertActor" | "hash">,
     private port: SecretPort,
     private options: SecretOptions,
     private request: RequestContext = {},
@@ -112,15 +113,6 @@ export class SecretService {
     value: Uint8Array,
     reason: string,
   ): Promise<SecretMetadata> {
-    return this.writeVersion(actor, purpose, value, reason, id());
-  }
-  private async writeVersion(
-    actor: Actor,
-    purpose: components["schemas"]["SecretCreate"]["purpose"],
-    value: Uint8Array,
-    reason: string,
-    name: string,
-  ): Promise<SecretMetadata> {
     if (
       ![
         "storage_read",
@@ -130,53 +122,94 @@ export class SecretService {
         "wechat",
         "payment",
         "notify",
-      ].includes(purpose) ||
-      !value.length ||
-      value.length > 65536
+      ].includes(purpose)
     )
       fail("SECRET_INVALID", 422);
+    return this.writeVersion(actor, value, reason, { purpose });
+  }
+  private async writeVersion(
+    actor: Actor,
+    value: Uint8Array,
+    reason: string,
+    target:
+      | { purpose: components["schemas"]["SecretCreate"]["purpose"] }
+      | { referenceId: string },
+  ): Promise<SecretMetadata> {
+    if (!value.length || value.length > 65536) fail("SECRET_INVALID", 422);
     requireReason(reason);
-    // Validate/consume step-up before the external write; no database lock crosses that call.
-    await this.db.transaction((tx) => this.authorize(tx, actor));
-    let binding: { secretRef: string; secretVersion: string };
     const copy = Uint8Array.from(value);
     try {
-      binding = await this.port.write(name, copy);
-    } catch {
-      fail("SECRET_WRITE_FAILED", 503);
+      // A keyed digest prevents SQL contents from becoming an offline secret dictionary oracle.
+      // Neither the plaintext nor its unkeyed digest crosses the SQL/log boundary.
+      const hash = payloadHash({
+        ...target,
+        reason,
+        valueHash: this.auth.hash(`config:secret-value:${digest(copy)}`),
+      });
+      const scope = `config:secret:${"purpose" in target ? "create" : "rotate"}:${this.options.environment}:${actor.userId}`;
+      return await this.db.transaction(async (tx) => {
+        // Replays still require the current session and live role, but consume no further proof.
+        await requireRoles(tx, this.auth, actor, ["platform_ops"]);
+        const work = async () => {
+          let purpose: components["schemas"]["SecretCreate"]["purpose"],
+            name: string;
+          if ("purpose" in target) {
+            purpose = target.purpose;
+            name = id();
+          } else {
+            const { rows } = await tx.query(
+              "SELECT purpose,secret_ref FROM secret_references WHERE id=$1 AND environment=$2",
+              [target.referenceId, this.options.environment],
+            );
+            if (!rows[0]) fail("SECRET_UNAVAILABLE", 404);
+            purpose = rows[0].purpose;
+            name = rows[0].secret_ref;
+          }
+          await this.authorize(tx, actor);
+          let binding: { secretRef: string; secretVersion: string };
+          try {
+            binding = await this.port.write(name, copy);
+          } catch {
+            fail("SECRET_WRITE_FAILED", 503);
+          }
+          if (
+            ![binding.secretRef, binding.secretVersion].every((v) =>
+              /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(v),
+            )
+          )
+            fail("SECRET_WRITE_FAILED", 503);
+          await requireRoles(tx, this.auth, actor, ["platform_ops"]);
+          const { rows } = await tx.query(
+            "INSERT INTO secret_references(id,environment,secret_ref,secret_version,purpose) VALUES($1,$2,$3,$4,$5) RETURNING *",
+            [
+              id(),
+              this.options.environment,
+              binding.secretRef,
+              binding.secretVersion,
+              purpose,
+            ],
+          );
+          await audit(
+            tx,
+            actor,
+            this.request,
+            "secret.write",
+            "secret",
+            rows[0].id,
+            reason,
+            { purpose },
+          );
+          return this.metadata(rows[0]);
+        };
+        // The per-request advisory lock spans the vault write. It serializes identical
+        // requests before consuming proof or mutating the vault; no publication lock is held.
+        return this.request.idempotencyKey
+          ? runIdempotent(tx, scope, this.request.idempotencyKey, hash, work)
+          : work();
+      });
     } finally {
       copy.fill(0);
     }
-    if (
-      ![binding.secretRef, binding.secretVersion].every((v) =>
-        /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(v),
-      )
-    )
-      fail("SECRET_WRITE_FAILED", 503);
-    return this.db.transaction(async (tx) => {
-      await requireRoles(tx, this.auth, actor, ["platform_ops"]);
-      const { rows } = await tx.query(
-        "INSERT INTO secret_references(id,environment,secret_ref,secret_version,purpose) VALUES($1,$2,$3,$4,$5) RETURNING *",
-        [
-          id(),
-          this.options.environment,
-          binding.secretRef,
-          binding.secretVersion,
-          purpose,
-        ],
-      );
-      await audit(
-        tx,
-        actor,
-        this.request,
-        "secret.write",
-        "secret",
-        rows[0].id,
-        reason,
-        { purpose },
-      );
-      return this.metadata(rows[0]);
-    });
   }
   async rotateSecret(
     actor: Actor,
@@ -184,23 +217,8 @@ export class SecretService {
     value: Uint8Array,
     reason: string,
   ): Promise<SecretMetadata> {
-    const previous = await this.db.transaction(async (tx) => {
-      await requireRoles(tx, this.auth, actor, ["platform_ops"]);
-      const { rows } = await tx.query(
-        "SELECT purpose,secret_ref FROM secret_references WHERE id=$1 AND environment=$2",
-        [referenceId, this.options.environment],
-      );
-      if (!rows[0]) fail("SECRET_UNAVAILABLE", 404);
-      return rows[0];
-    });
-    // Rotation creates a distinct immutable binding. Existing releases keep the old binding.
-    return this.writeVersion(
-      actor,
-      previous.purpose,
-      value,
-      reason,
-      previous.secret_ref,
-    );
+    // A distinct immutable binding retains the logical name; old releases keep their version.
+    return this.writeVersion(actor, value, reason, { referenceId });
   }
   async revokeSecret(
     actor: Actor,

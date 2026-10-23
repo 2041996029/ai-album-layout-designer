@@ -556,18 +556,33 @@ export class ConfigService {
     let state: TestResult["state"] = "passed",
       checks: string[] = ["schema", "dependencies", "secret_versions"],
       errorCode: string | undefined;
+    const secret = async (binding: SecretBinding) => {
+      if (
+        !secretBindings(payload).some(
+          (b) =>
+            b.secretRef === binding.secretRef &&
+            b.secretVersion === binding.secretVersion,
+        )
+      )
+        fail("SECRET_UNAVAILABLE", 403);
+      const vault = await this.vaultBinding(binding);
+      if (await this.secrets.isRevoked(vault.secretRef, vault.secretVersion))
+        fail("SECRET_REVOKED", 409);
+      return this.secrets.read(vault.secretRef, vault.secretVersion);
+    };
     if (level === "storage_roundtrip" && payload.kind === "storage") {
       if (!this.options.storageProbe)
         fail("CONFIG_INTEGRATION_UNCONFIGURED", 503);
-      const key = `config-tests/${id()}`,
+      const key = `${payload.basePrefix}/config-tests/${id()}`,
         bytes = randomBytes(32),
-        probe = this.options.storageProbe;
+        probe = this.options.storageProbe,
+        context = { payload: deepFreeze(payload), secret };
       let attempted = false;
       try {
         attempted = true;
-        await probe.put(key, bytes);
+        await probe.put(key, bytes, context);
         checks = ["dns", "object_put"];
-        const got = await probe.get(key);
+        const got = await probe.get(key, context);
         checks.push("object_get");
         if (digest(got) !== digest(bytes)) throw Error("HASH_MISMATCH");
         checks.push("object_hash");
@@ -577,7 +592,7 @@ export class ConfigService {
       } finally {
         if (attempted)
           try {
-            await probe.delete(key);
+            await probe.delete(key, context);
             checks.push("object_delete");
           } catch {
             state = "cleanup_required";
@@ -589,26 +604,7 @@ export class ConfigService {
       const integration = this.options.integrations?.[payload.kind];
       if (!integration) fail("CONFIG_INTEGRATION_UNCONFIGURED", 503);
       try {
-        const result = await integration.test(
-          payload,
-          level,
-          async (binding) => {
-            if (
-              !secretBindings(payload).some(
-                (b) =>
-                  b.secretRef === binding.secretRef &&
-                  b.secretVersion === binding.secretVersion,
-              )
-            )
-              fail("SECRET_UNAVAILABLE", 403);
-            const vault = await this.vaultBinding(binding);
-            if (
-              await this.secrets.isRevoked(vault.secretRef, vault.secretVersion)
-            )
-              fail("SECRET_REVOKED", 409);
-            return this.secrets.read(vault.secretRef, vault.secretVersion);
-          },
-        );
+        const result = await integration.test(payload, level, secret);
         const allow = [
           "dns",
           "authentication",
@@ -1000,6 +996,13 @@ export class ConfigService {
         const active = await this.active(tx);
         if (active?.id !== expectedCurrentRelease)
           fail("CONFIG_RELEASE_CONFLICT", 409);
+        // Replacing a manifest also removes current-only namespaces. Authorize every
+        // affected namespace against the actual active release under the publication lock.
+        for (const namespace of new Set([
+          ...Object.keys(source.versions),
+          ...Object.keys(active.manifest.versions),
+        ]))
+          await this.authorize(tx, actor, namespace);
         await this.stepUp(tx, actor);
         if ((await this.clock(tx)).getTime() - validationStarted >= 300_000)
           fail("CONFIG_TEST_EXPIRED", 409);

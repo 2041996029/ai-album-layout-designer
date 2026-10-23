@@ -272,10 +272,18 @@ export type ConfigIntegration = {
   ): Promise<IntegrationTestResult>;
   supports?(payload: ConfigPayload): boolean;
 };
+export type StorageProbeContext = {
+  payload: Extract<ConfigPayload, { kind: "storage" }>;
+  secret: (binding: SecretBinding) => Promise<Uint8Array>;
+};
 export type StorageProbe = {
-  put(key: string, bytes: Uint8Array): Promise<void>;
-  get(key: string): Promise<Uint8Array>;
-  delete(key: string): Promise<void>;
+  put(
+    key: string,
+    bytes: Uint8Array,
+    context: StorageProbeContext,
+  ): Promise<void>;
+  get(key: string, context: StorageProbeContext): Promise<Uint8Array>;
+  delete(key: string, context: StorageProbeContext): Promise<void>;
 };
 export type RequestContext = {
   reauthProof?: string;

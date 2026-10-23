@@ -728,6 +728,52 @@ describe("configuration transactions on PostgreSQL", () => {
       service.createConfigDraft(ops, "upload", multipart, null),
     ).rejects.toThrow("CONFIG_ADAPTER_CAPABILITY_UNSUPPORTED");
   });
+  it.each([
+    ["finance", "sku"],
+    ["content", "albumDefaults"],
+  ])(
+    "rollback cannot remove a current-only %s namespace",
+    async (role, kind) => {
+      const a = await tested();
+      const first = await publish([a.draft.id], [a.test.id]);
+      const roleId = id();
+      await db.database.transaction((tx) =>
+        tx.query(
+          "INSERT INTO admin_role_assignments(id,user_id,role) VALUES($1,$2,$3)",
+          [roleId, ops.userId, role],
+        ),
+      );
+      const b = await tested(example(schema.$defs[kind]));
+      const second = await publish([b.draft.id], [b.test.id], first.releaseId);
+      await db.database.transaction((tx) =>
+        tx.query(
+          "UPDATE admin_role_assignments SET revoked_at=clock_timestamp() WHERE id=$1",
+          [roleId],
+        ),
+      );
+      const before = await db.pool.query(
+        "SELECT (SELECT count(*) FROM ai_album.config_releases) releases,(SELECT count(*) FROM ai_album.audit_events) audits,(SELECT count(*) FROM ai_album.config_tests) tests",
+      );
+      await expect(
+        service
+          .withRequest({ reauthProof: await proof() })
+          .rollbackConfig(
+            ops,
+            first.releaseId,
+            second.releaseId,
+            "remove unauthorized namespace",
+          ),
+      ).rejects.toThrow("FORBIDDEN");
+      expect((await service.loadRelease()).releaseId).toBe(second.releaseId);
+      expect(
+        (
+          await db.pool.query(
+            "SELECT (SELECT count(*) FROM ai_album.config_releases) releases,(SELECT count(*) FROM ai_album.audit_events) audits,(SELECT count(*) FROM ai_album.config_tests) tests",
+          )
+        ).rows,
+      ).toEqual(before.rows);
+    },
+  );
   it("rollback rejects revoked old secrets and leaves the active release untouched", async () => {
     await seedSecret();
     const configured = service.withIntegrations({
@@ -909,6 +955,110 @@ describe("configuration transactions on PostgreSQL", () => {
       strict.testConfigDraft(ops, draft.id, "schema"),
     ).rejects.toThrow("CONFIG_DEPENDENCY_UNAVAILABLE");
   });
+  it.each(["bucket", "credential"])(
+    "storage tests reject a candidate with the wrong %s rather than reuse healthy profile A",
+    async (wrong) => {
+      const payload = {
+        ...example(schema.$defs.storage),
+        bucket: "bucket-a",
+        basePrefix: "tenant-a/assets",
+        credential: binding,
+      };
+      await db.database.transaction(async (tx) => {
+        await tx.query(
+          "INSERT INTO secret_references(id,environment,secret_ref,secret_version,purpose) VALUES($1,'dev',$2,$3,'storage_write')",
+          [id(), binding.secretRef, binding.secretVersion],
+        );
+        await tx.query(
+          "INSERT INTO secret_references(id,environment,secret_ref,secret_version,purpose) VALUES($1,'dev','bad_credential','bad_version','storage_write')",
+          [id()],
+        );
+      });
+      values.set(
+        `${binding.secretRef}:${binding.secretVersion}`,
+        Buffer.from("account-a"),
+      );
+      values.set("bad_credential:bad_version", Buffer.from("wrong-account"));
+      const objects = new Map<string, Uint8Array>();
+      const contexts: unknown[] = [];
+      type Context = {
+        payload: Extract<ConfigPayload, { kind: "storage" }>;
+        secret: (b: typeof binding) => Promise<Uint8Array>;
+      };
+      const configured = service.withStorageProbe({
+        async put(key: string, bytes: Uint8Array, context?: Context) {
+          // Profile A was the old unbound default; candidate-aware calls must use their supplied account.
+          if (context) {
+            contexts.push(context.payload);
+            const credential = await context.secret(context.payload.credential);
+            if (
+              context.payload.bucket !== "bucket-a" ||
+              Buffer.from(credential).toString() !== "account-a"
+            )
+              throw Error("candidate authentication failed");
+            await expect(
+              context.secret({
+                secretRef: "bad_credential",
+                secretVersion: "bad_version",
+              }),
+            ).rejects.toThrow("SECRET_UNAVAILABLE");
+            expect(key).toMatch(/^tenant-a\/assets\/config-tests\//);
+          }
+          objects.set(key, bytes.slice());
+        },
+        async get(key: string, context?: Context) {
+          if (context) contexts.push(context.payload);
+          return objects.get(key)!;
+        },
+        async delete(key: string, context?: Context) {
+          if (context) contexts.push(context.payload);
+          objects.delete(key);
+        },
+      });
+      const a = await configured.createConfigDraft(
+        ops,
+        "storage",
+        payload,
+        null,
+      );
+      expect(
+        (await configured.testConfigDraft(ops, a.id, "storage_roundtrip"))
+          .state,
+      ).toBe("passed");
+      const changed = {
+        ...payload,
+        ...(wrong === "bucket"
+          ? { bucket: "missing-bucket" }
+          : {
+              credential: {
+                secretRef: "bad_credential",
+                secretVersion: "bad_version",
+              },
+            }),
+      };
+      const b = await configured.updateConfigDraft(ops, a.id, 1, changed);
+      const schemaTest = await configured.testConfigDraft(ops, b.id, "schema");
+      const result = await configured.testConfigDraft(
+        ops,
+        b.id,
+        "storage_roundtrip",
+      );
+      expect(result.state).toBe("failed");
+      expect(contexts.slice(0, 3)).toEqual([payload, payload, payload]);
+      expect(objects.size).toBe(0);
+      await expect(
+        configured
+          .withRequest({ reauthProof: await proof() })
+          .publishConfig(
+            ops,
+            [b.id],
+            [schemaTest.id, result.id],
+            "reject invalid candidate",
+            null,
+          ),
+      ).rejects.toThrow("CONFIG_TEST_FAILED");
+    },
+  );
   it("records storage round-trip hash verification and warns when deleting only its new test object fails", async () => {
     const payload = example(schema.$defs.storage);
     payload.credential = binding;
@@ -948,7 +1098,9 @@ describe("configuration transactions on PostgreSQL", () => {
     expect(result.state).toBe("cleanup_required");
     expect(result.verifiedChecks).toContain("object_hash");
     expect(removed).toHaveLength(1);
-    expect(removed[0]).toMatch(/^config-tests\//);
+    expect(removed[0]).toMatch(
+      new RegExp(`^${payload.basePrefix}/config-tests/`),
+    );
     expect(objects.has("existing-object")).toBe(true);
     expect(JSON.stringify(result)).not.toContain("do-not-leak");
     const schemaTest = await configured.testConfigDraft(
@@ -1090,6 +1242,151 @@ describe("configuration transactions on PostgreSQL", () => {
     expect(result.verifiedChecks).not.toContain("object_hash");
     expect(removed).toHaveLength(1);
   });
+  for (const operation of ["create", "rotate"] as const) {
+    async function secretOperation() {
+      const secrets = new SecretService(db.database, auth, secretPort, {
+        environment: "dev",
+        reauth,
+      });
+      const original =
+        operation === "rotate"
+          ? await secrets
+              .withRequest({ reauthProof: await proof(ops, "admin_secret") })
+              .writeSecret(ops, "ai", Buffer.from("old-secret"), "seed")
+          : undefined;
+      const key = id();
+      const request = {
+        idempotencyKey: key,
+        reauthProof: await proof(ops, "admin_secret"),
+      };
+      return {
+        key,
+        secrets,
+        request,
+        async call(
+          value = "private-value-do-not-store",
+          reason = "credential change",
+          purpose: "ai" | "notify" = "ai",
+          target = original?.id,
+        ) {
+          const client = secrets.withRequest(request);
+          return operation === "create"
+            ? client.writeSecret(ops, purpose, Buffer.from(value), reason)
+            : client.rotateSecret(ops, target!, Buffer.from(value), reason);
+        },
+      };
+    }
+    it(`${operation} secret replays a lost response for seven days without a new proof or vault write`, async () => {
+      const operation = await secretOperation();
+      const first = await operation.call();
+      const count = values.size;
+      expect(await operation.call()).toEqual(first);
+      expect(values.size).toBe(count);
+      const rows = await db.pool.query(
+        "SELECT *,expires_at>=created_at+interval '7 days' ttl FROM ai_album.idempotency_keys WHERE idempotency_key=$1",
+        [operation.key],
+      );
+      expect(rows.rows).toHaveLength(1);
+      expect(rows.rows[0].ttl).toBe(true);
+      // Age the persisted completed result close to seven days without changing its payload.
+      // Reinsert because the schema deliberately makes created_at immutable.
+      await db.database.transaction(async (tx) => {
+        const record = (
+          await tx.query(
+            "DELETE FROM idempotency_keys WHERE idempotency_key=$1 RETURNING *",
+            [operation.key],
+          )
+        ).rows[0];
+        await tx.query(
+          "INSERT INTO idempotency_keys(id,created_at,principal_scope,idempotency_key,request_hash,operation,state,response_status,response_json,expires_at) VALUES($1,now()-interval '6 days 23 hours',$2,$3,$4,$5,'completed',200,$6,now()+interval '1 hour')",
+          [
+            record.id,
+            record.principal_scope,
+            record.idempotency_key,
+            record.request_hash,
+            record.operation,
+            record.response_json,
+          ],
+        );
+      });
+      operation.request.reauthProof = await proof(ops, "admin_secret");
+      expect(await operation.call()).toEqual(first);
+      expect(values.size).toBe(count);
+      expect(
+        (
+          await db.pool.query(
+            "SELECT consumed_at FROM ai_album.reauth_proofs WHERE token_hash=$1",
+            [auth.hash(operation.request.reauthProof)],
+          )
+        ).rows[0].consumed_at,
+      ).toBeNull();
+      expect(JSON.stringify(rows.rows)).not.toContain(
+        "private-value-do-not-store",
+      );
+      expect(
+        JSON.stringify(
+          (await db.pool.query("SELECT * FROM ai_album.audit_events")).rows,
+        ),
+      ).not.toContain("private-value-do-not-store");
+      // A consumed/absent proof is acceptable only for replay; live permissions are still required.
+      await db.database.transaction((tx) =>
+        tx.query(
+          "UPDATE admin_role_assignments SET revoked_at=clock_timestamp() WHERE user_id=$1",
+          [ops.userId],
+        ),
+      );
+      await expect(operation.call()).rejects.toThrow("FORBIDDEN");
+      expect(values.size).toBe(count);
+    });
+    it(`${operation} secret rejects changed payloads before proof consumption or vault mutation`, async () => {
+      const operation = await secretOperation();
+      await operation.call();
+      const count = values.size;
+      operation.request.reauthProof = await proof(ops, "admin_secret");
+      await expect(operation.call("changed-value")).rejects.toMatchObject({
+        code: "IDEMPOTENCY_CONFLICT",
+        status: 409,
+      });
+      await expect(operation.call(undefined, "changed reason")).rejects.toThrow(
+        "IDEMPOTENCY_CONFLICT",
+      );
+      await expect(
+        operation.call(undefined, undefined, "notify", id()),
+      ).rejects.toThrow("IDEMPOTENCY_CONFLICT");
+      expect(values.size).toBe(count);
+      const proofs = await db.pool.query(
+        "SELECT consumed_at FROM ai_album.reauth_proofs WHERE token_hash=$1",
+        [auth.hash(operation.request.reauthProof)],
+      );
+      expect(proofs.rows[0].consumed_at).toBeNull();
+    });
+    it(`${operation} secret concurrent identical requests perform exactly one external write and audit`, async () => {
+      const operation = await secretOperation();
+      const count = values.size;
+      const before = (
+        await db.pool.query(
+          "SELECT count(*) n FROM ai_album.audit_events WHERE action='secret.write'",
+        )
+      ).rows[0].n;
+      const results = await Promise.all([
+        operation.call(),
+        operation.call(),
+        operation.call(),
+      ]);
+      expect(results[1]).toEqual(results[0]);
+      expect(results[2]).toEqual(results[0]);
+      expect(values.size).toBe(count + 1);
+      expect(
+        Number(
+          (
+            await db.pool.query(
+              "SELECT count(*) n FROM ai_album.audit_events WHERE action='secret.write'",
+            )
+          ).rows[0].n,
+        ),
+      ).toBe(Number(before) + 1);
+    });
+  }
   it("replays an emergency secret revocation without needing a second step-up proof", async () => {
     await seedSecret();
     const reference = (
