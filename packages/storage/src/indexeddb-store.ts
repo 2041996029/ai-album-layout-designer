@@ -253,11 +253,22 @@ export class IndexedDbRevisionStore
     return value;
   }
   async listProjects(): Promise<
-    { projectId: string; revision: number; savedAt: string }[]
+    { projectId: string; revision: number; savedAt: string; name?: string }[]
   > {
     return (await (await this.db).getAll("projects")).sort((a, b) =>
       b.savedAt.localeCompare(a.savedAt),
     );
+  }
+  async renameProject(projectId: string, name: string): Promise<void> {
+    name = name.trim();
+    if (!name || name.length > 80)
+      throw new StorageError("INVALID_PROJECT_NAME");
+    await this.transaction(["projects"], async (tx) => {
+      const projects = tx.objectStore("projects");
+      const project = await projects.get(projectId);
+      if (!project) throw new StorageError("PROJECT_NOT_FOUND");
+      await projects.put({ ...project, name }, projectId);
+    });
   }
   async save(
     doc: DocumentModel,
@@ -293,6 +304,7 @@ export class IndexedDbRevisionStore
             .put(value, `${value.doc.projectId}:${value.doc.revision}`);
           await tx.objectStore("projects").put(
             {
+              ...current,
               projectId: value.doc.projectId,
               revision: value.doc.revision,
               savedAt: value.savedAt,

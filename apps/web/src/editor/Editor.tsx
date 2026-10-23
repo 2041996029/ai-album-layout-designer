@@ -57,6 +57,7 @@ export interface EditorProps {
   resources: ResourceManifest;
   port: ResourcePort;
   importRef?: { current: ((files: File[]) => Promise<void>) | null };
+  renderProjectTitle?: (save: () => Promise<SaveResult>) => ReactNode;
   onDocumentChange?: (doc: DocumentModel, resources: ResourceManifest) => void;
   onExport?: (save: () => Promise<SaveResult>) => void;
   onCreateTemplateProject?: (
@@ -853,7 +854,17 @@ export function Editor(p: EditorProps) {
           </span>
         </a>
         <div className="project-title">
-          未命名相册 <span>本地项目</span>
+          {p.renderProjectTitle ? (
+            p.renderProjectTitle(async () => {
+              if (resourceOperation.current)
+                throw Error("请等待照片或模板处理完成后再切换相册。");
+              return save();
+            })
+          ) : (
+            <>
+              未命名相册 <span>本地项目</span>
+            </>
+          )}
         </div>
         <div className="top-actions">
           <span className="browser-only">仅此浏览器保存</span>

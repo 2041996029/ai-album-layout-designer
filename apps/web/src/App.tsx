@@ -1,3 +1,4 @@
+import { LocalAlbumMenu } from "./projects/LocalAlbumMenu";
 import { CloudPanel } from "./cloud/CloudPanel";
 import { bundledAssetUrl } from "./bundled-url";
 import { LibraryPanel } from "./editor/LibraryPanel";
@@ -146,6 +147,18 @@ export function App() {
         }}
       />
       <Editor
+        renderProjectTitle={(save) => (
+          <LocalAlbumMenu
+            store={store}
+            projectId={saved.doc.projectId}
+            save={save}
+            onOpen={(next) => {
+              setCurrent(next);
+              setSaved(next);
+              localStorage.setItem("album-active", next.doc.projectId);
+            }}
+          />
+        )}
         importRef={cloudImport}
         onDocumentChange={documentChanged}
         key={saved.doc.projectId}
