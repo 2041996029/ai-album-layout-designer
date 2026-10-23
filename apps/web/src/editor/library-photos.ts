@@ -3,7 +3,10 @@ export function photoPool<T extends { id: string }>(
   assets: T[],
   layers: Layer[],
   selectedIds: string[],
+  selectedPhotoIds?: string[],
 ): T[] {
+  if (selectedPhotoIds !== undefined)
+    return assets.filter((a) => selectedPhotoIds.includes(a.id));
   const selected = new Set(selectedIds),
     ids = new Set<string>();
   const visit = (items: Layer[], inherited = false) => {

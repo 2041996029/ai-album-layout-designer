@@ -1,3 +1,7 @@
+import { fitAlbumText } from "./fit-album-text";
+import { PhotoCropStage } from "./PhotoCropStage";
+import { planThemeBook } from "../templates/auto-book";
+import { initialPhotoCrop, movePhotoCrop } from "./photo-crop";
 import { restorePhotoFit } from "./restore-photo-fit";
 import { isUserPhoto } from "@album/assets";
 import { canonicalJson } from "@album/document";
@@ -68,6 +72,8 @@ export interface EditorProps {
     doc: DocumentModel;
     surfaceId: string;
     selectedIds: string[];
+    selectedPhotoIds?: string[];
+    autoLayoutTheme: (theme: ConvertedTheme) => Promise<boolean>;
     execute: Execute;
     resources: ResourceManifest;
     port: ResourcePort;
@@ -82,7 +88,10 @@ export interface EditorProps {
       book: boolean,
     ) => Promise<boolean>;
   }) => ReactNode;
-  renderExport?: (context: { save: () => Promise<SaveResult> }) => ReactNode;
+  renderExport?: (context: {
+    save: () => Promise<SaveResult>;
+    repairText: () => Promise<SaveResult>;
+  }) => ReactNode;
 }
 const errorText = (error: unknown) => {
   const code = error instanceof Error ? error.message : String(error);
@@ -101,6 +110,9 @@ export function Editor(p: EditorProps) {
     [manifest, setManifest] = useState(p.resources),
     [surfaceId, setSurface] = useState(p.initial.spreads[0].id),
     [selected, setSelected] = useState<string[]>([]),
+    [selectedPhotoIds, setSelectedPhotoIds] = useState<string[] | undefined>(
+      undefined,
+    ),
     [message, setMessage] = useState(""),
     [progress, setProgress] = useState(""),
     [zoom, setZoom] = useState(1),
@@ -197,6 +209,7 @@ export function Editor(p: EditorProps) {
     pageIds: string[],
     bindings: Record<string, string> | string[],
     book: boolean,
+    replaceBook = false,
   ): Promise<boolean> => {
     if (resourceOperation.current) throw Error("请等待当前资源操作完成");
     resourceOperation.current = true;
@@ -248,6 +261,7 @@ export function Editor(p: EditorProps) {
           before,
           converted.theme,
           pageIds,
+          { replaceBook },
         );
         command = createLayoutCommand(input, candidates[0], before);
       } else {
@@ -291,6 +305,28 @@ export function Editor(p: EditorProps) {
       resourceOperation.current = false;
       setBusy(false);
     }
+  };
+  const autoLayoutTheme = async (theme: ConvertedTheme) => {
+    const selectedAssets = resourceRef.current.assets.filter(
+      (a) =>
+        isUserPhoto(a) &&
+        a.status === "ready" &&
+        a.license.usable &&
+        (selectedPhotoIds === undefined || selectedPhotoIds.includes(a.id)),
+    );
+    const pages = planThemeBook(theme.theme.pages, selectedAssets.length);
+    const result = await applyImportedTheme(
+      theme,
+      pages,
+      selectedAssets.map((a) => a.id),
+      true,
+      true,
+    );
+    if (result)
+      setMessage(
+        `已使用「${theme.theme.name}」完成 ${pages.length} 个跨页，全部 ${selectedAssets.length} 张照片已排入；可撤销`,
+      );
+    return result;
   };
   const patch = (value: Record<string, unknown>, ids = selected) => {
     if (!ids.length) return;
@@ -700,6 +736,26 @@ export function Editor(p: EditorProps) {
       changePage(doc.spreads.find((s) => s.id !== surfaceId)!.id);
   };
   const save = () => autosave.flush();
+  const repairText = async () => {
+    if (resourceOperation.current) throw Error("请等待当前资源操作完成");
+    resourceOperation.current = true;
+    setBusy(true);
+    const epoch = editGeneration.current;
+    try {
+      const command = await fitAlbumText(
+        history.current,
+        resourceRef.current,
+        p.port,
+      );
+      if (epoch !== editGeneration.current)
+        throw Error("作品已更新，请重新检查文字");
+      if (command.type === "batch" && command.commands.length) execute(command);
+      return await save();
+    } finally {
+      resourceOperation.current = false;
+      setBusy(false);
+    }
+  };
   const statusText = {
     saved: "已保存至此浏览器",
     dirty: "有未保存的更改",
@@ -709,8 +765,10 @@ export function Editor(p: EditorProps) {
   }[saveStatus];
   const cropAsset = manifest.assets.find((asset) => asset.id === crop?.assetId);
   const edit = (layer: KnownLayer) => {
-    if (layer.type === "image") setCrop(structuredClone(layer));
-    else if (layer.type === "text") setTextEdit(structuredClone(layer));
+    if (layer.type === "image") {
+      const asset = manifest.assets.find((a) => a.id === layer.assetId);
+      if (asset) setCrop(initialPhotoCrop(layer, asset));
+    } else if (layer.type === "text") setTextEdit(structuredClone(layer));
   };
   const run = async (fn: () => Promise<void>) => {
     try {
@@ -740,6 +798,7 @@ export function Editor(p: EditorProps) {
       {layoutOpen && (
         <LayoutWizard
           doc={doc}
+          selectedPhotoIds={selectedPhotoIds}
           resources={manifest}
           port={p.port}
           revisionToken={
@@ -748,13 +807,37 @@ export function Editor(p: EditorProps) {
               : doc.revision
           }
           onClose={() => setLayoutOpen(false)}
-          onApply={(command) => {
-            const applied = execute(command);
-            if (applied) {
-              setSelected([]);
-              setSurface(history.current.spreads[0].id);
+          onApply={async (command, theme) => {
+            if (resourceOperation.current)
+              throw Error("请等待当前资源操作完成");
+            resourceOperation.current = true;
+            setBusy(true);
+            try {
+              let merged = resourceRef.current;
+              const epoch = editGeneration.current;
+              if (theme && command.type === "apply-layout") {
+                merged = await stageThemeResources(
+                  theme,
+                  command.spreads.flatMap((s) => s.layers),
+                  merged,
+                  p.store,
+                );
+                assertManifest(merged);
+                if (epoch !== editGeneration.current)
+                  throw Error("作品已改变，请重新生成方案");
+              }
+              const applied = execute(command);
+              if (applied) {
+                resourceRef.current = merged;
+                setManifest(merged);
+                setSelected([]);
+                setSurface(history.current.spreads[0].id);
+              }
+              return applied;
+            } finally {
+              resourceOperation.current = false;
+              setBusy(false);
             }
-            return applied;
           }}
         />
       )}
@@ -801,7 +884,7 @@ export function Editor(p: EditorProps) {
           <button className="save-button" onClick={() => void save()}>
             保存
           </button>
-          {p.renderExport?.({ save })}
+          {p.renderExport?.({ save, repairText })}
           {p.onExport && (
             <button className="primary" onClick={() => p.onExport!(save)}>
               导出相册 ↗
@@ -931,6 +1014,8 @@ export function Editor(p: EditorProps) {
           {tab === "photos" ? (
             <AssetPanel
               assets={manifest.assets.filter(isUserPhoto)}
+              selectedPhotoIds={selectedPhotoIds}
+              onSelectPhotos={setSelectedPhotoIds}
               port={p.port}
               onImport={(files) => void importFiles(files)}
               onAdd={addPhoto}
@@ -946,6 +1031,8 @@ export function Editor(p: EditorProps) {
               doc,
               surfaceId,
               selectedIds: selected,
+              selectedPhotoIds,
+              autoLayoutTheme,
               execute,
               resources: manifest,
               port: p.port,
@@ -1160,7 +1247,7 @@ export function Editor(p: EditorProps) {
               });
             }}
             onCrop={() => {
-              if (single?.type === "image") setCrop(structuredClone(single));
+              if (single?.type === "image") edit(single);
             }}
           />
           <div className="layer-actions">
@@ -1222,75 +1309,14 @@ export function Editor(p: EditorProps) {
               ×
             </button>
           </div>
-          <p>调整原图归一化裁剪区域。画框的位置、尺寸与旋转保持不变。</p>
-          <div
-            className="crop-diagram"
-            style={
-              cropAsset
-                ? {
-                    width: `min(100%, ${(240 * cropAsset.width) / cropAsset.height}px)`,
-                    height: "auto",
-                    aspectRatio: `${cropAsset.width}/${cropAsset.height}`,
-                    marginInline: "auto",
-                  }
-                : undefined
-            }
-            onPointerMove={(event) => {
-              const drag = cropDrag.current;
-              if (!drag) return;
-              setCrop((current) =>
-                current
-                  ? {
-                      ...current,
-                      crop: {
-                        ...current.crop,
-                        x: Math.max(
-                          0,
-                          Math.min(
-                            1 - current.crop.width,
-                            drag.x +
-                              (event.clientX - drag.clientX) / drag.width,
-                          ),
-                        ),
-                        y: Math.max(
-                          0,
-                          Math.min(
-                            1 - current.crop.height,
-                            drag.y +
-                              (event.clientY - drag.clientY) / drag.height,
-                          ),
-                        ),
-                      },
-                    }
-                  : current,
-              );
-            }}
-            onPointerUp={() => (cropDrag.current = undefined)}
-            onPointerCancel={() => (cropDrag.current = undefined)}
-          >
-            {cropAsset && <AssetPreview asset={cropAsset} port={p.port} />}
-            <div
-              onPointerDown={(event) => {
-                const rect =
-                  event.currentTarget.parentElement!.getBoundingClientRect();
-                event.currentTarget.setPointerCapture(event.pointerId);
-                cropDrag.current = {
-                  x: crop.crop.x,
-                  y: crop.crop.y,
-                  clientX: event.clientX,
-                  clientY: event.clientY,
-                  width: rect.width,
-                  height: rect.height,
-                };
-              }}
-              style={{
-                left: `${crop.crop.x * 100}%`,
-                top: `${crop.crop.y * 100}%`,
-                width: `${crop.crop.width * 100}%`,
-                height: `${crop.crop.height * 100}%`,
-              }}
+          {cropAsset && (
+            <PhotoCropStage
+              layer={crop}
+              asset={cropAsset}
+              port={p.port}
+              onChange={setCrop}
             />
-          </div>
+          )}
           <div className="field-grid">
             {(["x", "y", "width", "height"] as const).map((key, i) => (
               <label className="field" key={key}>
@@ -1319,6 +1345,7 @@ export function Editor(p: EditorProps) {
                 setCrop({
                   ...crop,
                   crop: { x: 0, y: 0, width: 1, height: 1 },
+                  fitMode: "contain",
                 })
               }
             >
@@ -1331,7 +1358,7 @@ export function Editor(p: EditorProps) {
                   execute({
                     type: "update-layer",
                     layerId: crop.id,
-                    patch: { crop: crop.crop },
+                    patch: { crop: crop.crop, fitMode: crop.fitMode },
                   })
                 )
                   setCrop(undefined);

@@ -2002,3 +2002,7 @@ script[type="application/json"] {
 .template-grid[hidden] {
   display: none;
 }
+
+.crop-photo-preview img {width:100%;height:100%;max-width:none;object-fit:fill;display:block;user-select:none;-webkit-user-drag:none;}
+
+.crop-photo-preview.is-contain img {object-fit:contain;}

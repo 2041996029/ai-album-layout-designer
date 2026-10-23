@@ -155,7 +155,19 @@ export function instantiateTemplate(
             type: "text",
             text: slot.defaultText ?? "",
             fontAssetId: slot.fontAssetId!,
-            fontSize: slot.fontSize!,
+            height: Math.min(
+              template.pageSize.height - slot.frame.y,
+              Math.max(
+                slot.frame.height,
+                slot.fontSize! *
+                  ((slot.defaultText ?? "").split("\n").length * 1.3 + 0.2),
+              ),
+            ),
+            fontSize: Math.min(
+              slot.fontSize!,
+              Math.max(0.1, template.pageSize.height - slot.frame.y) /
+                ((slot.defaultText ?? "").split("\n").length * 1.3 + 0.2),
+            ),
             fontWeight: slot.fontWeight!,
             lineHeight: 1.3,
             letterSpacing: slot.letterSpacing ?? 0,

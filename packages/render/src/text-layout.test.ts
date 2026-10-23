@@ -129,3 +129,13 @@ it("keeps oversized legal punctuation units uncompressed on justified wrapped li
     expect(r.overflow).toBe(true);
   }
 });
+
+it("keeps a fitting overhanging glyph inside its box instead of falsely blocking export", () => {
+  const precise = Object.assign(
+    (...args: Parameters<typeof measure>) => measure(...args),
+    { ink: () => ({ left: 1, right: 29, ascent: 9, descent: 1 }) },
+  );
+  const r = layoutText(layer("ABC", { width: 80, height: 20 }), font, precise);
+  expect(r.overflow).toBe(false);
+  expect(r.inkBounds.x).toBeGreaterThanOrEqual(0);
+});

@@ -6,11 +6,11 @@ import type { ConvertedTheme, ImportedTheme } from "@album/template-import";
 import type { LibraryContext } from "../editor/TemplatePanel";
 import { importTheme } from "./import-controller";
 import { ThemePreview } from "./ThemePreview";
-const errorText = (error: unknown) => {
+export const themeErrorText = (error: unknown) => {
   const code = error instanceof Error ? error.message : String(error);
   const messages: Record<string, string> = {
     THEME_CAPACITY_MISMATCH:
-      "所选跨页的照片槽总数与已选照片数量不匹配，请调整跨页或照片。",
+      "无法匹配照片与跨页，请检查选片数量和已有锁定内容。",
     PAGE_ASPECT_MISMATCH: "模板与当前作品比例不同，不能直接等比适配。",
     LAYER_LOCKED: "当前跨页包含锁定图层，请先解锁或选择其他跨页。",
     STALE_LAYOUT: "作品已更新，请重新生成并应用。",
@@ -51,12 +51,13 @@ export function ThemeLibraryPanel(
       ...ctx.doc.spreads.flatMap((s) => s.layers),
     ],
     ctx.selectedIds,
+    ctx.selectedPhotoIds,
   );
   const theme = converted?.theme,
     page = theme?.pages.find((p) => p.id === pageId);
   const refresh = () => library.list().then(setThemes);
   useEffect(() => {
-    void refresh().catch((e) => setError(errorText(e)));
+    void refresh().catch((e) => setError(themeErrorText(e)));
     return () => {
       controller.current?.abort();
     };
@@ -81,7 +82,11 @@ export function ThemeLibraryPanel(
   const choose = (value: ConvertedTheme) => {
     setConverted(value);
     setPageId(value.theme.pages[0]?.id ?? "");
-    setSelectedPages([]);
+    setSelectedPages(
+      value.theme.pages
+        .filter((p) => !p.issues.some((i) => i.severity === "blocker"))
+        .map((p) => p.id),
+    );
     setBindings(
       autoBindings(
         value.theme.pages[0]?.photoSlots.map((s) => s.slotId) ?? [],
@@ -97,11 +102,17 @@ export function ThemeLibraryPanel(
   }, [ctx.initialTheme]);
   const load = async (id: string) => {
     const token = ++sequence.current;
+    setBusy(true);
     setError("");
     try {
       const value = await library.get(id);
       if (sequence.current === token) {
         choose(value);
+        if (ctx.autoLayoutTheme) {
+          await ctx.autoLayoutTheme(value);
+          setProgress("已按此主题完成整本排版，可一次撤销。");
+          return;
+        }
         const target = [...value.theme.pages]
           .filter(
             (p) =>
@@ -124,7 +135,9 @@ export function ThemeLibraryPanel(
         }
       }
     } catch (e) {
-      setError(errorText(e));
+      setError(themeErrorText(e));
+    } finally {
+      if (token === sequence.current) setBusy(false);
     }
   };
   const onImport = async (file: File) => {
@@ -144,7 +157,7 @@ export function ThemeLibraryPanel(
         `已导入「${value.theme.name}」，共 ${value.theme.pages.length} 个版式。`,
       );
     } catch (e) {
-      if (!abort.signal.aborted) setError(errorText(e));
+      if (!abort.signal.aborted) setError(themeErrorText(e));
       else setProgress("已取消导入，作品未改变。");
     } finally {
       if (token === sequence.current) {
@@ -195,7 +208,7 @@ export function ThemeLibraryPanel(
         setConfirmBook(false);
       }
     } catch (e) {
-      setError(errorText(e));
+      setError(themeErrorText(e));
     } finally {
       setBusy(false);
     }
@@ -266,7 +279,7 @@ export function ThemeLibraryPanel(
                   if (theme?.id === t.id) setConverted(undefined);
                   await refresh();
                 } catch (e) {
-                  setError(errorText(e));
+                  setError(themeErrorText(e));
                 }
               }}
             >
@@ -283,6 +296,36 @@ export function ThemeLibraryPanel(
       {theme && (
         <>
           <h4>{theme.name}</h4>
+          <button
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                if (await ctx.autoLayoutTheme(converted!))
+                  setProgress("已按此主题完成整本排版，可一次撤销。");
+              } catch (e) {
+                setError(themeErrorText(e));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            用此模板智能排整本
+          </button>
+          <button
+            onClick={() =>
+              setSelectedPages(
+                theme.pages
+                  .filter(
+                    (p) => !p.issues.some((i) => i.severity === "blocker"),
+                  )
+                  .map((p) => p.id),
+              )
+            }
+          >
+            全选跨页
+          </button>
+          <button onClick={() => setSelectedPages([])}>取消全选跨页</button>
           <div className="theme-page-grid">
             {theme.pages.map((p, index) => (
               <article key={p.id}>
@@ -360,7 +403,7 @@ export function ThemeLibraryPanel(
                       height: page.height,
                     });
                   } catch (e) {
-                    setError(errorText(e));
+                    setError(themeErrorText(e));
                   } finally {
                     setBusy(false);
                   }
@@ -458,6 +501,10 @@ export function ThemeLibraryPanel(
             <p>
               选入照片 {selectedPhotos.length} / {slots}，按素材顺序排列。
             </p>
+            <button onClick={() => setSelectedPhotos(assets.map((a) => a.id))}>
+              全选照片
+            </button>
+            <button onClick={() => setSelectedPhotos([])}>清空选片</button>
             <div className="theme-photo-selection">
               {assets.map((a) => (
                 <label key={a.id}>

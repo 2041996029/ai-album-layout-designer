@@ -1,6 +1,9 @@
 import { originalThemeBundle } from "../templates/original-theme";
 import type { ConvertedTheme } from "@album/template-import";
-import { ThemeLibraryPanel } from "../templates/ThemeLibraryPanel";
+import {
+  ThemeLibraryPanel,
+  themeErrorText,
+} from "../templates/ThemeLibraryPanel";
 import { useState } from "react";
 import { TemplatePanel, type LibraryContext } from "./TemplatePanel";
 import { FilterPanel } from "./FilterPanel";
@@ -37,11 +40,12 @@ export function LibraryPanel(ctx: LibraryContext) {
           onUseCollection={async (themeId) => {
             try {
               const value = await originalThemeBundle(themeId, ctx.resources);
+              await ctx.autoLayoutTheme(value);
               setSeed(value);
               setError("");
               setTab("imported");
             } catch (e) {
-              setError(String(e));
+              setError(themeErrorText(e));
             }
           }}
         />

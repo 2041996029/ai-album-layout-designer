@@ -486,8 +486,9 @@ export async function preflight(
           );
           canvas.width = canvas.height = 0;
           if (report.overflow)
-            await add("TEXT_OVERFLOW", path, "文字或字形墨迹超出文本框。", {
+            await add("TEXT_OVERFLOW", path, `「${layer.text.slice(0,36)}」超出文字框，请自动适配或扩大文字框。`, {
               layerId: layer.id,
+              surfaceId,
             });
         } catch (error) {
           signal.throwIfAborted();

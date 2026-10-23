@@ -42,7 +42,7 @@ function Preview({
               <image
                 {...s.frame}
                 href={urls[index++ % urls.length]}
-                preserveAspectRatio="xMidYMid slice"
+                preserveAspectRatio="xMidYMid meet"
               />
             ) : (
               <g>
@@ -147,6 +147,7 @@ export function TemplatePanel(
       ...ctx.doc.spreads.flatMap((s) => s.layers),
     ],
     ctx.selectedIds,
+    ctx.selectedPhotoIds,
   );
   const themeGroups = [
     ...new Set(
@@ -279,14 +280,29 @@ export function TemplatePanel(
     }
     apply(t, next);
   }
+  const family = (t: TemplateVersion) =>
+    t.themeId ??
+    (t.id.startsWith("style_") ? t.id.replace(/_\d+$/u, "") : t.id);
+  const basicGroups = [
+    ...new Set(templateVersions.filter((t) => !t.themeId).map(family)),
+  ].map((id) => templateVersions.filter((t) => !t.themeId && family(t) === id));
+  const basic = basicGroups.map(
+    (group) =>
+      [...group].sort((a, b) => {
+        const ac = a.slots.filter((s) => s.kind === "image").length,
+          bc = b.slots.filter((s) => s.kind === "image").length;
+        return (
+          (ac <= pool.length ? Math.abs(pool.length - ac) : 1000 + ac) -
+          (bc <= pool.length ? Math.abs(pool.length - bc) : 1000 + bc)
+        );
+      })[0],
+  );
   const visible =
     series === "basic"
-      ? templateVersions.filter((t) => !t.themeId)
+      ? basic
       : [
           ...themeGroups.map((group) => group[0]),
-          ...(series === "all"
-            ? templateVersions.filter((t) => !t.themeId)
-            : []),
+          ...(series === "all" ? basic : []),
         ];
   return (
     <section aria-label="原创模板" className="template-library">
@@ -309,7 +325,7 @@ export function TemplatePanel(
         >
           <option value="all">全部模板</option>
           <option value="themes">主题套装 · 96 跨页</option>
-          <option value="basic">基础版式 · 41 套</option>
+          <option value="basic">基础模板 · 自动匹配图数</option>
         </select>
       </label>
       <label>
@@ -353,9 +369,13 @@ export function TemplatePanel(
                   : template?.id === t.id
               }
               onClick={() => {
+                if (t.collectionName && ctx.onUseCollection) {
+                  void ctx.onUseCollection(t.themeId!);
+                  return;
+                }
                 const group = t.themeId
                   ? templateVersions.filter((v) => v.themeId === t.themeId)
-                  : [t];
+                  : templateVersions.filter((v) => family(v) === family(t));
                 const fitting = group.filter(
                   (v) =>
                     v.slots.filter((s) => s.kind === "image").length <=
@@ -378,10 +398,11 @@ export function TemplatePanel(
             >
               <Preview template={t} urls={urls} />
               <span className="template-card-title">
-                {t.collectionName ?? t.name}
+                {t.collectionName ??
+                  t.name.replace(/\/\s*[1-4]图.*$/u, "").trim()}
               </span>
               <small>
-                {t.collectionName ? `整套 8 跨页 · 1–4 图版式 · ` : ""}
+                {t.collectionName ? `8 种跨页版式 · 自动成册 · ` : ""}
                 {t.slots.filter((s) => s.kind === "image").length} 张照片 ·{" "}
                 {categories[t.category]}
                 {t.id.startsWith("style_") || t.themeId ? "" : " · 旧版"}
@@ -393,10 +414,10 @@ export function TemplatePanel(
       {template && (
         <div aria-label="模板预览">
           <h4>{template.collectionName ?? template.name}</h4>
-          {template.themeId && (
+          {(template.themeId || template.id.startsWith("style_")) && (
             <div className="theme-variants" aria-label="主题内版式">
               {templateVersions
-                .filter((t) => t.themeId === template.themeId)
+                .filter((t) => family(t) === family(template))
                 .map((t) => (
                   <button
                     key={t.id}

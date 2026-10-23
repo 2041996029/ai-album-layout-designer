@@ -38,6 +38,8 @@ export function AssetPreview({
 }
 interface Props {
   assets: readonly AssetRecord[];
+  selectedPhotoIds?: string[];
+  onSelectPhotos?: (ids: string[]) => void;
   port: ResourcePort;
   onImport: (files: File[]) => void;
   onAdd: (asset: AssetRecord) => void;
@@ -55,6 +57,15 @@ export function AssetPanel(p: Props) {
         <h2>照片素材</h2>
         <small>{p.assets.length} / 500</small>
       </div>
+      {p.onSelectPhotos && (
+        <div>
+          <button onClick={() => p.onSelectPhotos!(p.assets.map((a) => a.id))}>
+            全选照片
+          </button>
+          <button onClick={() => p.onSelectPhotos!([])}>清空选片</button>
+          <small>已选 {p.selectedPhotoIds?.length ?? p.assets.length} 张</small>
+        </div>
+      )}
       <label className="import-card">
         <span>＋</span>
         <b>导入照片</b>
@@ -87,6 +98,25 @@ export function AssetPanel(p: Props) {
               e.dataTransfer.setData("application/x-album-asset", asset.id)
             }
           >
+            {p.onSelectPhotos && (
+              <label>
+                <input
+                  type="checkbox"
+                  aria-label={`选择照片 ${asset.source.name}`}
+                  checked={p.selectedPhotoIds?.includes(asset.id) ?? true}
+                  onChange={(e) =>
+                    p.onSelectPhotos!(
+                      e.target.checked
+                        ? [...(p.selectedPhotoIds ?? []), asset.id]
+                        : (p.selectedPhotoIds ?? []).filter(
+                            (id) => id !== asset.id,
+                          ),
+                    )
+                  }
+                />
+                选入排版
+              </label>
+            )}
             <button
               aria-label={`添加照片 ${asset.source.name}`}
               className="asset-image"

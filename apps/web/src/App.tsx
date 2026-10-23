@@ -154,7 +154,9 @@ export function App() {
         resources={saved.resources}
         port={store}
         renderLibrary={(ctx) => <LibraryPanel {...ctx} />}
-        renderExport={({ save }) => <ExportPanel store={store} save={save} />}
+        renderExport={({ save, repairText }) => (
+          <ExportPanel store={store} save={save} onRepairText={repairText} />
+        )}
         onCreateTemplateProject={async (pageSize, resources) => {
           const doc: DocumentModel = {
             schemaVersion: 1,

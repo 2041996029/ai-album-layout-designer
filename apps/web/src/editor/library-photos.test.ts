@@ -24,3 +24,11 @@ describe("library photo defaults", () => {
   it("does not repeat photos to fill missing slots", () =>
     expect(autoBindings(["x", "y"], [{ id: "a" }] as any)).toEqual({ x: "a" }));
 });
+
+it("distinguishes explicitly empty photo selection from default all", () => {
+  expect(photoPool(assets, layers, [], [])).toEqual([]);
+  expect(photoPool(assets, layers, [], ["a", "c"])).toEqual([
+    assets[0],
+    assets[2],
+  ]);
+});

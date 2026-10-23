@@ -295,6 +295,19 @@ export function FolderBrowser({
             </li>
           ))}
       </ul>
+      {write && (
+        <div>
+          <button
+            disabled={busy}
+            onClick={() => setSelected(assets.map((a) => a.id))}
+          >
+            全选当前素材
+          </button>
+          <button disabled={busy} onClick={() => setSelected([])}>
+            取消全选素材
+          </button>
+        </div>
+      )}
       <ul>
         {assets.map((a) => (
           <li key={a.id}>

@@ -122,7 +122,7 @@ export function layoutText(
         : layer.letterSpacing;
     lineLetterSpacing.push(spacing);
     const width = measure(line, font, layer.fontSize, spacing);
-    const x =
+    let x =
       layer.textAlign === "center"
         ? (layer.width - width) / 2
         : layer.textAlign === "right"
@@ -131,13 +131,21 @@ export function layoutText(
     const y = index * step,
       baseline = y + layer.fontSize;
     baselines.push(baseline);
-    lineBoxes.push({ x, y, width, height: step });
     const ink = measure.ink?.(line, font, layer.fontSize, spacing) ?? {
       left: 0,
       right: width,
       ascent: line ? layer.fontSize : 0,
       descent: 0,
     };
+    if (
+      ink.left + ink.right <= layer.width + 1e-7 &&
+      width <= layer.width + 1e-7
+    ) {
+      const minX = Math.max(0, ink.left),
+        maxX = Math.min(layer.width - width, layer.width - ink.right);
+      if (minX <= maxX) x = Math.max(minX, Math.min(maxX, x));
+    }
+    lineBoxes.push({ x, y, width, height: step });
     lineInkBounds.push({
       x: x - ink.left,
       y: baseline - ink.ascent,
@@ -212,4 +220,31 @@ export function createTextMeasure(
     return { left: -left, right, ascent, descent };
   };
   return measure;
+}
+
+/** Shrink within an existing text box using the same shaping as render/preflight. */
+export function fitTextToFrame(
+  layer: TextLayer,
+  font: LoadedFont,
+  measure: TextMeasure,
+): TextLayer {
+  if (!layoutText(layer, font, measure).overflow) return layer;
+  const minimum = Math.min(layer.fontSize, 6);
+  const candidate = (size: number) => ({
+    ...layer,
+    fontSize: size,
+    letterSpacing: (layer.letterSpacing * size) / layer.fontSize,
+  });
+  if (layoutText(candidate(minimum), font, measure).overflow)
+    throw Error(
+      `「${layer.text.slice(0, 24)}」的文字框太小，请扩大文字框后重试。`,
+    );
+  let low = minimum,
+    high = layer.fontSize;
+  for (let i = 0; i < 14; i++) {
+    const mid = (low + high) / 2;
+    if (layoutText(candidate(mid), font, measure).overflow) high = mid;
+    else low = mid;
+  }
+  return candidate(low);
 }

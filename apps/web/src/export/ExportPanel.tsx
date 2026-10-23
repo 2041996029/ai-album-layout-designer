@@ -64,9 +64,11 @@ function archive(files: Artifact[], manifest: unknown): Uint8Array {
 export function ExportPanel({
   store,
   save,
+  onRepairText,
 }: {
   store: IndexedDbRevisionStore;
   save: () => Promise<SaveResult>;
+  onRepairText?: () => Promise<SaveResult>;
 }) {
   const [open, setOpen] = useState(false),
     [saved, setSaved] = useState<SavedRevision>(),
@@ -133,8 +135,8 @@ export function ExportPanel({
       setBusy(false);
     }
   }
-  async function check() {
-    if (!saved) return;
+  async function check(value = saved) {
+    if (!value) return;
     controller.current?.abort();
     const c = new AbortController();
     controller.current = c;
@@ -147,7 +149,7 @@ export function ExportPanel({
     setAck([]);
     try {
       const snap = await freezeSnapshot(
-        saved,
+        value,
         options,
         new Date().toISOString(),
       );
@@ -340,6 +342,23 @@ export function ExportPanel({
               />
               包含封面正背面
             </label>
+            <button
+              onClick={() =>
+                invalidate({
+                  ...options,
+                  pageIds: allSurfaceIds(
+                    saved!.doc,
+                    options.view,
+                    options.includeCover,
+                  ),
+                })
+              }
+            >
+              全选导出页面
+            </button>
+            <button onClick={() => invalidate({ ...options, pageIds: [] })}>
+              清空导出页面
+            </button>
             <div className="export-pages">
               {saved &&
                 allSurfaceIds(
@@ -371,6 +390,28 @@ export function ExportPanel({
               检查导出条件
             </button>
           </fieldset>
+          {report?.blockers.some((i) => i.code === "TEXT_OVERFLOW") &&
+            onRepairText && (
+              <button
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const result = await onRepairText();
+                    if (!result.ok)
+                      throw Error("文字适配后保存失败，请保留本地草稿");
+                    setSaved(result.value);
+                    await check(result.value);
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : String(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                自动适配溢出文字并重新检查
+              </button>
+            )}
           {report && (
             <PreflightPanel
               report={report}

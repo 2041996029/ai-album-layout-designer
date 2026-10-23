@@ -131,11 +131,11 @@ test("common style library previews imported photos and applies background, typo
   await page.getByLabel("模板系列").selectOption("basic");
   await page.getByLabel("模板分类").selectOption("qipao");
   const region = page.getByRole("region", { name: "原创模板" });
-  await expect(region.locator(".template-card")).toHaveCount(3);
+  await expect(region.locator(".template-card")).toHaveCount(1);
   await expect(
     region.locator(".template-card").first().locator("svg image"),
   ).toHaveCount(2);
-  await region.getByRole("button", { name: /旗袍 · 海棠旧梦 \/ 2图/ }).click();
+  await region.getByRole("button", { name: /旗袍 · 海棠旧梦/ }).click();
   const after = await model(page);
   expect(after.spreads[0].background).toBe("#f2e8db");
   expect(after.spreads[0].templateRef.id).toBe("style_qipao_2");
@@ -149,14 +149,14 @@ test("common style library previews imported photos and applies background, typo
   await page.getByRole("button", { name: "撤销", exact: true }).click();
   expect((await model(page)).spreads).toEqual(before.spreads);
   await page.getByLabel("模板分类").selectOption("jk");
-  await expect(region.locator(".template-card")).toHaveCount(3);
+  await expect(region.locator(".template-card")).toHaveCount(1);
   await region.screenshot({
     path: testInfo.outputPath("style-template-library.png"),
   });
   await page.getByRole("button", { name: "智能排版", exact: true }).click();
   await expect(
-    page.getByLabel("场景模板").locator('optgroup[label="JK 校园"] option'),
-  ).toHaveCount(11);
+    page.getByLabel("选择模板").locator('optgroup[label="JK 校园"] option'),
+  ).toHaveCount(2);
 });
 test("twelve original collections offer eight editable decorated spreads each", async ({
   page,
@@ -191,11 +191,12 @@ test("twelve original collections offer eight editable decorated spreads each", 
   }
   await page.getByLabel("模板分类").selectOption("qipao");
   await page.locator(".template-card").click();
-  await expect(page.getByLabel("主题内版式").getByRole("button")).toHaveCount(
-    8,
-  );
+  await expect(page.locator(".theme-page-grid article")).toHaveCount(8);
+  await expect(
+    page.getByText(/已使用「.*」完成 .*全部 2 张照片已排入/),
+  ).toBeVisible();
   const after = await model(page);
-  expect(after.spreads[0].templateRef.id).toBe("theme_qipao_2");
+  expect(after.spreads[0].templateRef.id).toMatch(/^mjpage_/);
   expect(
     after.spreads[0].layers.filter((l: any) => l.type === "image"),
   ).toHaveLength(2);
@@ -214,9 +215,9 @@ test("original collection opens eight theme pages and applies with existing loca
   await page.getByLabel("模板系列").selectOption("themes");
   await page.getByLabel("模板分类").selectOption("qipao");
   await page.locator(".template-card").click();
-  await page
-    .getByRole("button", { name: "使用整套主题（8 跨页）", exact: true })
-    .click();
+  await expect(
+    page.getByText(/已使用「.*」完成 .*全部 2 张照片已排入/),
+  ).toBeVisible();
   await expect(page.locator(".theme-page-grid article")).toHaveCount(8);
   await expect
     .poll(() =>
@@ -298,14 +299,16 @@ test("theme automatic filling never repeats missing photos and respects locked c
     filled.spreads[0].layers.filter((l: any) => l.type === "image"),
   ).toHaveLength(2);
   await page
-    .getByLabel("主题内版式")
+    .locator(".theme-page-grid")
     .getByRole("button", { name: /4 图/ })
     .first()
     .click();
-  await expect(page.getByRole("alert")).toContainText("照片不足");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "照片不足" }),
+  ).toBeVisible();
   expect((await model(page)).spreads).toEqual(filled.spreads);
   await page
-    .getByLabel("主题内版式")
+    .locator(".theme-page-grid")
     .getByRole("button", { name: /2 图/ })
     .first()
     .click();
@@ -316,14 +319,16 @@ test("theme automatic filling never repeats missing photos and respects locked c
     .click();
   const locked = await model(page);
   await page
-    .getByLabel("主题内版式")
+    .locator(".theme-page-grid")
     .getByRole("button", { name: /1 图/ })
     .first()
     .click();
-  await expect(page.getByRole("alert")).toContainText("锁定");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "锁定" }),
+  ).toBeVisible();
   expect((await model(page)).spreads).toEqual(locked.spreads);
   await page
-    .getByRole("region", { name: "原创模板" })
+    .getByRole("region", { name: "我的主题模板" })
     .screenshot({ path: testInfo.outputPath("theme-interaction.png") });
   await page.getByRole("button", { name: "滤镜", exact: true }).click();
   await page.getByRole("button", { name: /^F07 / }).click();

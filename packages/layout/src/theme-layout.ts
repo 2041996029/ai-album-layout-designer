@@ -41,6 +41,7 @@ export async function generateThemeCandidates(
   before: DocumentModel,
   theme: ImportedTheme,
   selectedPageIds: readonly string[],
+  options: { replaceBook?: boolean } = {},
 ): Promise<LayoutCandidate[]> {
   // Snapshot theme and page order before any asynchronous hashing.
   theme = structuredClone(theme);
@@ -53,11 +54,7 @@ export async function generateThemeCandidates(
     throw new Error("TEMPLATE_UNAVAILABLE");
   if (canonicalJson(input.templatePageIds) !== canonicalJson(selectedPageIds))
     throw new Error("THEME_PAGE_SEQUENCE_MISMATCH");
-  if (
-    !selectedPageIds.length ||
-    new Set(selectedPageIds).size !== selectedPageIds.length
-  )
-    throw new Error("INVALID_THEME_PAGE_SEQUENCE");
+  if (!selectedPageIds.length) throw new Error("INVALID_THEME_PAGE_SEQUENCE");
   const pages = selectedPageIds.map((id) => {
     const p = theme.pages.find((p) => p.id === id);
     if (!p) throw new Error("UNKNOWN_THEME_PAGE");
@@ -75,7 +72,8 @@ export async function generateThemeCandidates(
   if (
     c.spreadCount !== pages.length ||
     (c.targetSpreadIds && c.spreadCount !== before.spreads.length) ||
-    before.spreads.slice(c.spreadCount).some((s) => s.layers.length)
+    (!options.replaceBook &&
+      before.spreads.slice(c.spreadCount).some((s) => s.layers.length))
   )
     throw new Error("THEME_CAPACITY_MISMATCH");
   const allOld = [

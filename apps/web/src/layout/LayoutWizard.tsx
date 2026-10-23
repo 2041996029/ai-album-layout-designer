@@ -1,6 +1,11 @@
+import { originalThemeBundle } from "../templates/original-theme";
+import { planThemeBook } from "../templates/auto-book";
+import { IndexedDbThemeLibrary } from "@album/storage";
+import type { ConvertedTheme, ImportedTheme } from "@album/template-import";
+import { generateThemeCandidates } from "@album/layout";
 import { isUserPhoto } from "@album/assets";
 import { templateCategories } from "../editor/template-categories";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   canonicalJson,
   templateVersions,
@@ -24,13 +29,18 @@ export function LayoutWizard({
   revisionToken,
   onClose,
   onApply,
+  selectedPhotoIds,
 }: {
   doc: DocumentModel;
   resources: ResourceManifest;
   port: ResourcePort;
   revisionToken: number;
   onClose: () => void;
-  onApply: (command: DocumentCommand) => boolean;
+  onApply: (
+    command: DocumentCommand,
+    theme?: ConvertedTheme,
+  ) => boolean | Promise<boolean>;
+  selectedPhotoIds?: string[];
 }) {
   const [baseline] = useState(() => ({
     doc: structuredClone(doc),
@@ -41,7 +51,14 @@ export function LayoutWizard({
       .filter((a) => isUserPhoto(a) && a.status === "ready" && a.license.usable)
       .map((a) => a.id),
   );
-  const [selected, setSelected] = useState(() => new Set(ids)),
+  const [selected, setSelected] = useState(
+      () =>
+        new Set(
+          selectedPhotoIds !== undefined
+            ? ids.filter((id) => selectedPhotoIds.includes(id))
+            : ids,
+        ),
+    ),
     [repeat, setRepeat] = useState<string[]>([]),
     [required, setRequired] = useState<string[]>([]);
   const [count, setCount] = useState(doc.spreads.length),
@@ -60,6 +77,44 @@ export function LayoutWizard({
     [input, setInput] = useState<LayoutInput>(),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [activeTheme, setActiveTheme] = useState<ConvertedTheme>();
+  const previewResources = useMemo(
+    () => ({
+      assets: [
+        ...resources.assets,
+        ...(activeTheme?.theme.resources.assets ?? []).filter(
+          (a) => !resources.assets.some((v) => v.id === a.id),
+        ),
+      ],
+      fonts: [
+        ...resources.fonts,
+        ...(activeTheme?.theme.resources.fonts ?? []).filter(
+          (a) => !resources.fonts.some((v) => v.id === a.id),
+        ),
+      ],
+    }),
+    [activeTheme, resources],
+  );
+  const previewPort = useMemo<ResourcePort>(
+    () => ({
+      read: async (id, variant) =>
+        activeTheme?.files.get(`${id}:${variant}`) ?? port.read(id, variant),
+    }),
+    [activeTheme, port],
+  );
+  const [privateThemes, setPrivateThemes] = useState<ImportedTheme[]>([]);
+  useEffect(() => {
+    let live = true;
+    void new IndexedDbThemeLibrary()
+      .list()
+      .then((items) => {
+        if (live) setPrivateThemes(items);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
   const controller = useRef<AbortController | undefined>(undefined),
     sequence = useRef(0);
   const stale =
@@ -71,15 +126,16 @@ export function LayoutWizard({
     controller.current?.abort();
     setBusy(false);
     setCandidates([]);
+    setActiveTheme(undefined);
     setError("");
   };
-  const generate = async () => {
+  const generate = async (chosenTemplate = templateId) => {
     invalidate();
     const token = sequence.current,
       abort = new AbortController();
     controller.current = abort;
     setBusy(true);
-    const t = templateVersions.find((t) => t.id === templateId)!;
+    const t = templateVersions.find((t) => t.id === chosenTemplate);
     const photos = ids
       .filter((id) => selected.has(id))
       .map((id) => {
@@ -106,13 +162,50 @@ export function LayoutWizard({
           ? { targetSpreadIds: targets }
           : {}),
       },
-      templateRef: { id: t.id, version: t.version, sha256: t.sha256 },
+      templateRef: t
+        ? { id: t.id, version: t.version, sha256: t.sha256 }
+        : { id: chosenTemplate, version: 1, sha256: "0".repeat(64) },
       algorithmVersion: "local-layout-v1",
       seed: 1,
     };
     try {
-      const result = await computeLayouts(next, baseline.doc, t, abort.signal);
+      let result: LayoutCandidate[];
+      let bundleForPreview: ConvertedTheme | undefined;
+      if (t?.collectionName || chosenTemplate.startsWith("private:")) {
+        const bundle = t?.collectionName
+          ? await originalThemeBundle(t.themeId!, resources)
+          : await new IndexedDbThemeLibrary().get(chosenTemplate.slice(8));
+        bundleForPreview = bundle;
+        const pages = planThemeBook(bundle.theme.pages, photos.length);
+        const counts = pages.map(
+          (id) =>
+            bundle.theme.pages.find((p) => p.id === id)!.photoSlots.length,
+        );
+        next.templateRef = {
+          id: bundle.theme.id,
+          version: 1,
+          sha256: bundle.theme.sourceHash,
+        };
+        next.templatePageIds = pages;
+        next.constraints = {
+          ...next.constraints,
+          spreadCount: pages.length,
+          minPhotosPerSpread: Math.min(...counts),
+          maxPhotosPerSpread: Math.max(...counts),
+          lockedSpreadIds: locks,
+        };
+        delete next.constraints.targetSpreadIds;
+        result = await generateThemeCandidates(
+          next,
+          baseline.doc,
+          bundle.theme,
+          pages,
+          { replaceBook: true },
+        );
+      } else
+        result = await computeLayouts(next, baseline.doc, t!, abort.signal);
       if (sequence.current !== token || abort.signal.aborted) return;
+      setActiveTheme(bundleForPreview);
       setInput(next);
       setCandidates(result);
       setChosen(0);
@@ -137,7 +230,7 @@ export function LayoutWizard({
         controller.current?.abort();
         onClose();
       }}
-      initialFocus='select[aria-label="场景模板"]'
+      initialFocus='select[aria-label="选择模板"]'
     >
       <header className="layout-heading">
         <div>
@@ -157,26 +250,64 @@ export function LayoutWizard({
           <h3>01 / 排版规则</h3>
           <fieldset disabled={busy || stale} onChange={invalidate}>
             <label>
-              场景模板
+              选择模板
               <select
-                aria-label="场景模板"
+                aria-label="选择模板"
                 value={templateId}
-                onChange={(e) => setTemplate(e.target.value)}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setTemplate(e.target.value);
+                  void generate(e.target.value);
+                }}
               >
                 {Object.entries(templateCategories).map(([category, label]) => (
                   <optgroup key={category} label={label}>
                     {templateVersions
-                      .filter((t) => t.category === category)
+                      .filter(
+                        (t) =>
+                          t.category === category &&
+                          (t.collectionName
+                            ? t.pageOrder === 1
+                            : t.id.startsWith("style_")
+                              ? templateVersions.find(
+                                  (v) =>
+                                    v.id.replace(/_\d+$/u, "") ===
+                                    t.id.replace(/_\d+$/u, ""),
+                                )?.id === t.id
+                              : !t.themeId ||
+                                templateVersions.find(
+                                  (v) => v.themeId === t.themeId,
+                                )?.id === t.id),
+                      )
                       .map((t) => (
                         <option value={t.id} key={t.id}>
-                          {t.name}
+                          {t.collectionName ??
+                            t.name.replace(/\/\s*[1-4]图.*$/u, "").trim()}
                         </option>
                       ))}
                   </optgroup>
                 ))}
+                {privateThemes.length > 0 && (
+                  <optgroup label="我的模板">
+                    {privateThemes.map((t) => (
+                      <option key={t.id} value={`private:${t.id}`}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </label>
-            <div className="layout-numbers">
+            <p>
+              选择主题后，系统自动分配全部选中照片与跨页；图数变体由系统选择。
+            </p>
+            <div
+              className="layout-numbers"
+              hidden={Boolean(
+                templateVersions.find((t) => t.id === templateId)
+                  ?.collectionName || templateId.startsWith("private:"),
+              )}
+            >
               <label>
                 跨页数量
                 <input
@@ -247,6 +378,24 @@ export function LayoutWizard({
             <details>
               <summary>局部重排与锁定</summary>
               <p>已有图层锁定自动保留。调整总页数时请使用整本范围。</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setTargets(baseline.doc.spreads.map((s) => s.id));
+                  invalidate();
+                }}
+              >
+                全选重排跨页
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTargets([]);
+                  invalidate();
+                }}
+              >
+                清空重排跨页
+              </button>
               {baseline.doc.spreads.map((s, i) => (
                 <div className="layout-scope" key={s.id}>
                   <label>
@@ -272,6 +421,33 @@ export function LayoutWizard({
           <h3>
             02 / 照片与顺序 <small>{selected.size} 张选中</small>
           </h3>
+          <button
+            disabled={busy}
+            onClick={() => {
+              invalidate();
+              setSelected(new Set(ids));
+            }}
+          >
+            全选照片
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => {
+              invalidate();
+              setSelected(new Set());
+            }}
+          >
+            清空选片
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => {
+              invalidate();
+              setSelected(new Set(ids.filter((id) => !selected.has(id))));
+            }}
+          >
+            反选照片
+          </button>
           <div className="layout-photo-list">
             {ids.map((id, index) => {
               const asset = resources.assets.find((a) => a.id === id)!;
@@ -343,7 +519,7 @@ export function LayoutWizard({
           {busy ? (
             <div className="layout-placeholder">
               <h3>正在整理照片与页面…</h3>
-              <p>计算在独立线程运行，取消不会更改项目。</p>
+              <p>系统正在生成预览，应用前不会更改作品。</p>
               <button onClick={invalidate}>取消计算</button>
             </div>
           ) : candidates.length ? (
@@ -352,8 +528,8 @@ export function LayoutWizard({
               selected={chosen}
               onSelect={setChosen}
               doc={baseline.doc}
-              resources={resources}
-              port={port}
+              resources={previewResources}
+              port={previewPort}
             />
           ) : (
             <div className="layout-placeholder">
@@ -379,12 +555,20 @@ export function LayoutWizard({
         <button
           className="primary"
           disabled={busy || stale || !candidates.length}
-          onClick={() => {
+          onClick={async () => {
+            setBusy(true);
             try {
-              if (onApply(createLayoutCommand(input!, candidates[chosen], doc)))
+              if (
+                await onApply(
+                  createLayoutCommand(input!, candidates[chosen], doc),
+                  activeTheme,
+                )
+              )
                 onClose();
             } catch (e) {
               setError(e instanceof Error ? e.message : "应用失败");
+            } finally {
+              setBusy(false);
             }
           }}
         >
