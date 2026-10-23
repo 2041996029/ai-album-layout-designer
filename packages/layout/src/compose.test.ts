@@ -75,7 +75,7 @@ it("fits a different photo count without missing photos or duplicating placehold
     "p3",
   ]);
 });
-it("warns about a trusted subject outside the crop", async () => {
+it("preserves a trusted subject outside the original crop", async () => {
   const { p, a, d } = await setup();
   const r = composeSpread(p, a, d, template, [
     {
@@ -84,7 +84,10 @@ it("warns about a trusted subject outside the crop", async () => {
       confidence: 0.9,
     },
   ])[0];
-  expect(r.warnings).toContain("SUBJECT_CROP_RISK");
+  expect(r.warnings).not.toContain("SUBJECT_CROP_RISK");
+  const photo = r.layers.filter(isImageLayer).find((l) => l.assetId === "p0")!;
+  expect(photo.fitMode).toBe("contain");
+  expect(photo.crop).toEqual({ x: 0, y: 0, width: 1, height: 1 });
 });
 it("rejects invalid geometry before using scores", async () => {
   const { p, a, d } = await setup();

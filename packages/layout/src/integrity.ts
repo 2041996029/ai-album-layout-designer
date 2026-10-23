@@ -224,7 +224,8 @@ export function importedSourceGeometryMatches(
           delete found.templateSlot;
           expected.assetId = found.assetId;
           expected.crop = { x: 0, y: 0, width: 1, height: 1 };
-          expected.fitMode = "cover";
+          // Older saved imported pages used cover; new substitutions preserve the full photo.
+          expected.fitMode = found.fitMode === "contain" ? "contain" : "cover";
         }
         return canonicalJson(expected) === canonicalJson(found);
       });

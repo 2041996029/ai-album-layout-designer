@@ -136,7 +136,8 @@ export function instantiateTemplate(
           type: "image",
           assetId: bindings[slot.slotId],
           crop: { x: 0, y: 0, width: 1, height: 1 },
-          fitMode: slot.fitMode ?? "cover",
+          // Automatic substitution has no trusted subject location: preserve the full photo.
+          fitMode: "contain",
           role: "photo",
         }
       : slot.kind === "shape"

@@ -58,6 +58,8 @@ it("applies only bound user photos, preserves mask, proves imported source and u
   const after = h.execute(command);
   expect(after.spreads[0].layers[0]).toMatchObject({
     assetId: "user-photo",
+    fitMode: "contain",
+    crop: { x: 0, y: 0, width: 1, height: 1 },
     alphaMask: { assetId: "mask" },
     layoutPhotoRole: "selection",
   });

@@ -62,7 +62,7 @@ export async function prepareThemePage(
       if (slot && isImageLayer(l)) {
         l.assetId = bindings[slot];
         l.crop = { x: 0, y: 0, width: 1, height: 1 };
-        l.fitMode = "cover";
+        l.fitMode = "contain";
         l.layoutPhotoRole = "selection";
         delete l.layoutInputHash;
       }

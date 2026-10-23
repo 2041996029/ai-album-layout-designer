@@ -70,7 +70,8 @@ function Preview({
   );
 }
 const warningText: Record<string, string> = {
-  SUBJECT_UNKNOWN: "未进行主体识别，请人工检查裁剪。",
+  SUBJECT_UNKNOWN: "未进行主体识别，已完整保留照片。",
+  SAFE_FIT_APPLIED: "已使用完整显示，避免裁切人脸和主体。",
   SUBJECT_CROP_RISK: "部分主体可能被裁剪，请检查照片。",
   LOCKED_CONTENT_OVERLAP_REVIEW: "保留了锁定内容，请检查与新照片的重叠。",
 };

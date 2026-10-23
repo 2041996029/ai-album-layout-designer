@@ -57,6 +57,14 @@ test("basic template click fills imported photos and applies/undoes one target s
     version: 1,
   });
   expect(after.spreads[1].layers).toHaveLength(4);
+  expect(
+    after.spreads[1].layers
+      .filter((l: any) => l.type === "image")
+      .every(
+        (l: any) =>
+          l.fitMode === "contain" && l.crop.height === 1 && l.crop.width === 1,
+      ),
+  ).toBe(true);
   expect(new Set(after.spreads[1].layers.map((l: any) => l.id)).size).toBe(4);
   await page.getByRole("button", { name: "撤销", exact: true }).click();
   expect((await model(page)).spreads).toEqual(before.spreads);
@@ -329,4 +337,32 @@ test("theme automatic filling never repeats missing photos and respects locked c
       .filter((l: any) => l.type === "image" && !l.locked)
       .every((l: any) => l.filter?.presetId === "F07"),
   ).toBe(true);
+});
+
+test("existing cropped portrait can be repaired across the album and undone once", async ({
+  page,
+}) => {
+  await boot(page);
+  await photos(page);
+  await page
+    .getByRole("button", { name: "添加照片 first.jpg", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "适配方式", exact: true })
+    .selectOption("cover");
+  const before = await model(page);
+  expect(before.spreads[0].layers[0].fitMode).toBe("cover");
+  await page.getByRole("button", { name: "修复照片裁切", exact: true }).click();
+  const after = await model(page);
+  const photo = after.spreads[0].layers[0];
+  expect(photo.fitMode).toBe("contain");
+  expect(photo.crop).toEqual({ x: 0, y: 0, width: 1, height: 1 });
+  expect([photo.x, photo.y, photo.width, photo.height]).toEqual([
+    before.spreads[0].layers[0].x,
+    before.spreads[0].layers[0].y,
+    before.spreads[0].layers[0].width,
+    before.spreads[0].layers[0].height,
+  ]);
+  await page.getByRole("button", { name: "撤销", exact: true }).click();
+  expect((await model(page)).spreads).toEqual(before.spreads);
 });

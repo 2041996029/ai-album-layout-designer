@@ -194,7 +194,7 @@ export function composeSpread(
       }
       const frameAspect = l.width / l.height,
         aspect = photo.width / photo.height;
-      const crop =
+      let crop =
         l.fitMode === "contain"
           ? { x: 0, y: 0, width: 1, height: 1 }
           : aspect > frameAspect
@@ -211,7 +211,7 @@ export function composeSpread(
                 height: aspect / frameAspect,
               };
       l.crop = crop;
-      const hint = hints.find(
+      const subjects = hints.filter(
         (h) =>
           h.assetId === l.assetId &&
           h.confidence >= 0.5 &&
@@ -226,26 +226,27 @@ export function composeSpread(
           h.rect.x + h.rect.width <= 1 &&
           h.rect.y + h.rect.height <= 1,
       );
-      if (!hint) {
+      // A warning does not prevent a damaged album. Unknown subjects or any
+      // subject crossing the crop boundary must fall back to the complete photo.
+      const safe =
+        subjects.length > 0 &&
+        subjects.every(
+          ({ rect: r }) =>
+            crop.x <= Math.max(0, r.x - 0.02) + 1e-8 &&
+            crop.y <= Math.max(0, r.y - 0.02) + 1e-8 &&
+            crop.x + crop.width >= Math.min(1, r.x + r.width + 0.02) - 1e-8 &&
+            crop.y + crop.height >= Math.min(1, r.y + r.height + 0.02) - 1e-8,
+        );
+      if (!safe) {
+        l.fitMode = "contain";
+        crop = { x: 0, y: 0, width: 1, height: 1 };
+        l.crop = crop;
+        warnings.push("SAFE_FIT_APPLIED");
+      }
+      if (!subjects.length) {
         warnings.push("SUBJECT_UNKNOWN");
         retention.push(0.5);
-      } else {
-        const r = hint.rect,
-          intersection =
-            Math.max(
-              0,
-              Math.min(crop.x + crop.width, r.x + r.width) -
-                Math.max(crop.x, r.x),
-            ) *
-            Math.max(
-              0,
-              Math.min(crop.y + crop.height, r.y + r.height) -
-                Math.max(crop.y, r.y),
-            );
-        const ratio = intersection / (r.width * r.height);
-        retention.push(Math.min(1, ratio));
-        if (ratio < 0.95) warnings.push("SUBJECT_CROP_RISK");
-      }
+      } else retention.push(1);
     }
     if (!framesWithinPage(layers, width, height))
       hardViolations.push("FRAME_OUT_OF_BOUNDS");

@@ -176,7 +176,7 @@ export async function generateThemeCandidates(
           layer.layoutPhotoRole = "selection";
           layer.layoutInputHash = p.inputHash;
           layer.crop = { x: 0, y: 0, width: 1, height: 1 };
-          layer.fitMode = "cover";
+          layer.fitMode = "contain";
         } else if (isImageLayer(layer)) {
           layer.layoutPhotoRole = "decoration";
           delete layer.layoutInputHash;

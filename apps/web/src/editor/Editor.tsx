@@ -1,3 +1,4 @@
+import { restorePhotoFit } from "./restore-photo-fit";
 import { isUserPhoto } from "@album/assets";
 import { canonicalJson } from "@album/document";
 import { generateThemeCandidates, createLayoutCommand } from "@album/layout";
@@ -470,8 +471,8 @@ export function Editor(p: EditorProps) {
     asset: AssetRecord,
     position?: { x: number; y: number },
   ) => {
-    const width = 360,
-      height = 280;
+    const width = Math.min(360, (280 * asset.width) / asset.height),
+      height = (width * asset.height) / asset.width;
     const layer: ImageLayer = {
       ...base(),
       ...position,
@@ -480,7 +481,7 @@ export function Editor(p: EditorProps) {
       type: "image",
       assetId: asset.id,
       crop: { x: 0, y: 0, width: 1, height: 1 },
-      fitMode: "cover",
+      fitMode: "contain",
     };
     if (execute({ type: "insert-layer", surfaceId, layer }))
       setSelected([layer.id]);
@@ -491,6 +492,7 @@ export function Editor(p: EditorProps) {
       assetId: asset.id,
       crop: { x: 0, y: 0, width: 1, height: 1 },
       layoutPhotoRole: "selection",
+      fitMode: "contain",
     });
   };
   const importFiles = async (files: File[]) => {
@@ -855,6 +857,21 @@ export function Editor(p: EditorProps) {
             onClick={deleteSelected}
           >
             删除
+          </button>
+          <button
+            title="整本相册完整显示照片，保留画框、滤镜和锁定内容；可撤销"
+            onClick={() => {
+              const command = restorePhotoFit(
+                doc,
+                new Set(manifest.assets.filter(isUserPhoto).map((a) => a.id)),
+              );
+              if (command.type === "batch" && command.commands.length) {
+                if (execute(command))
+                  setMessage("已修复整本相册的照片裁切，完整显示原图；可撤销");
+              } else setMessage("照片已完整显示，或已锁定，无需修复");
+            }}
+          >
+            修复照片裁切
           </button>
         </div>
         <div className="toolbar-right">
