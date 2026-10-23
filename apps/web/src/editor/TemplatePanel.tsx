@@ -127,8 +127,12 @@ function Preview({
   );
 }
 export function TemplatePanel(
-  ctx: LibraryContext & { onUseCollection?: (themeId: string) => void },
+  ctx: LibraryContext & {
+    onUseCollection?: (themeId: string) => void;
+    pending?: boolean;
+  },
 ) {
+  const [query, setQuery] = useState("");
   const [series, setSeries] = useState("themes");
   const [category, setCategory] = useState("all"),
     [template, setTemplate] = useState<TemplateVersion>(),
@@ -304,6 +308,18 @@ export function TemplatePanel(
           ...themeGroups.map((group) => group[0]),
           ...(series === "all" ? basic : []),
         ];
+  const sourcePageId =
+    (spread?.importedTemplate as { pageId?: string } | undefined)?.pageId ??
+    spread?.templateRef?.id;
+  const appliedTemplate = templateVersions.find((t) => t.id === sourcePageId);
+  const appliedFamily = appliedTemplate ? family(appliedTemplate) : undefined;
+  const matches = visible.filter(
+    (t) =>
+      (category === "all" || t.category === category) &&
+      `${t.collectionName ?? t.name} ${categories[t.category]}`
+        .toLowerCase()
+        .includes(query.trim().toLowerCase()),
+  );
   return (
     <section aria-label="原创模板" className="template-library">
       <div className="panel-heading">
@@ -313,6 +329,16 @@ export function TemplatePanel(
       <p className="panel-hint">
         选择风格，系统自动选版、填片。每套包含不同图数的可编辑版式。
       </p>
+      <label className="library-search">
+        <span>搜索风格</span>
+        <input
+          type="search"
+          aria-label="搜索模板"
+          placeholder="搜索日系、JK、旗袍…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
       <label>
         模板系列
         <select
@@ -357,59 +383,70 @@ export function TemplatePanel(
         </button>
       )}
       <div className="template-grid" hidden={Boolean(template)}>
-        {visible
-          .filter((t) => category === "all" || t.category === category)
-          .map((t) => (
-            <button
-              key={t.id}
-              className={`template-card ${(t.themeId ? template?.themeId === t.themeId : template?.id === t.id) ? "is-selected" : ""}`}
-              aria-pressed={
-                t.themeId
-                  ? template?.themeId === t.themeId
-                  : template?.id === t.id
+        {matches.map((t) => (
+          <button
+            key={t.id}
+            disabled={ctx.pending}
+            className={`template-card ${family(t) === appliedFamily ? "is-selected" : ""}`}
+            aria-pressed={family(t) === appliedFamily}
+            onClick={() => {
+              if (t.collectionName && ctx.onUseCollection) {
+                void ctx.onUseCollection(t.themeId!);
+                return;
               }
-              onClick={() => {
-                if (t.collectionName && ctx.onUseCollection) {
-                  void ctx.onUseCollection(t.themeId!);
-                  return;
-                }
-                const group = t.themeId
-                  ? templateVersions.filter((v) => v.themeId === t.themeId)
-                  : templateVersions.filter((v) => family(v) === family(t));
-                const fitting = group.filter(
-                  (v) =>
-                    v.slots.filter((s) => s.kind === "image").length <=
-                    pool.length,
-                );
-                const target =
-                  [...fitting].sort(
-                    (a, b) =>
-                      Math.abs(
-                        a.slots.filter((s) => s.kind === "image").length -
-                          pool.length,
-                      ) -
-                      Math.abs(
-                        b.slots.filter((s) => s.kind === "image").length -
-                          pool.length,
-                      ),
-                  )[0] ?? t;
-                choose(target);
-              }}
-            >
-              <Preview template={t} urls={urls} />
-              <span className="template-card-title">
-                {t.collectionName ??
-                  t.name.replace(/\/\s*[1-4]图.*$/u, "").trim()}
-              </span>
-              <small>
-                {t.collectionName ? `8 种跨页版式 · 自动成册 · ` : ""}
-                {t.slots.filter((s) => s.kind === "image").length} 张照片 ·{" "}
-                {categories[t.category]}
-                {t.id.startsWith("style_") || t.themeId ? "" : " · 旧版"}
-              </small>
-            </button>
-          ))}
+              const group = t.themeId
+                ? templateVersions.filter((v) => v.themeId === t.themeId)
+                : templateVersions.filter((v) => family(v) === family(t));
+              const fitting = group.filter(
+                (v) =>
+                  v.slots.filter((s) => s.kind === "image").length <=
+                  pool.length,
+              );
+              const target =
+                [...fitting].sort(
+                  (a, b) =>
+                    Math.abs(
+                      a.slots.filter((s) => s.kind === "image").length -
+                        pool.length,
+                    ) -
+                    Math.abs(
+                      b.slots.filter((s) => s.kind === "image").length -
+                        pool.length,
+                    ),
+                )[0] ?? t;
+              choose(target);
+            }}
+          >
+            <Preview template={t} urls={urls} />
+            <span className="template-card-title">
+              {t.collectionName ??
+                t.name.replace(/\/\s*[1-4]图.*$/u, "").trim()}
+            </span>
+            <small>
+              {family(t) === appliedFamily ? "✓ 当前跨页使用 · " : ""}
+              {t.collectionName
+                ? "8 种跨页版式 · 自动成册 · "
+                : `${t.slots.filter((s) => s.kind === "image").length} 张照片 · `}
+              {categories[t.category]}
+              {t.id.startsWith("style_") || t.themeId ? "" : " · 旧版"}
+            </small>
+          </button>
+        ))}
       </div>
+      {!matches.length && !template && (
+        <div className="library-empty">
+          <b>没有匹配的模板</b>
+          <p>试试其他风格或清空筛选。</p>
+          <button
+            onClick={() => {
+              setQuery("");
+              setCategory("all");
+            }}
+          >
+            清空模板筛选
+          </button>
+        </div>
+      )}
       {!spread && <p>请选择内页跨页后应用模板。</p>}
       {template && (
         <div aria-label="模板预览">

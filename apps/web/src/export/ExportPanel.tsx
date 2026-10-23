@@ -212,6 +212,23 @@ export function ExportPanel({
       }
     }
   }
+  const pendingWarnings =
+    report?.warnings.filter((w) => !ack.includes(w.id)).length ?? 0;
+  const displayProgress =
+    !busy &&
+    report &&
+    !files.length &&
+    [
+      "请先解决阻断问题",
+      "请逐项检查并确认预警",
+      "检查通过，可以开始导出",
+    ].includes(progress)
+      ? report.blockers.length
+        ? `还有 ${report.blockers.length} 项问题需要修复`
+        : pendingWarnings
+          ? `还有 ${pendingWarnings} 项预警待确认`
+          : "检查通过，可以开始导出"
+      : progress;
   return (
     <>
       <button
@@ -314,16 +331,18 @@ export function ExportPanel({
                 }
               />
             </label>
-            <label>
-              JPEG 底色{" "}
-              <input
-                type="color"
-                value={options.jpegMatte}
-                onChange={(e) =>
-                  invalidate({ ...options, jpegMatte: e.target.value })
-                }
-              />
-            </label>
+            {options.format === "jpeg" && (
+              <label>
+                JPEG 底色{" "}
+                <input
+                  type="color"
+                  value={options.jpegMatte}
+                  onChange={(e) =>
+                    invalidate({ ...options, jpegMatte: e.target.value })
+                  }
+                />
+              </label>
+            )}
             <label>
               <input
                 type="checkbox"
@@ -417,39 +436,46 @@ export function ExportPanel({
               report={report}
               acknowledged={ack}
               onChange={setAck}
+              disabled={busy}
             />
           )}
           {error && <p role="alert">{error}</p>}
-          <p
-            className={`export-status ${files.length ? "is-success" : ""}`}
-            role="status"
-          >
-            {progress}
-          </p>
-          {busy && (
-            <p className="modal-hint">
-              正在处理，请保持页面打开。Esc 可取消当前任务。
+          <footer className="export-action-bar">
+            <p
+              className={`export-status ${files.length ? "is-success" : ""}`}
+              role="status"
+            >
+              {displayProgress}
             </p>
-          )}
-          {busy ? (
-            <button onClick={() => controller.current?.abort()}>取消</button>
-          ) : (
-            report && (
+            {busy && (
+              <p className="modal-hint">
+                正在处理，请保持页面打开。Esc 可取消当前任务。
+              </p>
+            )}
+            {busy ? (
+              <button onClick={() => controller.current?.abort()}>取消</button>
+            ) : (
+              report && (
+                <button
+                  className="primary"
+                  disabled={
+                    !!report.blockers.length ||
+                    report.warnings.some((w) => !ack.includes(w.id))
+                  }
+                  onClick={() => void render()}
+                >
+                  开始导出
+                </button>
+              )
+            )}
+            <button disabled={busy} onClick={() => setOpen(false)}>
+              返回编辑
+            </button>
+          </footer>
+          {!!files.length && snapshot && (
+            <div className="export-downloads">
               <button
                 className="primary"
-                disabled={
-                  !!report.blockers.length ||
-                  report.warnings.some((w) => !ack.includes(w.id))
-                }
-                onClick={() => void render()}
-              >
-                开始导出
-              </button>
-            )
-          )}
-          {!!files.length && snapshot && (
-            <div>
-              <button
                 onClick={() => {
                   try {
                     download(
@@ -464,19 +490,24 @@ export function ExportPanel({
               >
                 下载文件与清单 ZIP
               </button>
-              {files.map((f) => (
-                <button
-                  key={f.filename}
-                  onClick={() => download(f.bytes, f.filename, f.mime)}
-                >
-                  下载 {f.filename}
-                </button>
-              ))}
+              <details open={files.length === 1}>
+                <summary>单独下载文件（{files.length} 个）</summary>
+                {files.map((f) => (
+                  <button
+                    key={f.filename}
+                    onClick={() => download(f.bytes, f.filename, f.mime)}
+                  >
+                    下载 {f.filename}
+                  </button>
+                ))}
+              </details>
             </div>
           )}
-          <p>
-            普通 PDF 不包含 CMYK 或 PDF/X 印刷认证。单次下载上限 256
-            MiB，超出请分批选择页面。
+          <p className="panel-hint">
+            {options.format === "pdf"
+              ? "普通 PDF 不包含 CMYK 或 PDF/X 印刷认证。"
+              : ""}
+            单次下载上限 256 MiB，超出请分批选择页面。
           </p>
         </Modal>
       )}

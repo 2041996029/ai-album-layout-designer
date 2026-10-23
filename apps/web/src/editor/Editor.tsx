@@ -125,6 +125,7 @@ export function Editor(p: EditorProps) {
     p.onDocumentChange?.(doc, manifest);
   }, [doc, manifest, p.onDocumentChange]);
   const [layoutOpen, setLayoutOpen] = useState(false);
+  const [visitedLibrary, setVisitedLibrary] = useState(false);
   const editGeneration = useRef(0);
   const resourceOperation = useRef(false);
   const resourceRef = useRef(manifest);
@@ -1020,13 +1021,16 @@ export function Editor(p: EditorProps) {
             {p.renderLibrary && (
               <button
                 className={tab === "library" ? "active" : ""}
-                onClick={() => setTab("library")}
+                onClick={() => {
+                  setVisitedLibrary(true);
+                  setTab("library");
+                }}
               >
                 模板与滤镜
               </button>
             )}
           </nav>
-          {tab === "photos" ? (
+          {tab === "photos" && (
             <AssetPanel
               assets={manifest.assets.filter(isUserPhoto)}
               selectedPhotoIds={selectedPhotoIds}
@@ -1041,28 +1045,31 @@ export function Editor(p: EditorProps) {
               hasRetry={hasRetry}
               retry={() => void importFiles([...failed.current])}
             />
-          ) : (
-            p.renderLibrary?.({
-              doc,
-              surfaceId,
-              selectedIds: selected,
-              selectedPhotoIds,
-              autoLayoutTheme,
-              execute,
-              resources: manifest,
-              port: p.port,
-              applyImportedTheme,
-              createTemplateProject: p.onCreateTemplateProject
-                ? async (pageSize) => {
-                    const result = await save();
-                    if (!result.ok) throw Error("请先备份当前作品后重试。");
-                    await p.onCreateTemplateProject!(
-                      pageSize,
-                      resourceRef.current,
-                    );
-                  }
-                : undefined,
-            })
+          )}
+          {visitedLibrary && (
+            <div hidden={tab !== "library"}>
+              {p.renderLibrary?.({
+                doc,
+                surfaceId,
+                selectedIds: selected,
+                selectedPhotoIds,
+                autoLayoutTheme,
+                execute,
+                resources: manifest,
+                port: p.port,
+                applyImportedTheme,
+                createTemplateProject: p.onCreateTemplateProject
+                  ? async (pageSize) => {
+                      const result = await save();
+                      if (!result.ok) throw Error("请先备份当前作品后重试。");
+                      await p.onCreateTemplateProject!(
+                        pageSize,
+                        resourceRef.current,
+                      );
+                    }
+                  : undefined,
+              })}
+            </div>
           )}
           <div className="local-note">
             <span>◈</span>

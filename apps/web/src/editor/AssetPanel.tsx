@@ -107,10 +107,16 @@ export function AssetPanel(p: Props) {
                   onChange={(e) =>
                     p.onSelectPhotos!(
                       e.target.checked
-                        ? [...(p.selectedPhotoIds ?? []), asset.id]
-                        : (p.selectedPhotoIds ?? []).filter(
-                            (id) => id !== asset.id,
-                          ),
+                        ? [
+                            ...new Set([
+                              ...(p.selectedPhotoIds ??
+                                p.assets.map((a) => a.id)),
+                              asset.id,
+                            ]),
+                          ]
+                        : (
+                            p.selectedPhotoIds ?? p.assets.map((a) => a.id)
+                          ).filter((id) => id !== asset.id),
                     )
                   }
                 />

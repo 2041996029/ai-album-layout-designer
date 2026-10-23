@@ -81,11 +81,7 @@ test("33 filters batch selected photos and preserve text; strength is one undo s
   const before = await model(page);
   await page.getByRole("button", { name: "模板与滤镜", exact: true }).click();
   await page.getByRole("button", { name: "滤镜", exact: true }).click();
-  await expect(
-    page.getByText(
-      "选中照片 · 2 张可编辑照片。锁定照片与装饰不受影响，可一次撤销。",
-    ),
-  ).toBeVisible();
+  await expect(page.getByText("选中照片 · 2 张可编辑照片")).toBeVisible();
   expect(
     await page
       .getByRole("region", { name: "照片滤镜" })

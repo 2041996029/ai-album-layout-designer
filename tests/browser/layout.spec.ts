@@ -283,14 +283,20 @@ test("a C2 candidate exports a real PNG after photo-integrity preflight", async 
     .click();
   await expect(dialog.locator(".preflight-panel")).toBeVisible();
   await expect(dialog.locator(".preflight-blocker")).toHaveCount(0);
-  for (const warning of await dialog.locator(".preflight-warning input").all())
-    await warning.check();
+  const confirmWarnings = dialog.getByRole("button", {
+    name: "确认全部已检查的预警",
+    exact: true,
+  });
+  if (await confirmWarnings.isVisible()) await confirmWarnings.click();
   await dialog.getByRole("button", { name: "开始导出", exact: true }).click();
   await expect(dialog.getByText("导出完成，可下载")).toBeVisible({
     timeout: 60000,
   });
+  const firstDownload = dialog.getByRole("button", { name: /下载 0001/ });
+  if (!(await firstDownload.isVisible()))
+    await dialog.getByText(/^单独下载文件/).click();
   const downloaded = page.waitForEvent("download");
-  await dialog.getByRole("button", { name: /下载 0001/ }).click();
+  await firstDownload.click();
   const file = await downloaded;
   await file.saveAs(info.outputPath("c2-layout-export.png"));
   const zipEvent = page.waitForEvent("download");
