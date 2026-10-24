@@ -283,6 +283,62 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
       expect(redeemed.entitlementGrantIds).toHaveLength(2);
       expect(redeemed.skuVersionId).toBe(input.skuVersionId);
     });
+    it("replays expired batch creation within retention before computing new admission defaults", async () => {
+      const input = {
+        skuVersionId: await published(),
+        count: 1,
+        maxUsesPerCode: 1,
+        expiresAt: new Date(+clock + 1000).toISOString(),
+        reason: "short distribution window",
+      };
+      const req = request(),
+        first = await service.withRequest(req).createBatch(actor, input),
+        previous = clock;
+      clock = new Date(+clock + 2000);
+      try {
+        const { oneTimeCodes: _, ...metadata } = first;
+        expect(
+          await service.withRequest(req).createBatch(actor, input),
+        ).toEqual(metadata);
+        await expect(
+          service.withRequest(req).createBatch(actor, { ...input, count: 2 }),
+        ).rejects.toThrow("IDEMPOTENCY_MISMATCH");
+        await rows(
+          "UPDATE admin_role_assignments SET revoked_at=now() WHERE user_id=$1 AND role='finance'",
+          [actor.userId],
+        );
+        await expect(
+          service.withRequest(req).createBatch(actor, input),
+        ).rejects.toThrow("FORBIDDEN");
+      } finally {
+        clock = previous;
+        await rows(
+          "UPDATE admin_role_assignments SET revoked_at=NULL WHERE user_id=$1 AND role='finance'",
+          [actor.userId],
+        );
+      }
+    });
+    it("records the verified finance authorizing role on creation and disable audit events", async () => {
+      const b = await batch();
+      await service
+        .withRequest({ ...request(), expectedRevision: 1 })
+        .disableRedemptionBatch(actor, b.batchId, "distribution ended");
+      const events = await rows(
+        "SELECT action,actor_user_id,redacted_details FROM audit_events WHERE target_id=$1 ORDER BY created_at,id",
+        [b.batchId],
+      );
+      expect(events).toHaveLength(2);
+      expect(events.map((e) => e.action).sort()).toEqual([
+        "commerce.redemption_batch_created",
+        "commerce.redemption_batch_disabled",
+      ]);
+      for (const event of events) {
+        expect(event.actor_user_id).toBe(actor.userId);
+        expect(event.redacted_details).toMatchObject({
+          authorizingRole: "finance",
+        });
+      }
+    });
     it("serializes different codes under the common account lock and batch disable lock", async () => {
       const b = await batch({ count: 3 });
       const claimed = await Promise.all(

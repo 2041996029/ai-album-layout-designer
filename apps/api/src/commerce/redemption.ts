@@ -143,6 +143,7 @@ export class RedemptionService {
   }
   private async finance(tx: PoolClient, actor: Actor) {
     await requireRoles(tx, this.auth, actor, ["finance"]);
+    return "finance" as const;
   }
   private async fresh(tx: PoolClient, actor: Actor) {
     await this.options.reauth.verifyFresh(
@@ -275,14 +276,13 @@ export class RedemptionService {
   }
   private async create(
     actor: Actor,
-    input: RedemptionBatchInput,
+    inputSource: RedemptionBatchInput | ((at: Date) => RedemptionBatchInput),
     reason: string,
     payload: unknown,
   ): Promise<Creation> {
-    this.validateBatch(input);
     this.reason(reason);
     return this.db.transaction(async (tx) => {
-      await this.finance(tx, actor);
+      const authorizingRole = await this.finance(tx, actor);
       return this.once(
         tx,
         actor,
@@ -293,6 +293,9 @@ export class RedemptionService {
         async () => {
           await this.fresh(tx, actor);
           const at = await this.at(tx);
+          const input =
+            typeof inputSource === "function" ? inputSource(at) : inputSource;
+          this.validateBatch(input);
           if (Date.parse(input.expiresAt) <= +at)
             fail("REDEMPTION_BATCH_INVALID", 422);
           await this.sku(tx, input.skuVersionId, true);
@@ -332,6 +335,7 @@ export class RedemptionService {
             batchId,
             reason,
             {
+              authorizingRole,
               count: input.count,
               skuVersionId: input.skuVersionId,
               distributionChannel: input.distributionChannel,
@@ -358,17 +362,16 @@ export class RedemptionService {
     actor: Actor,
     input: components["schemas"]["RedemptionBatchCreate"],
   ): Promise<BatchCreated> {
-    // Default start is computed in the authoritative transaction's clock; it is
-    // not part of the public payload hash, so time advancing cannot break replay.
-    const at = await this.db.transaction((tx) => this.at(tx));
+    // Resolve retained replay before computing new-admission defaults. The start
+    // time belongs only to the first creation's authoritative SQL transaction.
     const result = await this.create(
       actor,
-      {
+      (at) => ({
         ...input,
         startsAt: at.toISOString(),
         workspaceKinds: ["personal", "studio"],
         distributionChannel: "admin",
-      },
+      }),
       input.reason,
       input,
     );
@@ -623,7 +626,7 @@ export class RedemptionService {
   ): Promise<Batch> {
     this.reason(reason);
     return this.db.transaction(async (tx) => {
-      await this.finance(tx, actor);
+      const authorizingRole = await this.finance(tx, actor);
       return this.once(
         tx,
         actor,
@@ -662,7 +665,11 @@ export class RedemptionService {
               "redemption_batch",
               batchId,
               reason,
-              { previousState: b.state, revision: Number(b.revision) + 1 },
+              {
+                authorizingRole,
+                previousState: b.state,
+                revision: Number(b.revision) + 1,
+              },
             );
           }
           return this.metadata(tx, batchId);
