@@ -474,6 +474,45 @@ export class JobRepository {
       result: outcome.result,
     });
   }
+  /** Trusted platform recovery caller supplies live authorization and operation atomicity. */
+  async recoverTargetInTransaction(
+    tx: PoolClient,
+    jobId: string,
+    action: "reschedule_dispatch" | "request_cancel",
+    expectedRevision: number,
+  ) {
+    let row = await this.lock(tx, jobId);
+    if (!row) fail("NOT_FOUND", 404);
+    if (Number(row.revision) !== expectedRevision)
+      fail("REVISION_CONFLICT", 409);
+    if (terminal(row.state)) fail("JOB_TERMINAL", 409);
+    if (action === "reschedule_dispatch") {
+      if (
+        !["queued", "retry_wait"].includes(row.state) ||
+        row.provider_submission_state !== "not_submitted"
+      )
+        fail("JOB_CONFIRMATION_REQUIRED", 409);
+      await tx.query("UPDATE jobs SET revision=revision+1 WHERE id=$1", [
+        jobId,
+      ]);
+      const changed = await tx.query(
+        "UPDATE outbox SET sent_at=NULL,claimed_by=NULL,claim_expires_at=NULL,available_at=COALESCE((SELECT next_attempt_at FROM jobs WHERE id=$1),clock_timestamp()),last_error_code=NULL WHERE aggregate_kind='job' AND aggregate_id=$1 AND event_type='job.ready' RETURNING id",
+        [jobId],
+      );
+      if (!changed.rowCount) await jobEvent(tx, row, "job.ready", { jobId });
+    } else if (["queued", "retry_wait"].includes(row.state)) {
+      await tx.query(
+        "UPDATE jobs SET cancel_requested_at=clock_timestamp(),revision=revision+1 WHERE id=$1",
+        [jobId],
+      );
+      row = (await this.lock(tx, jobId))!;
+      await this.complete(tx, row, { state: "cancelled", result: {} });
+    } else if (row.state !== "cancel_requested")
+      await tx.query(
+        "UPDATE jobs SET state='cancel_requested',stage='cancelling',cancel_requested_at=clock_timestamp(),revision=revision+1 WHERE id=$1",
+        [jobId],
+      );
+  }
   async requestCancel(
     actor: Actor,
     wid: string,

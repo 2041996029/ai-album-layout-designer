@@ -327,46 +327,14 @@ export function commerceHandlers(
       }));
     },
     async adminJobAction(r) {
-      await db.transaction((tx) =>
-        requireRoles(tx, auth, r.actor, ["platform_ops"]),
+      return (await import("./admin-jobs")).adminJobAction(
+        runtime,
+        s,
+        r.actor,
+        r.params.jobId,
+        r.body,
+        context(r),
       );
-      const row = (
-        await db.transaction((tx) =>
-          tx.query("SELECT * FROM jobs WHERE id=$1", [r.params.jobId]),
-        )
-      ).rows[0];
-      if (!row) fail("NOT_FOUND", 404);
-      if (Number(row.revision) !== r.body.expectedRevision)
-        fail("REVISION_CONFLICT", 409);
-      await db.transaction(async (tx) => {
-        await s.reauth.verifyFresh(
-          r.actor,
-          header(r, "x-reauthentication-proof"),
-          "admin_operations",
-          tx,
-        );
-        await tx.query(
-          "INSERT INTO audit_events(id,actor_user_id,action,target_kind,target_id,request_id,reason,redacted_details) VALUES($1,$2,'commerce.job_action','job',$3,$4,$5,$6)",
-          [
-            id(),
-            r.actor.userId,
-            row.id,
-            id(),
-            r.body.reason,
-            { action: r.body.action },
-          ],
-        );
-      });
-      if (r.body.action === "request_cancel")
-        await s.jobs.requestCancel(r.actor, row.workspace_id, row.id);
-      else if (r.body.action === "reconcile_upstream")
-        fail("UPSTREAM_UNCONFIGURED", 503);
-      else await s.jobs.recoverExpiredJobs(100);
-      return {
-        operationId: id(),
-        state: "completed",
-        acceptedAt: new Date().toISOString(),
-      };
     },
     async listSkus(r) {
       let active;
@@ -1041,7 +1009,7 @@ export function commerceHandlers(
       return config(r).emergencyDisable(
         r.actor,
         r.body.capability,
-        true,
+        r.body.disabled,
         r.body.reason,
       );
     },

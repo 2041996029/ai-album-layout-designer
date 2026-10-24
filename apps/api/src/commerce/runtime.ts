@@ -1,3 +1,5 @@
+import { assertSecretNotInUse } from "./secret-obligations";
+import type { SecretOptions } from "../config/secrets";
 import { CloudLayoutService } from "../projects/layout-service";
 import { fail, type Database } from "@album/server-core";
 import { JobRepository, policyFromRelease, type PolicyPort } from "@album/jobs";
@@ -27,6 +29,7 @@ import {
 import { commerceHandlers } from "./http";
 export type CommerceOptions = {
   secrets?: SecretPort;
+  assertSecretNotInUse?: SecretOptions["assertNotInUse"];
   config?: Partial<ConfigOptions>;
   paymentBindings?: Array<{
     id: string;
@@ -75,7 +78,11 @@ export async function bindCommerceRuntime(
     db,
     auth,
     options.secrets ?? closedSecrets,
-    { environment, reauth },
+    {
+      environment,
+      reauth,
+      assertNotInUse: options.assertSecretNotInUse ?? assertSecretNotInUse,
+    },
   );
   const payments = new PaymentAdapters(environment),
     refundAdapters = new RefundAdapters(payments);

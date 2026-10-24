@@ -946,7 +946,12 @@ export class ConfigService {
         previousReleaseId,
       },
     );
-    await this.options.onPublished?.(tx, {releaseId, versions, versionIds:Object.values(versions).map(v=>v.id), effectiveAt:at.toISOString()});
+    await this.options.onPublished?.(tx, {
+      releaseId,
+      versions,
+      versionIds: Object.values(versions).map((v) => v.id),
+      effectiveAt: at.toISOString(),
+    });
     return deepFreeze({
       releaseId,
       versions,
@@ -1132,6 +1137,11 @@ export class ConfigService {
           reason,
           { environment: this.options.environment, capability, disabled },
         );
+        return {
+          operationId: this.request.requestId ?? id(),
+          state: "completed" as const,
+          acceptedAt: new Date().toISOString(),
+        };
       };
       return this.request.idempotencyKey
         ? runIdempotent(
