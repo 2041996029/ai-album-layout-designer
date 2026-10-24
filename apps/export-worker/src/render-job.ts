@@ -699,11 +699,10 @@ export class ExportWorker {
           byteLength: artifact.bytes.length,
           mime: artifact.mime,
         });
-        try {
-          await this.deps.objects.put(locator, artifact.bytes);
-        } finally {
-          await markPutSettled(this.deps.db, stageId);
-        }
+        await this.deps.objects.put(locator, artifact.bytes);
+        // A rejected client promise may precede the remote commit. Only success proves
+        // settlement through this ObjectStore port; unknown writes retain quarantine.
+        await markPutSettled(this.deps.db, stageId);
         const head = await this.deps.objects.head(locator),
           downloaded = await this.deps.objects.read(locator);
         if (

@@ -187,7 +187,12 @@ export async function verifyPdf(
       let content = "";
       for (const ref of refs) {
         const stream = pdf.context.lookup(ref);
-        if (!(stream instanceof PDFRawStream)) fail("ARTIFACT_INVALID");
+        if (
+          !(stream instanceof PDFRawStream) ||
+          stream.dict.get(PDFName.of("Filter")) !== PDFName.of("FlateDecode") ||
+          stream.dict.has(PDFName.of("DecodeParms"))
+        )
+          fail("ARTIFACT_INVALID");
         const data = inflateSync(stream.contents, { maxOutputLength: 65536 });
         content += Buffer.from(data).toString("ascii") + "\n";
       }

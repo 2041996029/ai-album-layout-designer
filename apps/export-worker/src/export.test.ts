@@ -1183,6 +1183,24 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
             [staged.id],
           );
         }
+        if (mode === "lost-put-response") {
+          expect(
+            (
+              await rows("SELECT payload FROM outbox WHERE id=$1", [staged.id])
+            )[0].payload.putSettled,
+          ).toBe(false);
+          await worker.recoverStagedArtifacts(100, job.jobId);
+          expect(await objects.read(locator)).toBeTruthy();
+          expect(
+            (
+              await rows("SELECT sent_at FROM outbox WHERE id=$1", [staged.id])
+            )[0].sent_at,
+          ).toBeNull();
+          await rows(
+            "UPDATE outbox SET payload=jsonb_set(payload,'{unsettledUntil}',to_jsonb((clock_timestamp()-interval '1 second')::text)) WHERE id=$1",
+            [staged.id],
+          );
+        }
         await worker.recoverStagedArtifacts(100, job.jobId);
         await expect(objects.read(locator)).rejects.toThrow();
         expect(
@@ -1195,5 +1213,135 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
       },
       180000,
     );
+    it.each([
+      "wrong-filter",
+      "missing-filter",
+      "filter-array",
+      "decode-parameters",
+    ] as const)(
+      "rejects PDF content %s without changing the compressed drawing bytes",
+      async (mode) => {
+        const saved = await revisions.load(actor, wid, pid, 12);
+        const snap = await freezeSnapshot(
+          saved,
+          {
+            ...options,
+            dpi: 72,
+            view: "singlePage",
+            pageIds: ["spread_1:left"],
+          },
+          saved.savedAt,
+        );
+        const surfaces = planSurfaces(snap),
+          surface = surfaces[0];
+        const png = await sharp({
+          create: {
+            width: surface.pixelWidth,
+            height: surface.pixelHeight,
+            channels: 3,
+            background: "#ff0000",
+          },
+        })
+          .png()
+          .toBuffer();
+        const good = await encodePdf(
+          [{ surface, mime: "image/png", bytes: png }],
+          snap,
+        );
+        await expect(verifyPdf(good, surfaces, [png])).resolves.toBeUndefined();
+        const { PDFDocument, PDFName, PDFArray, PDFRawStream } =
+          await import("pdf-lib");
+        const pdf = await PDFDocument.load(good),
+          contents = pdf.getPage(0).node.lookup(PDFName.of("Contents"));
+        const refs =
+          contents instanceof PDFArray ? contents.asArray() : [contents];
+        const originals: Buffer[] = [];
+        for (const ref of refs) {
+          const stream = pdf.context.lookup(ref);
+          if (!(stream instanceof PDFRawStream)) throw Error("fixture");
+          originals.push(Buffer.from(stream.contents));
+          if (mode === "wrong-filter")
+            stream.dict.set(PDFName.of("Filter"), PDFName.of("ASCIIHexDecode"));
+          else if (mode === "missing-filter")
+            stream.dict.delete(PDFName.of("Filter"));
+          else if (mode === "filter-array")
+            stream.dict.set(
+              PDFName.of("Filter"),
+              pdf.context.obj(["FlateDecode"]),
+            );
+          else
+            stream.dict.set(
+              PDFName.of("DecodeParms"),
+              pdf.context.obj({ Predictor: 12, Columns: 1 }),
+            );
+        }
+        const changed = await pdf.save(),
+          decoded = await PDFDocument.load(changed);
+        const changedContents = decoded
+          .getPage(0)
+          .node.lookup(PDFName.of("Contents"));
+        const changedRefs =
+          changedContents instanceof PDFArray
+            ? changedContents.asArray()
+            : [changedContents];
+        expect(
+          changedRefs.map((ref) =>
+            Buffer.from(
+              (decoded.context.lookup(ref) as import("pdf-lib").PDFRawStream)
+                .contents,
+            ),
+          ),
+        ).toEqual(originals);
+        await expect(verifyPdf(changed, surfaces, [png])).rejects.toThrow(
+          "ARTIFACT_INVALID",
+        );
+      },
+    );
+    it("keeps an ambiguous rejected PUT recoverable when the remote write completes after initial cleanup", async () => {
+      const job = await accept({ ...options, dpi: 72 }),
+        held = await lease(job.jobId),
+        put = objects.put.bind(objects);
+      let remoteCommit!: () => Promise<void>, locator: any;
+      objects.put = async (value, bytes) => {
+        locator = value;
+        const copy = Uint8Array.from(bytes);
+        remoteCommit = () => put(value, copy);
+        throw Error("CLIENT_TIMEOUT_BEFORE_REMOTE_COMMIT");
+      };
+      await worker.renderExportJob(held, new AbortController().signal);
+      const [stage] = await rows(
+        "SELECT * FROM outbox WHERE aggregate_id=$1 AND event_type='export.staged'",
+        [job.jobId],
+      );
+      expect(stage.payload.putSettled).toBe(false);
+      expect(stage.sent_at).toBeNull();
+      await worker.recoverStagedArtifacts(100, job.jobId);
+      expect(
+        (await rows("SELECT sent_at FROM outbox WHERE id=$1", [stage.id]))[0]
+          .sent_at,
+      ).toBeNull();
+      await remoteCommit();
+      expect(await objects.read(locator)).toBeTruthy();
+      await worker.recoverStagedArtifacts(100, job.jobId);
+      expect(await objects.read(locator)).toBeTruthy();
+      expect(
+        (await rows("SELECT sent_at FROM outbox WHERE id=$1", [stage.id]))[0]
+          .sent_at,
+      ).toBeNull();
+      await rows(
+        "UPDATE outbox SET payload=jsonb_set(payload,'{unsettledUntil}',to_jsonb((clock_timestamp()-interval '1 second')::text)) WHERE id=$1",
+        [stage.id],
+      );
+      await worker.recoverStagedArtifacts(100, job.jobId);
+      await expect(objects.read(locator)).rejects.toThrow();
+      expect(
+        (await rows("SELECT sent_at FROM outbox WHERE id=$1", [stage.id]))[0]
+          .sent_at,
+      ).not.toBeNull();
+      expect(
+        (await rows("SELECT state FROM jobs WHERE id=$1", [job.jobId]))[0]
+          .state,
+      ).toBe("failed");
+    }, 180000);
   },
 );
