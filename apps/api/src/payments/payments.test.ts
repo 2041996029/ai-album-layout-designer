@@ -251,6 +251,69 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         ).rows[0].count,
       );
     }
+    it("fairly recovers more than a batch after lost outbox rows, isolates bad snapshots, and revisits unknowns after restart", async () => {
+      const early: string[] = [];
+      for (let index = 0; index < 3; index++) {
+        clock = new Date(epoch.getTime() + index * 1000);
+        early.push((await create()).orderId);
+      }
+      const missingSnapshot = id();
+      await db.database.transaction(async (tx) => {
+        await tx.query(
+          "INSERT INTO orders(id,created_at,workspace_id,sku_version_id,buyer_user_id,amount_fen,channel,client_platform,expires_at) VALUES($1,$2,$3,$4,$5,100,'wechat_pay','web',$6)",
+          [
+            missingSnapshot,
+            new Date(epoch.getTime() + 3000),
+            wid,
+            sku,
+            actor.userId,
+            new Date(epoch.getTime() + 303000),
+          ],
+        );
+        await tx.query(
+          "INSERT INTO payment_attempts(id,workspace_id,order_id,attempt,channel,merchant_account_ref,provider_request_id,amount_fen) VALUES($1,$2,$3,1,'wechat_pay','merchant',$4,100)",
+          [id(), wid, missingSnapshot, missingSnapshot],
+        );
+      });
+      clock = new Date(epoch.getTime() + 4000);
+      const late = await create();
+      facts.set(late.orderId, paid(late.orderId));
+      const query = adapter.options.transport.query;
+      adapter.options.transport.query = async (orderId, request) => {
+        if (orderId === early[1]) {
+          calls.push(`query:${orderId}`);
+          throw Error("PROVIDER_QUERY_UNKNOWN");
+        }
+        return query(orderId, request);
+      };
+      await db.pool.query(
+        "DELETE FROM ai_album.outbox WHERE event_type='payment.query' AND aggregate_id=ANY($1::text[])",
+        [[...early, missingSnapshot, late.orderId]],
+      );
+      clock = new Date(epoch.getTime() + 600000);
+      // Each invocation has a fresh service instance: fairness must survive process loss.
+      for (let index = 0; index < 4; index++)
+        await new OrderService(orders.options).reconcileDue(2);
+      expect((await row(late.orderId)).state).toBe("paid");
+      expect(await count(late.orderId)).toBe(1);
+      expect(calls.filter((call) => call === `query:${early[0]}`)).toHaveLength(
+        1,
+      );
+      expect(calls.filter((call) => call === `query:${early[1]}`)).toHaveLength(
+        1,
+      );
+      expect((await row(missingSnapshot)).state).toBe("pending");
+      clock = new Date(clock.getTime() + 30001);
+      for (let index = 0; index < 3; index++)
+        await new OrderService(orders.options).reconcileDue(2);
+      expect(calls.filter((call) => call === `query:${early[0]}`)).toHaveLength(
+        2,
+      );
+      expect(calls.filter((call) => call === `query:${early[1]}`)).toHaveLength(
+        2,
+      );
+      expect(await count(late.orderId)).toBe(1);
+    });
     it("replays 100 verified callbacks and concurrent authenticated query once in one SQL transaction", async () => {
       const order = await create();
       const event = paid(order.orderId);
@@ -455,6 +518,7 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         order.orderId,
         paid(order.orderId, { eventId: `query-paid-${order.orderId}` }),
       );
+      clock = new Date(clock.getTime() + 30001);
       await orders.reconcileDue();
       expect((await row(order.orderId)).state).toBe("paid");
       expect(await count(order.orderId)).toBe(1);

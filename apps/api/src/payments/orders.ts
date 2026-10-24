@@ -349,29 +349,43 @@ export class OrderService {
   async reconcileDue(limit = 100) {
     if (!Number.isInteger(limit) || limit < 1 || limit > 1000)
       fail("INVALID_LIMIT", 422);
-    const requests = await this.options.db.transaction(async (tx) => {
+    const due = await this.options.db.transaction(async (tx) => {
+      const now = this.now();
+      // Rebuild missing scheduling facts after queue/outbox loss. Sent delivery does
+      // not mean that a pending payment was resolved, so recovery ignores sent_at.
+      await tx.query(
+        "INSERT INTO outbox(id,workspace_id,event_key,aggregate_kind,aggregate_id,event_type,payload,available_at) SELECT 'payment-query-'||o.id,o.workspace_id,'payment-query-'||o.id,'order',o.id,'payment.query',jsonb_build_object('orderId',o.id),o.expires_at FROM orders o WHERE o.state='pending' AND o.expires_at<=$1 ON CONFLICT(event_key) DO NOTHING",
+        [now],
+      );
       const rows = (
         await tx.query(
-          "SELECT o.id,o.workspace_id,p.provider_request_id FROM orders o JOIN payment_attempts p ON p.workspace_id=o.workspace_id AND p.order_id=o.id AND p.attempt=1 WHERE o.state='pending' AND o.expires_at<=$1 ORDER BY o.expires_at,o.id LIMIT $2",
-          [this.now(), limit],
+          "SELECT o.id,o.workspace_id,p.provider_request_id,q.id AS query_id FROM outbox q JOIN orders o ON o.id=q.aggregate_id AND o.workspace_id=q.workspace_id JOIN payment_attempts p ON p.workspace_id=o.workspace_id AND p.order_id=o.id AND p.attempt=1 WHERE q.event_type='payment.query' AND q.aggregate_kind='order' AND o.state='pending' AND o.expires_at<=$1 AND q.available_at<=$1 ORDER BY q.available_at,o.expires_at,o.id LIMIT $2 FOR UPDATE OF q SKIP LOCKED",
+          [now, limit],
         )
       ).rows;
-      const requests: PaymentRequest[] = [];
-      for (const row of rows)
-        requests.push({
+      // Commit the retry schedule before any external query or snapshot read.
+      // A crash, unknown result, or malformed order must yield to unvisited rows.
+      if (rows.length)
+        await tx.query(
+          "UPDATE outbox SET available_at=$2 WHERE id=ANY($1::text[])",
+          [rows.map((row) => row.query_id), new Date(now.getTime() + 30000)],
+        );
+      return rows;
+    });
+    for (const row of due) {
+      try {
+        const request: PaymentRequest = {
           orderId: row.id,
           providerRequestId: row.provider_request_id,
-          snapshot: await frozenOrderSnapshot(tx, row.id, row.workspace_id),
-        });
-      return requests;
-    });
-    for (const request of requests) {
-      try {
+          snapshot: await this.options.db.transaction((tx) =>
+            frozenOrderSnapshot(tx, row.id, row.workspace_id),
+          ),
+        };
         await this.queryRequest(request);
       } catch {
-        /* Remains due and retryable from SQL. */
+        /* This order remains scheduled; continue the independently claimed batch. */
       }
     }
-    return { queried: requests.length };
+    return { queried: due.length };
   }
 }
