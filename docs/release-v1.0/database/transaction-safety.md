@@ -66,6 +66,14 @@
 
 ## 订单、支付、兑换与退款
 
+### C4 durable order binding amendment
+
+Apply `002_order_snapshots.up.sql` after `001_initial.up.sql` (93 canonical tables after this additive migration). `orders` alone cannot freeze the application, merchant, virtual product mapping, release, published SKU features and refund policy. The immutable `order_snapshots` business row stores those nonsecret facts, a canonical JSON SHA-256, and release/payment-item foreign keys. Its insertion guard checks workspace/order ownership, frozen SKU ID/amount/currency/channel and the exact immutable published payment payload. Service validation additionally checks canonical hash, published SKU materialization, product mapping and real channel/platform admission. Secret references are versioned references only, never key bytes. Application users receive neither this internal snapshot nor credential references.
+
+Counterexample: create an order, then expire/delete its seven-day `idempotency_keys` record and publish another payment app/product mapping. A delayed callback must still validate against the original snapshot, and a refund must use the original binding. Keeping that snapshot only in `response_json` loses financial facts during legal idempotency cleanup. The payment integration tests execute this deletion, verify the old callback, and reject snapshot mutation plus mismatched snapshot price/release. The migration adds no ledger and does not change idempotency retention. Runtime deployment must apply both canonical migrations before enabling payment endpoints; the C3 disposable database helper applies both.
+
+Rollout: run `002_order_snapshots.up.sql` once under the migration owner after the initial schema and before enabling order creation; it does not backfill financial bindings for legacy orders. Legacy orders without reconstructable authoritative bindings remain blocked for manual review. The matching down file is guarded by `ai_album.allow_destructive_local_reset=yes` and only removes this table/function in a disposable local database; production uses forward migrations and retains snapshots.
+
 1. 创建订单在服务端读取已启用sku的不可变version，冻结CNY金额和渠道/平台，写幂等记录。支付尝试有独立attempt和稳定provider_request_id（商户号作用域）；客户端“支付成功”只触发查询，不能发权益。
 2. 回调先独立验签/证书/时间/商户/app/币种/金额和provider transaction匹配。验签通过的事件按(channel,merchant_account_ref,provider_event_id)插payment_event，同事务锁order/attempt，检查状态和金额，改paid并插唯一entitlement_grant、credit_lot、credit_ledger、outbox。若同事件已存在，验证body_hash后读结果；若前事务未知，查询订单/渠道事实。一次provider transaction只能绑定一个attempt。
 3. 拆开pay event和履约状态是为重放恢复；重放同事实只补缺少的唯一grant/lot/ledger。不可让管理员直接改订单为paid绕过事件与账本；人工调整必须明确审批、operation_id、补偿流水和审计原因。
