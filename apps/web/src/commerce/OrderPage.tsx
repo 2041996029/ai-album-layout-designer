@@ -1,3 +1,4 @@
+import { useHumanVerification } from "./useHumanVerification";
 import { PagedMore } from "./PagedMore";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useState } from "react";
@@ -24,6 +25,7 @@ export function OrderPage({
 }: {
   workspaceId: string;
 }): React.JSX.Element {
+  const human = useHumanVerification();
   const [orders, setOrders] = useState<DTO<"Order">[]>([]),
     [nextOrders, setNextOrders] = useState<string | null>(null),
     [nextRedemptions, setNextRedemptions] = useState<string | null>(null),
@@ -31,18 +33,21 @@ export function OrderPage({
     [error, setError] = useState(""),
     [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),
-    [refund, setRefund] = useState<DTO<"Refund">>(),
+    [refunds, setRefunds] = useState<DTO<"Refund">[]>([]),
+    [nextRefunds, setNextRefunds] = useState<string | null>(null),
     [reason, setReason] = useState(""),
-    [proof, setProof] = useState(""),
     [qr, setQr] = useState("");
   const refresh = useCallback(async () => {
     try {
-      const [o, r] = await Promise.all([
+      const [o, r, f] = await Promise.all([
         api<Page<DTO<"Order">>>(`/workspaces/${id(workspaceId)}/orders`),
         api<Page<DTO<"Redemption">>>(
           `/workspaces/${id(workspaceId)}/redemptions`,
         ),
+        api<Page<DTO<"Refund">>>(`/workspaces/${id(workspaceId)}/refunds`),
       ]);
+      setRefunds(f.items);
+      setNextRefunds(f.nextCursor);
       setNextOrders(o.nextCursor);
       setNextRedemptions(r.nextCursor);
       setOrders(o.items);
@@ -146,25 +151,26 @@ export function OrderPage({
               )}
               {o.state === "paid" && (
                 <button
-                  disabled={busy || !reason.trim() || !proof.trim()}
+                  disabled={
+                    busy || !reason.trim() || !human.available || human.busy
+                  }
                   onClick={() =>
-                    void action(async () =>
-                      setRefund(
-                        await api<DTO<"Refund">>(
-                          `/orders/${id(o.id)}/refunds`,
-                          "POST",
-                          {
-                            amountFen: o.amountFen,
-                            reason,
-                            expectedOrderRevision: o.revision,
-                          },
-                          {
-                            ...ifMatch(o.revision),
-                            "X-Reauthentication-Proof": proof,
-                          },
-                        ),
-                      ),
-                    )
+                    void action(async () => {
+                      const proof = await human.verify("billing_refund");
+                      await api<DTO<"Refund">>(
+                        `/orders/${id(o.id)}/refunds`,
+                        "POST",
+                        {
+                          amountFen: o.amountFen,
+                          reason,
+                          expectedOrderRevision: o.revision,
+                        },
+                        {
+                          ...ifMatch(o.revision),
+                          "X-Reauthentication-Proof": proof,
+                        },
+                      );
+                    })
                   }
                 >
                   申请退款
@@ -199,20 +205,62 @@ export function OrderPage({
           maxLength={500}
         />
       </label>
-      <label>
-        退款二次验证凭证
-        <input
-          type="password"
-          autoComplete="off"
-          value={proof}
-          onChange={(e) => setProof(e.target.value)}
+      {human.notice}
+      {human.dialog}
+      <section className="commerce-note">
+        <h2>退款记录</h2>
+        {!refunds.length && <p>暂无退款记录。</p>}
+        {refunds.map((r) => (
+          <article className="order-row" key={r.id}>
+            <div>
+              <code>{r.id}</code>
+              <p>
+                订单 {r.orderId} · ¥{(r.amountFen / 100).toFixed(2)}
+              </p>
+              <p>
+                {
+                  (
+                    {
+                      requested: "待退款审核",
+                      submitted: "渠道处理中",
+                      unknown: "确认中",
+                      succeeded: "退款成功",
+                      failed: "退款失败",
+                      manual_review: "待人工复核",
+                    } as Record<string, string>
+                  )[r.state]
+                }
+              </p>
+              <small>{r.reasonCode ?? r.reason}</small>
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  const latest = await api<DTO<"Refund">>(
+                    `/refunds/${id(r.id)}`,
+                  );
+                  setRefunds((v) =>
+                    v.map((x) => (x.id === latest.id ? latest : x)),
+                  );
+                } catch (e) {
+                  setError(String(e));
+                }
+              }}
+            >
+              刷新退款
+            </button>
+          </article>
+        ))}
+        <PagedMore<DTO<"Refund">>
+          path={`/workspaces/${id(workspaceId)}/refunds`}
+          cursor={nextRefunds}
+          label="加载更多退款"
+          onPage={(p) => {
+            setRefunds((v) => [...v, ...p.items]);
+            setNextRefunds(p.nextCursor);
+          }}
         />
-      </label>
-      {refund && (
-        <p role="status">
-          退款 {refund.id} · {refund.state}（以渠道及服务端最终确认为准）
-        </p>
-      )}
+      </section>
       <div className="commerce-note">
         <h2>兑换权益</h2>
         <form

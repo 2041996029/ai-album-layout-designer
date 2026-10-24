@@ -4,7 +4,11 @@ import { CloudLayoutService } from "../projects/layout-service";
 import { fail, type Database } from "@album/server-core";
 import { JobRepository, policyFromRelease, type PolicyPort } from "@album/jobs";
 import type { ApiRuntime } from "../http/runtime";
-import type { ReauthService } from "../auth/reauthentication";
+import type {
+  ReauthService,
+  HumanReauthAdapter,
+  IdentityProof,
+} from "../auth/reauthentication";
 import { ConfigService, type ConfigOptions } from "../config/service";
 import { SecretService } from "../config/secrets";
 import type { SecretPort } from "../config/types";
@@ -28,6 +32,12 @@ import {
 } from "../exports/service";
 import { commerceHandlers } from "./http";
 export type CommerceOptions = {
+  reauthentication?: {
+    identities?: Partial<
+      Record<IdentityProof["provider"], import("../auth/types").IdentityAdapter>
+    >;
+    human?: HumanReauthAdapter;
+  };
   secrets?: SecretPort;
   assertSecretNotInUse?: SecretOptions["assertNotInUse"];
   config?: Partial<ConfigOptions>;
@@ -59,6 +69,7 @@ export async function bindCommerceRuntime(
   options: CommerceOptions = {},
 ) {
   const { db, auth, workspaces, environment } = runtime;
+  runtime.proofAdapter = reauth;
   const config = new ConfigService(db, auth, options.secrets ?? closedSecrets, {
     ...options.config,
     environment,

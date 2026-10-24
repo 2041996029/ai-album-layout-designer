@@ -50,9 +50,19 @@ export async function createRuntime(
   };
   runtime.sharing = new SharingService(runtime.db, workspaces);
   runtime.notifications = new NotificationsService(runtime.db, workspaces);
-  const reauth = new ReauthService(runtime.db, auth, {});
+  const reauth = new ReauthService(
+    runtime.db,
+    auth,
+    commerceOptions.reauthentication?.identities ?? {},
+    commerceOptions.reauthentication?.human,
+  );
   runtime.proofAdapter = reauth;
-  runtime.bindings = new BindingService(runtime.db, auth, reauth, {});
+  runtime.bindings = new BindingService(
+    runtime.db,
+    auth,
+    reauth,
+    commerceOptions.reauthentication?.identities ?? {},
+  );
   runtime.deletion = new AccountDeletionService(
     runtime.db,
     auth,

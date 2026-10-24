@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { id, digest } from "@album/server-core";
+import { id, digest, fail } from "@album/server-core";
 import { testDatabase } from "../../test/database";
 import { AuthService } from "../auth/identity";
 import { WorkspaceService } from "../workspaces/service";
@@ -35,20 +35,66 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           ...headers,
         },
       });
+    const deliveries = new Map<
+      string,
+      {
+        code: string;
+        userId: string;
+        sessionId: string;
+        purpose: string;
+        used: boolean;
+      }
+    >();
+    const human = {
+      start: async ({ actor, purpose, challengeId }: any) => {
+        deliveries.set(challengeId, {
+          code: String(100000 + Math.floor(Math.random() * 900000)),
+          userId: actor.userId,
+          sessionId: actor.sessionId,
+          purpose,
+          used: false,
+        });
+        return { destinationHint: "手机尾号1234" };
+      },
+      complete: async ({ actor, purpose, challengeId, code }: any) => {
+        const c = deliveries.get(challengeId);
+        if (
+          !c ||
+          c.used ||
+          c.userId !== actor.userId ||
+          c.sessionId !== actor.sessionId ||
+          c.purpose !== purpose ||
+          c.code !== code
+        )
+          fail("REAUTH_INVALID_CODE", 401);
+        c.used = true;
+        return {
+          provider: "sms" as const,
+          appId: "review-sms",
+          subject: "phone-" + actor.userId,
+          unionId: null,
+          openPlatformId: null,
+        };
+      },
+    };
     async function proof(purpose: string) {
-      const raw = "review-proof-" + id();
-      await db.database.transaction((tx) =>
-        tx.query(
-          "INSERT INTO reauth_proofs(token_hash,user_id,session_id,purpose,expires_at) VALUES($1,$2,$3,$4,now()+interval '5 minutes')",
-          [
-            runtime.auth.hash(raw),
-            session.actor.userId,
-            session.actor.sessionId,
-            purpose,
-          ],
-        ),
-      );
-      return raw;
+      const start = await call("POST", "/v1/auth/reauthentication/challenges", {
+        purpose,
+      });
+      expect(start.statusCode, start.body).toBe(200);
+      const challenge = start.json().data,
+        code = deliveries.get(challenge.id)!.code;
+      const verified = await call("POST", "/v1/auth/reauthenticate", {
+        purpose,
+        proof: {
+          provider: "phone",
+          challengeId: challenge.id,
+          proof: code,
+          purpose,
+        },
+      });
+      expect(verified.statusCode, verified.body).toBe(200);
+      return verified.json().data.reauthProof;
     }
     async function job(manifest: unknown = {}) {
       const jid = id(),
@@ -101,9 +147,19 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           [id(), session.actor.userId],
         ),
       );
+      await db.database.transaction((tx) =>
+        tx.query(
+          "INSERT INTO auth_identities(id,user_id,provider,app_id,subject_digest,verified_at) VALUES($1,$2,'phone','review-sms',$3,now())",
+          [
+            id(),
+            session.actor.userId,
+            auth.hash("phone-" + session.actor.userId),
+          ],
+        ),
+      );
       await bindCommerceRuntime(
         runtime,
-        new ReauthService(db.database, auth, {}),
+        new ReauthService(db.database, auth, {}, human),
       );
       rid = id();
       await db.database.transaction((tx) =>
@@ -117,6 +173,188 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
     afterAll(async () => {
       await app?.close();
       await db?.close();
+    });
+    it("binds human challenges to session, purpose, linked identity, expiry and one use", async () => {
+      const availability = await call("GET", "/v1/auth/reauthentication");
+      expect(availability.json().data).toMatchObject({
+        state: "available",
+        method: "sms",
+      });
+      const start = await call("POST", "/v1/auth/reauthentication/challenges", {
+          purpose: "billing_refund",
+        }),
+        c = start.json().data,
+        code = deliveries.get(c.id)!.code;
+      expect(c).not.toHaveProperty("reauthProof");
+      expect(c).not.toHaveProperty("proof");
+      const body = {
+        purpose: "billing_refund",
+        proof: {
+          provider: "phone",
+          challengeId: c.id,
+          proof: code,
+          purpose: "billing_refund",
+        },
+      };
+      const wrongPurpose = await call("POST", "/v1/auth/reauthenticate", {
+        purpose: "admin_operations",
+        proof: { ...body.proof, purpose: "admin_operations" },
+      });
+      expect(wrongPurpose.statusCode, wrongPurpose.body).toBe(403);
+      expect(deliveries.get(c.id)!.used).toBe(false);
+      const second = await runtime.auth.createWebSession(session.actor),
+        cross = await call("POST", "/v1/auth/reauthenticate", body, {
+          cookie: `album_session=${second.accessToken}`,
+          "x-csrf-token": second.csrfToken,
+        });
+      expect(cross.statusCode, cross.body).toBe(403);
+      expect(deliveries.get(c.id)!.used).toBe(false);
+      const wrongCode = await call("POST", "/v1/auth/reauthenticate", {
+        ...body,
+        proof: {
+          ...body.proof,
+          proof: code === "000000" ? "111111" : "000000",
+        },
+      });
+      expect(wrongCode.statusCode, wrongCode.body).toBe(401);
+      const verified = await call("POST", "/v1/auth/reauthenticate", body);
+      expect(verified.statusCode, verified.body).toBe(200);
+      expect(
+        (await call("POST", "/v1/auth/reauthenticate", body)).statusCode,
+      ).toBe(409);
+      const persisted = (
+        await db.pool.query(
+          "SELECT purpose,session_id,consumed_at FROM ai_album.reauth_proofs WHERE token_hash=$1",
+          [runtime.auth.hash(verified.json().data.reauthProof)],
+        )
+      ).rows[0];
+      expect(persisted).toMatchObject({
+        purpose: "billing_refund",
+        session_id: session.actor.sessionId,
+        consumed_at: null,
+      });
+      const expired = await call(
+          "POST",
+          "/v1/auth/reauthentication/challenges",
+          { purpose: "billing_refund" },
+        ),
+        eid = expired.json().data.id;
+      await db.pool.query(
+        "UPDATE ai_album.auth_challenges SET expires_at=created_at+interval '1 microsecond' WHERE id=$1",
+        [eid],
+      );
+      expect(
+        (
+          await call("POST", "/v1/auth/reauthenticate", {
+            purpose: "billing_refund",
+            proof: {
+              provider: "phone",
+              challengeId: eid,
+              proof: deliveries.get(eid)!.code,
+              purpose: "billing_refund",
+            },
+          })
+        ).statusCode,
+      ).toBe(410);
+      const prior = human.complete;
+      human.complete = async (input: any) => ({
+        ...(await prior(input)),
+        subject: "different-linked-person",
+      });
+      try {
+        const begin = await call(
+            "POST",
+            "/v1/auth/reauthentication/challenges",
+            { purpose: "billing_refund" },
+          ),
+          bid = begin.json().data.id;
+        const mismatch = await call("POST", "/v1/auth/reauthenticate", {
+          purpose: "billing_refund",
+          proof: {
+            provider: "phone",
+            challengeId: bid,
+            proof: deliveries.get(bid)!.code,
+            purpose: "billing_refund",
+          },
+        });
+        expect(mismatch.statusCode, mismatch.body).toBe(403);
+      } finally {
+        human.complete = prior;
+      }
+    });
+    it("wires the trusted human adapter through createRuntime without a manual token port", async () => {
+      const { createRuntime } = await import("../runtime"),
+        url = new URL(process.env.C3_TEST_DATABASE_URL!);
+      url.pathname =
+        "/" +
+        (await db.pool.query("SELECT current_database() AS name")).rows[0].name;
+      const server = await createRuntime(
+        {
+          C3_ENV: "dev",
+          C3_DATABASE_URL: url.toString(),
+          C3_AUTH_SECRET: "review-test-secret-".repeat(3),
+          C3_ALLOWED_ORIGIN: "https://album.test",
+        },
+        { reauthentication: { human } },
+      );
+      let configured: any;
+      try {
+        configured = await createApplication(server.runtime);
+        const headers = {
+          cookie: `album_session=${session.accessToken}`,
+          origin: "https://album.test",
+          "x-csrf-token": session.csrfToken,
+          "idempotency-key": id(),
+        };
+        const start = await configured.inject({
+          method: "POST",
+          url: "/v1/auth/reauthentication/challenges",
+          payload: { purpose: "billing_refund" },
+          headers,
+        });
+        expect(start.statusCode, start.body).toBe(200);
+        const challengeId = start.json().data.id;
+        const verified = await configured.inject({
+          method: "POST",
+          url: "/v1/auth/reauthenticate",
+          payload: {
+            purpose: "billing_refund",
+            proof: {
+              provider: "phone",
+              challengeId,
+              proof: deliveries.get(challengeId)!.code,
+              purpose: "billing_refund",
+            },
+          },
+          headers: { ...headers, "idempotency-key": id() },
+        });
+        expect(verified.statusCode, verified.body).toBe(200);
+        expect(verified.json().data.purpose).toBe("billing_refund");
+      } finally {
+        await configured?.close();
+        await server.close();
+      }
+    });
+    it("shows verification unavailable with no trusted human adapter", async () => {
+      const old = runtime.commerce!.reauth;
+      runtime.commerce!.reauth = new ReauthService(
+        db.database,
+        runtime.auth,
+        {},
+      );
+      try {
+        expect(
+          (await call("GET", "/v1/auth/reauthentication")).json().data.state,
+        ).toBe("unconfigured");
+        const start = await call(
+          "POST",
+          "/v1/auth/reauthentication/challenges",
+          { purpose: "billing_refund" },
+        );
+        expect(start.statusCode, start.body).toBe(503);
+      } finally {
+        runtime.commerce!.reauth = old;
+      }
     });
     it("honors emergency disabled booleans and replays a valid Accepted response without another proof", async () => {
       for (const disabled of [true, false]) {
@@ -199,6 +437,89 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         ).rows[0].consumed_at,
       ).toBeNull();
     });
+    it("discovers durable workspace refund history and reads changed server state under authorization", async () => {
+      const sku = id(),
+        version = id(),
+        oid = id(),
+        attempt = id(),
+        refund = id();
+      await db.database.transaction(async (tx) => {
+        await tx.query(
+          "INSERT INTO billing_skus(id,code,name) VALUES($1::text,$1::text,'test')",
+          [sku],
+        );
+        await tx.query(
+          "INSERT INTO sku_versions(id,sku_id,version,price_fen,duration_days,credit_grant,features) VALUES($1,$2,1,123,30,0,'{}')",
+          [version, sku],
+        );
+        await tx.query(
+          "INSERT INTO orders(id,workspace_id,sku_version_id,buyer_user_id,amount_fen,channel,client_platform,state,paid_at,expires_at) VALUES($1,$2,$3,$4,123,'wechat_pay','web','paid',now(),now()+interval '1 day')",
+          [oid, wid, version, session.actor.userId],
+        );
+        await tx.query(
+          "INSERT INTO payment_attempts(id,workspace_id,order_id,attempt,channel,merchant_account_ref,provider_request_id,state,amount_fen) VALUES($1::text,$2,$3,1,'wechat_pay','local',$1::text,'paid',123)",
+          [attempt, wid, oid],
+        );
+        await tx.query(
+          "INSERT INTO refunds(id,workspace_id,order_id,payment_attempt_id,operation_id,amount_fen,state,reason_code) VALUES($1::text,$2,$3,$4,$1::text,123,'manual_review','REVIEW_REQUIRED')",
+          [refund, wid, oid, attempt],
+        );
+      });
+      const found = await call("GET", `/v1/workspaces/${wid}/refunds`);
+      expect(found.statusCode, found.body).toBe(200);
+      expect(found.json().data.items).toEqual([
+        expect.objectContaining({ id: refund, state: "manual_review" }),
+      ]);
+      await db.pool.query(
+        "UPDATE ai_album.refunds SET state='succeeded',revision=revision+1 WHERE id=$1",
+        [refund],
+      );
+      const refreshed = await call("GET", `/v1/workspaces/${wid}/refunds`);
+      expect(refreshed.json().data.items[0].state).toBe("succeeded");
+      expect(
+        (await call("GET", `/v1/refunds/${refund}`)).json().data.state,
+      ).toBe("succeeded");
+      const stranger = (
+          await runtime.auth.login(
+            {
+              exchange: async () => ({
+                provider: "wechat",
+                appId: "review",
+                subject: "stranger",
+                unionId: null,
+                openPlatformId: null,
+              }),
+            },
+            id(),
+            "mini",
+          )
+        ).actor,
+        otherSession = await runtime.auth.createWebSession(stranger);
+      const denied = await call(
+        "GET",
+        `/v1/workspaces/${wid}/refunds`,
+        undefined,
+        { cookie: `album_session=${otherSession.accessToken}` },
+      );
+      expect(denied.statusCode, denied.body).toBe(404);
+      const foreign = (
+        await runtime.workspaces.createWorkspace(session.actor, "studio", id())
+      ).workspaceId;
+      expect(
+        (
+          await call("GET", `/v1/workspaces/${foreign}/refunds`, undefined, {
+            "x-workspace-id": foreign,
+          })
+        ).json().data.items,
+      ).toEqual([]);
+      expect(
+        (
+          await call("GET", `/v1/refunds/${refund}`, undefined, {
+            "x-workspace-id": foreign,
+          })
+        ).statusCode,
+      ).toBe(404);
+    });
     it("atomically restores only the targeted scheduling fact and returns/replays the contract Job", async () => {
       const target = await job(),
         other = await job(),
@@ -210,6 +531,22 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           reason: "restore dispatch",
         },
         headers = { "idempotency-key": key, "x-reauthentication-proof": token };
+      const wrong = await proof("admin_secret");
+      const wrongPurpose = await call(
+        "POST",
+        `/v1/admin/jobs/${target}/actions`,
+        body,
+        { "x-reauthentication-proof": wrong },
+      );
+      expect(wrongPurpose.statusCode, wrongPurpose.body).toBe(401);
+      expect(
+        (
+          await db.pool.query(
+            "SELECT consumed_at FROM ai_album.reauth_proofs WHERE token_hash=$1",
+            [runtime.auth.hash(wrong)],
+          )
+        ).rows[0].consumed_at,
+      ).toBeNull();
       const first = await call(
         "POST",
         `/v1/admin/jobs/${target}/actions`,
@@ -255,3 +592,30 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
     });
   },
 );
+
+it("defines strict human challenge and authorized refund history contracts", async () => {
+  const { loadContracts } = await import("./contracts"),
+    { contract, validate } = await loadContracts();
+  expect(
+    contract.paths["/workspaces/{workspaceId}/refunds"]?.get?.operationId,
+  ).toBe("listWorkspaceRefunds");
+  expect(
+    contract.paths["/auth/reauthentication/challenges"]?.post?.security,
+  ).toBeDefined();
+  const challenge = {
+    id: id(),
+    method: "sms",
+    destinationHint: "手机尾号1234",
+    expiresAt: new Date(Date.now() + 300000).toISOString(),
+    purpose: "billing_refund",
+  };
+  expect(() =>
+    validate({ $ref: "#/components/schemas/HumanReauthChallenge" }, challenge),
+  ).not.toThrow();
+  expect(() =>
+    validate(
+      { $ref: "#/components/schemas/HumanReauthChallenge" },
+      { ...challenge, reauthProof: "raw-protocol-token" },
+    ),
+  ).toThrow();
+});

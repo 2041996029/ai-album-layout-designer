@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
-import { id, digest } from "@album/server-core";
+import { id, digest, fail } from "@album/server-core";
 import { testDatabase } from "../../test/database";
 import { storageFixture } from "../../test/asset-fixtures";
 import { AuthService } from "../auth/identity";
@@ -53,6 +53,24 @@ describe.skipIf(
     skuVersion: string,
     root: string,
     host: ReturnType<typeof startCommerceHost> | undefined;
+  const smsCodes = new Map<string, string>();
+  const human = {
+    start: async ({ challengeId }: any) => {
+      smsCodes.set(challengeId, "654321");
+      return { destinationHint: "手机尾号1234" };
+    },
+    complete: async ({ challengeId, code }: any) => {
+      if (smsCodes.get(challengeId) !== code) fail("REAUTH_INVALID_CODE", 401);
+      smsCodes.delete(challengeId);
+      return {
+        provider: "sms" as const,
+        appId: "loop-sms",
+        subject: "loop-owner-phone",
+        unionId: null,
+        openPlatformId: null,
+      };
+    },
+  };
   const call = (
     method: string,
     url: string,
@@ -286,9 +304,15 @@ describe.skipIf(
         close: async () => null,
       },
     });
+    await db.database.transaction((tx) =>
+      tx.query(
+        "INSERT INTO auth_identities(id,user_id,provider,app_id,subject_digest,verified_at) VALUES($1,$2,'phone','loop-sms',$3,now())",
+        [id(), session.actor.userId, auth.hash("loop-owner-phone")],
+      ),
+    );
     await bindCommerceRuntime(
       runtime,
-      new ReauthService(db.database, auth, {}),
+      new ReauthService(db.database, auth, {}, human),
       {
         paymentBindings: [
           {
@@ -504,18 +528,25 @@ describe.skipIf(
       `/v1/outputs/${outputs.json().data.items[0].id}/download-token`,
     );
     expect(download.statusCode, download.body).toBe(200);
-    const paid = await call("GET", `/v1/orders/${oid}`),
-      proof = "refund-proof-" + id();
-    await db.database.transaction((tx) =>
-      tx.query(
-        "INSERT INTO reauth_proofs(token_hash,user_id,session_id,purpose,expires_at) VALUES($1,$2,$3,'billing_refund',now()+interval '5 minutes')",
-        [
-          runtime.auth.hash(proof),
-          session.actor.userId,
-          session.actor.sessionId,
-        ],
-      ),
+    const paid = await call("GET", `/v1/orders/${oid}`);
+    const challenge = await call(
+      "POST",
+      "/v1/auth/reauthentication/challenges",
+      { purpose: "billing_refund" },
     );
+    expect(challenge.statusCode, challenge.body).toBe(200);
+    const challengeId = challenge.json().data.id;
+    const verification = await call("POST", "/v1/auth/reauthenticate", {
+      purpose: "billing_refund",
+      proof: {
+        provider: "phone",
+        challengeId,
+        proof: smsCodes.get(challengeId),
+        purpose: "billing_refund",
+      },
+    });
+    expect(verification.statusCode, verification.body).toBe(200);
+    const proof = verification.json().data.reauthProof;
     const refund = await call(
       "POST",
       `/v1/orders/${oid}/refunds`,
@@ -541,6 +572,26 @@ describe.skipIf(
     };
     const result = await send("refund", refunded);
     expect(result.statusCode, result.body).toBe(200);
+    const history = await call("GET", `/v1/workspaces/${wid}/refunds`);
+    expect(history.statusCode, history.body).toBe(200);
+    expect(history.json().data.items).toEqual([
+      expect.objectContaining({
+        id: refund.json().data.id,
+        state: "succeeded",
+      }),
+    ]);
+    expect(
+      (
+        await db.pool.query(
+          "SELECT consumed_at,purpose,session_id FROM ai_album.reauth_proofs WHERE token_hash=$1",
+          [runtime.auth.hash(proof)],
+        )
+      ).rows[0],
+    ).toMatchObject({
+      consumed_at: expect.any(Date),
+      purpose: "billing_refund",
+      session_id: session.actor.sessionId,
+    });
     const report = await runtime.commerce!.reconciliation.reconcileStatement(
       new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(
         new Date(),

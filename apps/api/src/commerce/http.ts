@@ -166,6 +166,30 @@ export function commerceHandlers(
     };
   };
   return {
+    async getReauthAvailability(r) {
+      return s.reauth.availability(r.actor);
+    },
+    async createReauthChallenge(r) {
+      return s.reauth.start(r.actor, r.body.purpose, key(r));
+    },
+    async listWorkspaceRefunds(r) {
+      return scoped(
+        r,
+        async (tx) =>
+          mapPage(
+            await sqlPage(
+              tx,
+              r,
+              "refunds",
+              "SELECT * FROM refunds WHERE workspace_id=$1",
+              [wid(r)],
+              wid(r),
+            ),
+            refundDto,
+          ),
+        "purchase",
+      );
+    },
     async getCapabilities() {
       let release = null;
       try {

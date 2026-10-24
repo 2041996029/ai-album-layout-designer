@@ -2580,6 +2580,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/reauthentication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getReauthAvailability */
+        get: operations["getReauthAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/reauthentication/challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** createReauthChallenge */
+        post: operations["createReauthChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discover authorized durable refund history
+         * @description 查询工作区订单. Required permission: billing.read. Resource IDs are resolved in the authenticated workspace; inaccessible cross-tenant IDs return 404. Role checks do not replace license, capability, quota or ownership checks.
+         */
+        get: operations["listWorkspaceRefunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/reauthenticate": {
         parameters: {
             query?: never;
@@ -2940,6 +2994,33 @@ export interface components {
             challengeId: string;
             verificationCode: string;
             client: components["schemas"]["ClientInfo"];
+        };
+        ReauthAvailability: {
+            /** @enum {string} */
+            state: "available" | "unconfigured" | "unavailable";
+            reasonCode?: string;
+            /** @enum {string} */
+            method?: "sms";
+        };
+        HumanReauthCreate: {
+            purpose: components["schemas"]["IdentityProof"]["purpose"];
+        };
+        HumanReauthChallenge: {
+            id: string;
+            /** @constant */
+            method: "sms";
+            destinationHint: string;
+            /** Format: date-time */
+            expiresAt: string;
+            purpose: components["schemas"]["IdentityProof"]["purpose"];
+        };
+        ReauthAvailabilityResponse: {
+            data: components["schemas"]["ReauthAvailability"];
+            requestId: string;
+        };
+        HumanReauthChallengeResponse: {
+            data: components["schemas"]["HumanReauthChallenge"];
+            requestId: string;
         };
         IdentityProof: {
             /** @enum {string} */
@@ -13067,6 +13148,111 @@ export interface operations {
             422: components["responses"]["Unprocessable"];
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["RateLimited"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getReauthAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Human identity verification response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReauthAvailabilityResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createReauthChallenge: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Required replay key 16–128 printable ASCII. Workspace scope unique for 7 days across write endpoints; same canonical request/method/path returns original response, different payload returns 409 IDEMPOTENCY_MISMATCH. User scope before workspace selection. Callback dedup uses authenticated provider event ID instead.
+                 * @example demo_key_0000000000000001
+                 */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HumanReauthCreate"];
+            };
+        };
+        responses: {
+            /** @description Human identity verification response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumanReauthChallengeResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listWorkspaceRefunds: {
+        parameters: {
+            query?: {
+                /** @description Opaque signed cursor binding tenant, sort and filters; invalid/expired cursor returns 400. Never accepts SQL offsets or resource ownership through cursor. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Durable refund records in this workspace */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryAdminRefundsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["PaymentRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            410: components["responses"]["Gone"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
             503: components["responses"]["Unavailable"];
         };
     };

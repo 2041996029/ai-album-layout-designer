@@ -1,7 +1,9 @@
+import { useHumanVerification } from "../../../web/src/commerce/useHumanVerification";
 import { PagedMore } from "../../../web/src/commerce/PagedMore";
 import { useEffect, useState } from "react";
 import { api, id, type DTO, type Page } from "../../../web/src/cloud/api";
 export function CommerceConsole(): React.JSX.Element {
+  const human = useHumanVerification();
   const [orders, setOrders] = useState<DTO<"Order">[]>([]),
     [refunds, setRefunds] = useState<DTO<"Refund">[]>([]),
     [audits, setAudits] = useState<DTO<"AuditEvent">[]>([]),
@@ -13,7 +15,6 @@ export function CommerceConsole(): React.JSX.Element {
     [status, setStatus] = useState(""),
     [reason, setReason] = useState(""),
     [ticket, setTicket] = useState(""),
-    [proof, setProof] = useState(""),
     [workspace, setWorkspace] = useState(""),
     [source, setSource] = useState(""),
     [amount, setAmount] = useState(1),
@@ -48,12 +49,17 @@ export function CommerceConsole(): React.JSX.Element {
   useEffect(() => {
     void refresh();
   }, []);
-  const headers = { "X-Reauthentication-Proof": proof };
-  async function act(fn: () => Promise<unknown>) {
+  async function act(
+    fn: (headers: Record<string, string>) => Promise<unknown>,
+    verify = true,
+  ) {
     setError("");
     setStatus("");
     try {
-      await fn();
+      const headers: Record<string, string> = verify
+        ? { "X-Reauthentication-Proof": await human.verify("admin_operations") }
+        : {};
+      await fn(headers);
       await refresh();
     } catch (e) {
       setError(String(e));
@@ -69,6 +75,8 @@ export function CommerceConsole(): React.JSX.Element {
       </p>
       {error && <p role="alert">{error}</p>}
       {status && <p role="status">{status}</p>}
+      {human.notice}
+      {human.dialog}
       <section className="commerce-note">
         <h2>审核依据</h2>
         <div className="form-grid">
@@ -86,15 +94,6 @@ export function CommerceConsole(): React.JSX.Element {
               value={ticket}
               onChange={(e) => setTicket(e.target.value)}
               required
-            />
-          </label>
-          <label>
-            二次验证凭证
-            <input
-              type="password"
-              autoComplete="off"
-              value={proof}
-              onChange={(e) => setProof(e.target.value)}
             />
           </label>
         </div>
@@ -161,9 +160,11 @@ export function CommerceConsole(): React.JSX.Element {
                 {(["approve", "reject"] as const).map((decision) => (
                   <button
                     key={decision}
-                    disabled={!reason || !ticket || !proof}
+                    disabled={
+                      !reason || !ticket || !human.available || human.busy
+                    }
                     onClick={() =>
-                      void act(async () => {
+                      void act(async (headers) => {
                         const result = await api<DTO<"Refund">>(
                           `/admin/refunds/${id(r.id)}/decision`,
                           "POST",
@@ -211,9 +212,9 @@ export function CommerceConsole(): React.JSX.Element {
           </select>
         </label>
         <button
-          disabled={!sku || !reason || !proof}
+          disabled={!sku || !reason || !human.available || human.busy}
           onClick={() =>
-            void act(async () => {
+            void act(async (headers) => {
               const result = await api<DTO<"RedemptionBatchCreated">>(
                 "/admin/redemption-batches",
                 "POST",
@@ -250,9 +251,14 @@ export function CommerceConsole(): React.JSX.Element {
           <p key={b.id}>
             <code>{b.id}</code> · {b.state}{" "}
             <button
-              disabled={!reason || !proof || b.state !== "active"}
+              disabled={
+                !reason ||
+                !human.available ||
+                human.busy ||
+                b.state !== "active"
+              }
               onClick={() =>
-                void act(() =>
+                void act((headers) =>
                   api(
                     `/admin/redemption-batches/${id(b.id)}?reason=${encodeURIComponent(reason)}`,
                     "DELETE",
@@ -302,10 +308,16 @@ export function CommerceConsole(): React.JSX.Element {
         </div>
         <button
           disabled={
-            !workspace || !source || !reason || !ticket || !proof || !amount
+            !workspace ||
+            !source ||
+            !reason ||
+            !ticket ||
+            !human.available ||
+            human.busy ||
+            !amount
           }
           onClick={() =>
-            void act(async () => {
+            void act(async (headers) => {
               const result = await api<DTO<"FinancialAdjustment">>(
                 `/admin/workspaces/${id(workspace)}/adjustments`,
                 "POST",
@@ -347,9 +359,9 @@ export function CommerceConsole(): React.JSX.Element {
           />
         </label>
         <button
-          disabled={!reason || !proof}
+          disabled={!reason || !human.available || human.busy}
           onClick={() =>
-            void act(async () => {
+            void act(async (headers) => {
               const result = await api<DTO<"ReconcileResult">>(
                 "/admin/operations/reconciliations",
                 "POST",
@@ -377,12 +389,14 @@ export function CommerceConsole(): React.JSX.Element {
               <code>{a.targetId}</code> · {a.reason}
               <button
                 onClick={() =>
-                  void act(async () =>
-                    setReport(
-                      await api<DTO<"ReconcileResult">>(
-                        `/admin/operations/reconciliations/${id(a.targetId)}`,
+                  void act(
+                    async (headers) =>
+                      setReport(
+                        await api<DTO<"ReconcileResult">>(
+                          `/admin/operations/reconciliations/${id(a.targetId)}`,
+                        ),
                       ),
-                    ),
+                    false,
                   )
                 }
               >

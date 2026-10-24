@@ -274,3 +274,25 @@ input:focus-visible {
     font-size: 29px;
   }
 }
+.verification-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #173c3866;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.verification-dialog {
+  width: min(460px, 100%);
+  box-shadow: 0 16px 70px #153d3940;
+}
+.verification-dialog input {
+  width: 100%;
+  font-size: 22px;
+  letter-spacing: 5px;
+}
+.verification-dialog h2 {
+  margin-top: 0;
+}

@@ -11327,6 +11327,146 @@ paths:
         description: Exact raw UTF-8 JSON bytes on wire. Capture original byte buffer and original signed headers
           BEFORE decode/parse; schema validates only after successful cryptographic verification. Max body1MiB.
           WeChat Pay encrypted fields decrypted only after outer signature validation.
+  /auth/reauthentication:
+    get:
+      operationId: getReauthAvailability
+      tags:
+        - Identity
+      summary: getReauthAvailability
+      x-module: C3
+      x-required-permission: authenticated.self
+      security:
+        - WebCookie: []
+        - MiniBearer: []
+      parameters: []
+      responses:
+        "200":
+          description: Human identity verification response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReauthAvailabilityResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /auth/reauthentication/challenges:
+    post:
+      operationId: createReauthChallenge
+      tags:
+        - Identity
+      summary: createReauthChallenge
+      x-module: C3
+      x-required-permission: authenticated.self
+      security:
+        - WebCookie: []
+          CsrfToken: []
+        - MiniBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Human identity verification response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanReauthChallengeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HumanReauthCreate"
+  /workspaces/{workspaceId}/refunds:
+    get:
+      operationId: listWorkspaceRefunds
+      tags:
+        - Commerce
+      summary: Discover authorized durable refund history
+      description: "查询工作区订单. Required permission: billing.read. Resource IDs are
+        resolved in the authenticated workspace; inaccessible cross-tenant IDs
+        return 404. Role checks do not replace license, capability, quota or
+        ownership checks."
+      x-module: C4
+      x-requirement-ids:
+        - PAY-01
+      x-required-permission: billing.read
+      security:
+        - WebCookie: []
+        - MiniBearer: []
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+            examples:
+              - prj_demo
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Durable refund records in this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryAdminRefundsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /auth/reauthenticate:
     post:
       operationId: reauthenticate
@@ -12674,6 +12814,85 @@ components:
       - challengeId
       - verificationCode
       - client
+      additionalProperties: false
+    ReauthAvailability:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+            - available
+            - unconfigured
+            - unavailable
+        reasonCode:
+          type: string
+          minLength: 1
+          maxLength: 128
+        method:
+          type: string
+          enum:
+            - sms
+      required:
+        - state
+      additionalProperties: false
+    HumanReauthCreate:
+      type: object
+      properties:
+        purpose: &a1
+          $ref: "#/components/schemas/IdentityProof/properties/purpose"
+      required:
+        - purpose
+      additionalProperties: false
+    HumanReauthChallenge:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        method:
+          type: string
+          const: sms
+        destinationHint:
+          type: string
+          minLength: 1
+          maxLength: 100
+        expiresAt:
+          type: string
+          format: date-time
+        purpose: *a1
+      required:
+        - id
+        - method
+        - destinationHint
+        - expiresAt
+        - purpose
+      additionalProperties: false
+    ReauthAvailabilityResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ReauthAvailability"
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+        - data
+        - requestId
+      additionalProperties: false
+    HumanReauthChallengeResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/HumanReauthChallenge"
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+        - data
+        - requestId
       additionalProperties: false
     IdentityProof:
       type: object
