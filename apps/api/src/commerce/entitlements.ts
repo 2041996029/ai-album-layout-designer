@@ -3,6 +3,8 @@ import type { ConfigPayload, ConfigRelease } from "../config/types";
 import { validateConfigPayload } from "../config/types";
 import type { EntitlementSnapshot, EntitlementPort } from "../exports/service";
 import type { QuotaPolicyPort } from "../assets/types";
+import type { PoolClient } from "pg";
+import { lockCreditAccount, sourceCreditFrozenSql } from "./credits";
 import { membershipTierKey } from "./fulfillment";
 
 type Features = Extract<
@@ -32,7 +34,7 @@ export class EntitlementService implements EntitlementPort, QuotaPolicyPort {
       async (tx) =>
         (
           await tx.query(
-            "SELECT id,features FROM entitlement_grants WHERE workspace_id=$1 AND grant_type='membership' AND state='active' AND starts_at<=$2 AND ends_at>$2 ORDER BY id",
+            `SELECT g.id,g.features FROM entitlement_grants g WHERE g.workspace_id=$1 AND g.grant_type='membership' AND g.state='active' AND g.starts_at<=$2 AND g.ends_at>$2 AND NOT ${sourceCreditFrozenSql()} ORDER BY g.id`,
             [wid, time],
           )
         ).rows,
@@ -50,6 +52,43 @@ export class EntitlementService implements EntitlementPort, QuotaPolicyPort {
       effective = features;
     }
     return { features: effective, ids: rows.map((r) => r.id as string) };
+  }
+  /** Lock the same account as refund admission, then recheck the exact paid
+   * sources before snapshot/job/pins/quota commit. No nested transaction or I/O. */
+  async verifyAcceptance(
+    tx: PoolClient,
+    wid: string,
+    snapshot: EntitlementSnapshot,
+  ): Promise<void> {
+    await lockCreditAccount(tx, wid);
+    if (snapshot.workspaceId !== wid) fail("PREFLIGHT_STALE", 409);
+    if (!snapshot.grantIds.length) {
+      if (!snapshot.brandWatermark) fail("PREFLIGHT_STALE", 409);
+      return;
+    }
+    const rows = (
+      await tx.query(
+        `SELECT g.id,g.features FROM entitlement_grants g WHERE g.workspace_id=$1 AND g.id=ANY($2::text[]) AND g.grant_type='membership' AND g.state='active' AND g.starts_at<=$3 AND g.ends_at>$3 AND NOT ${sourceCreditFrozenSql()} ORDER BY g.id`,
+        [wid, snapshot.grantIds, this.now()],
+      )
+    ).rows;
+    if (
+      rows.length !== new Set(snapshot.grantIds).size ||
+      rows.length !== snapshot.grantIds.length
+    )
+      fail("PREFLIGHT_STALE", 409);
+    for (const row of rows) {
+      const features = row.features.entitlements;
+      if (
+        !features ||
+        row.features.tierKey !== membershipTierKey(features) ||
+        snapshot.maxDpi !== Math.max(...features.exportDpis) ||
+        snapshot.maxConcurrentExports !== features.exportConcurrency ||
+        snapshot.storageLimitBytes !== features.storageBytes ||
+        snapshot.brandWatermark
+      )
+        fail("PREFLIGHT_STALE", 409);
+    }
   }
   async getEntitlements(wid: string, at: string): Promise<EntitlementSnapshot> {
     const { features, ids } = await this.effective(wid, at);

@@ -53,7 +53,7 @@ export async function creditLedgerLine(
     reservationId?: string;
     groupId: string;
     line: number;
-    type: "grant" | "reserve" | "settle" | "release" | "expire";
+    type: "grant" | "reserve" | "settle" | "release" | "expire" | "revoke";
     amount: number;
     from: "external" | "available" | "reserved";
     to: "available" | "reserved" | "consumed" | "expired" | "revoked";

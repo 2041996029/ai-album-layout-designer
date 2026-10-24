@@ -38,6 +38,12 @@ export type EntitlementSnapshot = {
   storageLimitBytes: number;
 };
 export interface EntitlementPort {
+  /** Real commerce authority rechecks source eligibility in the acceptance transaction. */
+  verifyAcceptance?(
+    tx: PoolClient,
+    workspaceId: string,
+    snapshot: EntitlementSnapshot,
+  ): Promise<void>;
   getEntitlements(
     workspaceId: string,
     at: string,
@@ -677,6 +683,7 @@ export class ExportService {
         !same(preflight.warnings, p.report.warnings)
       )
         fail("PREFLIGHT_STALE", 409);
+      await this.deps.entitlements.verifyAcceptance?.(tx, wid, p.entitlements);
       // Same lock as C3 asset admission; all category rows are counted while serialized.
       await tx.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
         wid + ":assets",
