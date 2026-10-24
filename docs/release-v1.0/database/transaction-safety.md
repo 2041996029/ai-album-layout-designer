@@ -153,3 +153,13 @@ psql -X -v ON_ERROR_STOP=1 "$TEMP_DATABASE_URL" -f 001_initial.up.sql
 容器使用 `postgres:17-alpine` 与 `postgres:16-alpine`，本次镜像内容摘要分别 `sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24`、`sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea`；仅为本次临时验证环境证据，不是产品生产镜像锁定。容器无宿主端口映射，执行使用 `docker exec -i ... psql -X -U postgres -d contract_test -v ON_ERROR_STOP=1`。下迁移仅在这些临时容器运行。SQLSTATE负面断言分别覆盖23514、23503、23505；没有把顺序化状态断言称为真实并发竞态测试。
 
 最终枚举补充验证：`export_preflights.format=jpeg`成功、`jpg/zip`分别以23514拒绝；`job_outputs.format=jpeg/zip`成功、`jpg`以23514拒绝。最终SQL在PostgreSQL17重新空库up、39项负面断言/正面夹具、down保护拒绝、guarded down/up及目录自检均重新执行。provider submit未知状态查询、双预算锁及终局释放仍是待实现服务事务要求；本SQL检查不证明这些跨供应商协议已经实现。
+
+### C4 durable redemption policy amendment
+
+Apply `003_redemption_batch_policy.up.sql` after 001/002 before enabling redemption. `starts_at`, `workspace_kinds`, `distribution_channel` and SKU version are immutable business eligibility; `state` and monotonically increasing `revision` support disable/CAS. Existing batches without reconstructable eligibility are disabled during migration, retaining all historical claims and grants. Production uses forward migrations; the matching down requires the disposable local reset guard.
+
+Counterexample: create a studio-only batch starting tomorrow, delete its expired seven-day idempotency record, and attempt a personal workspace claim today. The durable batch policy must still deny the claim. Storing policy only in `idempotency_keys.response_json`, audit or process memory loses that restriction. Tests delete idempotency records and attempt both claims, then reject SQL policy mutation.
+
+Creation's generated HTTP DTO accepts only SKU/count/maxUses/expiry/reason. The internal richer input maps HTTP creation to server time, both workspace kinds, and distribution channel `admin`. `RedemptionBatchCreated.oneTimeCodes` is an optional **creation-only** response field: first generating response contains high-entropy codes for immediate authenticated admin download, replay contains metadata only. Raw codes never enter SQL, audit or idempotency. A lost response is intentionally unrecoverable; the operator can explicitly disable and reissue. Lists use `RedemptionBatch` and reject raw codes. No fake download output/job/URL is invented.
+
+The disable DELETE operation requires a `reason` query parameter (1–500 characters), alongside existing If-Match, Idempotency-Key and fresh reauthentication headers; it has no JSON body. Without this contract parameter the HTTP boundary could not carry the operator reason mandated by audit policy. Access logs must not dump query values.

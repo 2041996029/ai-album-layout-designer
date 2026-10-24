@@ -9906,6 +9906,14 @@ paths:
         CsrfToken: []
       - MiniBearer: []
       parameters:
+      - name: reason
+        in: query
+        required: true
+        description: Operator reason for disabling new claims; retained in the redacted audit. Do not log query values.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 500
       - name: batchId
         in: path
         required: true
@@ -17083,8 +17091,63 @@ components:
       - state
       - revision
       additionalProperties: false
-      description: Raw codes made available once through audited private output with short retention; stored hashes
-        only. Never returned in lists or audit.
+      description: Batch metadata only. Never contains raw codes. Legacy codeDownloadOutputId is optional and is not synthesized by creation.
+    RedemptionBatchCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+          examples:
+          - prj_demo
+        skuVersionId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          examples:
+          - prj_demo
+        count:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        expiresAt:
+          type: string
+          format: date-time
+        state:
+          type: string
+          enum:
+          - active
+          - disabled
+          - expired
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        oneTimeCodes:
+          type: array
+          minItems: 1
+          maxItems: 10000
+          items:
+            type: string
+            minLength: 22
+            maxLength: 128
+            pattern: '^[A-Za-z0-9_-]+$'
+        codeDownloadOutputId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          examples:
+          - prj_demo
+      required:
+      - id
+      - skuVersionId
+      - count
+      - expiresAt
+      - state
+      - revision
+      additionalProperties: false
+      description: Creation-only metadata. oneTimeCodes is present only on the first generating response; replay omits it. Raw codes are never persisted, logged, listed or returned again. The authorized admin must immediately download the transient response; lost responses require explicit disable and reissue.
     ContentPublication:
       type: object
       properties:
@@ -19726,7 +19789,7 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/RedemptionBatch'
+          $ref: '#/components/schemas/RedemptionBatchCreated'
         requestId:
           type: string
           minLength: 1

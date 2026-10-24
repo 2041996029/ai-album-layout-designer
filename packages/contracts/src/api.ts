@@ -4168,7 +4168,7 @@ export interface components {
             expiresAt: string;
             reason: string;
         };
-        /** @description Raw codes made available once through audited private output with short retention; stored hashes only. Never returned in lists or audit. */
+        /** @description Batch metadata only. Never contains raw codes. Legacy codeDownloadOutputId is optional and is not synthesized by creation. */
         RedemptionBatch: {
             /** @example prj_demo */
             id: string;
@@ -4180,6 +4180,22 @@ export interface components {
             /** @enum {string} */
             state: "active" | "disabled" | "expired";
             revision: number;
+            /** @example prj_demo */
+            codeDownloadOutputId?: string;
+        };
+        /** @description Creation-only metadata. oneTimeCodes is present only on the first generating response; replay omits it. Raw codes are never persisted, logged, listed or returned again. The authorized admin must immediately download the transient response; lost responses require explicit disable and reissue. */
+        RedemptionBatchCreated: {
+            /** @example prj_demo */
+            id: string;
+            /** @example prj_demo */
+            skuVersionId: string;
+            count: number;
+            /** Format: date-time */
+            expiresAt: string;
+            /** @enum {string} */
+            state: "active" | "disabled" | "expired";
+            revision: number;
+            oneTimeCodes?: string[];
             /** @example prj_demo */
             codeDownloadOutputId?: string;
         };
@@ -5001,7 +5017,7 @@ export interface components {
             requestId: string;
         };
         CreateRedemptionBatchResponse: {
-            data: components["schemas"]["RedemptionBatch"];
+            data: components["schemas"]["RedemptionBatchCreated"];
             /** @example prj_demo */
             requestId: string;
         };
@@ -12329,7 +12345,10 @@ export interface operations {
     };
     disableRedemptionBatch: {
         parameters: {
-            query?: never;
+            query: {
+                /** @description Operator reason for disabling new claims; retained in the redacted audit. Do not log query values. */
+                reason: string;
+            };
             header: {
                 /**
                  * @description Required replay key 16–128 printable ASCII. Workspace scope unique for 7 days across write endpoints; same canonical request/method/path returns original response, different payload returns 409 IDEMPOTENCY_MISMATCH. User scope before workspace selection. Callback dedup uses authenticated provider event ID instead.
