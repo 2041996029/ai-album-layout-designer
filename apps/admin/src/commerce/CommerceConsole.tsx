@@ -1,7 +1,12 @@
+import { PagedMore } from "../../../web/src/commerce/PagedMore";
 import { useEffect, useState } from "react";
 import { api, id, type DTO, type Page } from "../../../web/src/cloud/api";
 export function CommerceConsole(): React.JSX.Element {
   const [orders, setOrders] = useState<DTO<"Order">[]>([]),
+    [refunds, setRefunds] = useState<DTO<"Refund">[]>([]),
+    [audits, setAudits] = useState<DTO<"AuditEvent">[]>([]),
+    [report, setReport] = useState<DTO<"ReconcileResult">>(),
+    [next, setNext] = useState<Record<string, string | null>>({}),
     [skus, setSkus] = useState<DTO<"Sku">[]>([]),
     [batches, setBatches] = useState<DTO<"RedemptionBatch">[]>([]),
     [error, setError] = useState(""),
@@ -17,11 +22,22 @@ export function CommerceConsole(): React.JSX.Element {
     [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   async function refresh() {
     try {
-      const [o, b, s] = await Promise.all([
+      const [o, b, s, r, a] = await Promise.all([
         api<Page<DTO<"Order">>>("/admin/orders"),
         api<Page<DTO<"RedemptionBatch">>>("/admin/redemption-batches"),
         api<Page<DTO<"Sku">>>("/skus?platform=web"),
+        api<Page<DTO<"Refund">>>("/admin/refunds"),
+        api<Page<DTO<"AuditEvent">>>("/admin/audit-events"),
       ]);
+      setNext({
+        orders: o.nextCursor,
+        batches: b.nextCursor,
+        refunds: r.nextCursor,
+        audits: a.nextCursor,
+      });
+      setError("");
+      setRefunds(r.items);
+      setAudits(a.items);
       setOrders(o.items);
       setBatches(b.items);
       setSkus(s.items);
@@ -98,6 +114,15 @@ export function CommerceConsole(): React.JSX.Element {
       </section>
       <section>
         <h2>订单查询</h2>
+        <PagedMore<DTO<"Order">>
+          path="/admin/orders"
+          cursor={next.orders}
+          label="加载更多订单查询"
+          onPage={(p) => {
+            setOrders((v) => [...v, ...p.items]);
+            setNext((v) => ({ ...v, orders: p.nextCursor }));
+          }}
+        />
         <button onClick={() => void refresh()}>刷新</button>
         {orders.map((o) => (
           <article className="order-row" key={o.id}>
@@ -111,7 +136,69 @@ export function CommerceConsole(): React.JSX.Element {
         ))}
       </section>
       <section className="commerce-note">
+        <h2>退款复核</h2>
+        <PagedMore<DTO<"Refund">>
+          path="/admin/refunds"
+          cursor={next.refunds}
+          label="加载更多退款复核"
+          onPage={(p) => {
+            setRefunds((v) => [...v, ...p.items]);
+            setNext((v) => ({ ...v, refunds: p.nextCursor }));
+          }}
+        />
+        {!refunds.length && <p>暂无退款记录</p>}
+        {refunds.map((r) => (
+          <article className="order-row" key={r.id}>
+            <div>
+              <code>{r.id}</code>
+              <p>
+                订单 {r.orderId} · {r.amountFen} 分 · {r.state}
+              </p>
+              <small>{r.reasonCode}</small>
+            </div>
+            {r.state === "manual_review" && (
+              <div>
+                {(["approve", "reject"] as const).map((decision) => (
+                  <button
+                    key={decision}
+                    disabled={!reason || !ticket || !proof}
+                    onClick={() =>
+                      void act(async () => {
+                        const result = await api<DTO<"Refund">>(
+                          `/admin/refunds/${id(r.id)}/decision`,
+                          "POST",
+                          {
+                            decision,
+                            expectedRevision: r.revision,
+                            reason: `工单 ${ticket}：${reason}`.slice(0, 500),
+                          },
+                          headers,
+                        );
+                        setStatus(
+                          `退款 ${result.id} · ${result.state}（渠道确认后完成）`,
+                        );
+                      })
+                    }
+                  >
+                    {decision === "approve" ? "批准退款" : "拒绝退款"}
+                  </button>
+                ))}
+              </div>
+            )}
+          </article>
+        ))}
+      </section>
+      <section className="commerce-note">
         <h2>兑换批次</h2>
+        <PagedMore<DTO<"RedemptionBatch">>
+          path="/admin/redemption-batches"
+          cursor={next.batches}
+          label="加载更多兑换批次"
+          onPage={(p) => {
+            setBatches((v) => [...v, ...p.items]);
+            setNext((v) => ({ ...v, batches: p.nextCursor }));
+          }}
+        />
         <label>
           SKU 版本
           <select value={sku} onChange={(e) => setSku(e.target.value)}>
@@ -242,6 +329,15 @@ export function CommerceConsole(): React.JSX.Element {
       </section>
       <section className="commerce-note">
         <h2>渠道差异复核</h2>
+        <PagedMore<DTO<"AuditEvent">>
+          path="/admin/audit-events"
+          cursor={next.audits}
+          label="加载更多渠道差异复核"
+          onPage={(p) => {
+            setAudits((v) => [...v, ...p.items]);
+            setNext((v) => ({ ...v, audits: p.nextCursor }));
+          }}
+        />
         <label>
           上海业务日期
           <input
@@ -254,7 +350,7 @@ export function CommerceConsole(): React.JSX.Element {
           disabled={!reason || !proof}
           onClick={() =>
             void act(async () => {
-              const result = await api<{ id: string }>(
+              const result = await api<DTO<"ReconcileResult">>(
                 "/admin/operations/reconciliations",
                 "POST",
                 {
@@ -265,6 +361,7 @@ export function CommerceConsole(): React.JSX.Element {
                 },
                 headers,
               );
+              setReport(result);
               setStatus(
                 `对账记录 ${result.id}，差异需人工复核，不重复补发权益。`,
               );
@@ -273,6 +370,46 @@ export function CommerceConsole(): React.JSX.Element {
         >
           启动对账
         </button>
+        {audits
+          .filter((a) => a.action === "commerce.reconciliation")
+          .map((a) => (
+            <p key={a.id}>
+              <code>{a.targetId}</code> · {a.reason}
+              <button
+                onClick={() =>
+                  void act(async () =>
+                    setReport(
+                      await api<DTO<"ReconcileResult">>(
+                        `/admin/operations/reconciliations/${id(a.targetId)}`,
+                      ),
+                    ),
+                  )
+                }
+              >
+                查看对账差异
+              </button>
+            </p>
+          ))}
+        {report && (
+          <div>
+            <h3>
+              已核对 {report.scannedCount} 笔 · 差异 {report.discrepancyCount}{" "}
+              笔
+            </h3>
+            {report.reviews?.map((r) => (
+              <article className="order-row" key={r.id}>
+                <code>{r.id}</code>
+                <p>
+                  订单 {r.orderId} · 渠道实收 {r.paidFen} 分 / 已退{" "}
+                  {r.refundedFen} 分
+                </p>
+                <p>
+                  本地 {r.localState} / {r.localFulfillmentState}
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );

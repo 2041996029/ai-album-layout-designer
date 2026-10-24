@@ -92,7 +92,7 @@ export class SecretService {
       tx,
     );
   }
-  private metadata(row: Record<string, any>): SecretMetadata {
+  metadata(row: Record<string, any>): SecretMetadata {
     return {
       id: row.id,
       versionId: row.secret_version,

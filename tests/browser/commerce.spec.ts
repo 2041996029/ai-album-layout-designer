@@ -158,3 +158,113 @@ test("published purchase opens a server payment QR and stays pending until confi
   await expect(page.getByText("待确认", { exact: true })).toBeVisible();
   await expect(page.getByText("支付成功", { exact: true })).toHaveCount(0);
 });
+
+test("finance reviews refunds with reason, ticket and fresh proof and sees durable differences", async ({
+  page,
+}) => {
+  let decision: any;
+  await page.route("**/v1/**", async (route) => {
+    const url = new URL(route.request().url());
+    let data: any = { items: [], nextCursor: null, hasMore: false };
+    if (url.pathname.endsWith("/admin/refunds"))
+      data.items = [
+        {
+          id: "refund-review",
+          orderId: "order-review",
+          state: "manual_review",
+          amountFen: 123,
+          reasonCode: "REVIEW_REQUIRED",
+          revision: 1,
+        },
+      ];
+    if (url.pathname.endsWith("/admin/audit-events"))
+      data.items = [
+        {
+          id: "audit-report",
+          action: "commerce.reconciliation",
+          targetId: "report-review",
+          reason: "每日复核",
+        },
+      ];
+    if (url.pathname.endsWith("/reconciliations/report-review"))
+      data = {
+        id: "report-review",
+        scope: "payments",
+        scannedCount: 1,
+        discrepancyCount: 1,
+        state: "completed",
+        reviews: [
+          {
+            id: "difference-record",
+            orderId: "order-review",
+            paidFen: 123,
+            refundedFen: 0,
+            localState: "closed",
+            localFulfillmentState: "unfulfilled",
+          },
+        ],
+      };
+    if (url.pathname.endsWith("/refund-review/decision")) {
+      decision = route.request().postDataJSON();
+      data = { id: "refund-review", state: "requested" };
+    }
+    await route.fulfill({ json: { data, requestId: "test" } });
+  });
+  await page.goto("/tests/browser/harness/commerce.html?admin=1");
+  await expect(page.getByRole("heading", { name: "退款复核" })).toBeVisible();
+  await page.getByLabel("原因", { exact: true }).fill("工单复核");
+  await page.getByLabel("工单号").fill("ticket-42");
+  await page.getByLabel("二次验证凭证", { exact: true }).fill("fresh-proof");
+  await page.getByRole("button", { name: "批准退款" }).click();
+  await expect.poll(() => decision?.decision).toBe("approve");
+  expect(decision.reason).toContain("ticket-42");
+  await page.getByRole("button", { name: "查看对账差异" }).click();
+  await expect(
+    page.getByText("difference-record", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/closed/)).toBeVisible();
+});
+
+test("orders load additional cursor pages without hiding earlier records", async ({
+  page,
+}) => {
+  await setup(page);
+  const first = {
+    id: "order-page-first",
+    workspaceId: wid,
+    state: "pending",
+    fulfillmentState: "unfulfilled",
+    amountFen: 123,
+    createdAt: new Date().toISOString(),
+    revision: 1,
+  };
+  let receivedCursor = "";
+  await page.route(`**/v1/workspaces/${wid}/orders**`, (route) => {
+    const cursor = new URL(route.request().url()).searchParams.get("cursor");
+    receivedCursor = cursor ?? "";
+    return route.fulfill({
+      json: {
+        data: cursor
+          ? {
+              items: [{ ...first, id: "order-page-older", state: "closed" }],
+              nextCursor: null,
+              hasMore: false,
+            }
+          : { items: [first], nextCursor: "cursor-first", hasMore: true },
+        requestId: "test",
+      },
+    });
+  });
+  await page.getByRole("link", { name: "订单与兑换" }).click();
+  await page.getByRole("button", { name: "加载更多订单" }).click();
+  expect(receivedCursor).toBe("cursor-first");
+  await expect(
+    page.getByText("order-page-first", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("order-page-older", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "加载更多订单" })).toHaveCount(
+    0,
+  );
+});

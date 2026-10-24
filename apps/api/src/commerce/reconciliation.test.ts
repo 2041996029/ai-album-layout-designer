@@ -146,3 +146,33 @@ it("allows synchronous completed config tests without fabricated jobs and requir
       ),
     ).toThrow();
 });
+
+it("carries redacted durable differences in reconciliation results without raw content", async () => {
+  const { validate } = await loadContracts();
+  const result = {
+    id: id(),
+    scope: "payments",
+    scannedCount: 1,
+    discrepancyCount: 1,
+    state: "completed",
+    reviews: [
+      {
+        id: id(),
+        orderId: id(),
+        paidFen: 123,
+        refundedFen: 0,
+        localState: "closed",
+        localFulfillmentState: "unfulfilled",
+      },
+    ],
+  };
+  expect(() =>
+    validate({ $ref: "#/components/schemas/ReconcileResult" }, result),
+  ).not.toThrow();
+  expect(() =>
+    validate(
+      { $ref: "#/components/schemas/ReconcileResult" },
+      { ...result, reviews: [{ ...result.reviews[0], rawPhoto: "private" }] },
+    ),
+  ).toThrow();
+});

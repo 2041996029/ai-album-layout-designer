@@ -118,10 +118,30 @@ export async function createJob(
       (snapshot.quote_id ?? undefined) !== input.quoteId
     )
       fail("JOB_SNAPSHOT_MISMATCH", 409);
+    if (input.retry) {
+      const parent = (
+        await tx.query(
+          "SELECT kind,state,revision,provider_submission_state,error_code FROM jobs WHERE workspace_id=$1 AND id=$2 FOR SHARE",
+          [input.workspaceId, input.retry.parentJobId],
+        )
+      ).rows[0];
+      if (!parent || parent.kind !== input.kind) fail("NOT_FOUND", 404);
+      if (Number(parent.revision) !== input.retry.expectedRevision)
+        fail("REVISION_CONFLICT", 409);
+      if (
+        !["failed", "cancelled"].includes(parent.state) ||
+        parent.provider_submission_state !== "terminal"
+      )
+        fail("JOB_CONFIRMATION_REQUIRED", 409);
+      if (/OOM|MEMORY_BUDGET|SURFACE_BUDGET/.test(parent.error_code ?? ""))
+        fail("RESOURCE_BUDGET_REVIEW_REQUIRED", 409);
+      if (!input.retry.reason?.trim() || input.retry.reason.length > 300)
+        fail("REASON_REQUIRED", 422);
+    }
     const jobId = id();
     const row = (
       await tx.query(
-        `INSERT INTO jobs(id,workspace_id,kind,snapshot_id,quote_id,created_by,max_attempts) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+        `INSERT INTO jobs(id,workspace_id,kind,snapshot_id,quote_id,created_by,max_attempts,parent_job_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
         [
           jobId,
           input.workspaceId,
@@ -130,9 +150,26 @@ export async function createJob(
           input.quoteId ?? null,
           input.createdBy,
           maxAttempts,
+          input.retry?.parentJobId ?? null,
         ],
       )
     ).rows[0];
+    if (input.retry)
+      await tx.query(
+        "INSERT INTO audit_events(id,workspace_id,actor_user_id,action,target_kind,target_id,request_id,reason,redacted_details) VALUES($1,$2,$3,'job.retry','job',$4,$5,$6,$7)",
+        [
+          id(),
+          input.workspaceId,
+          input.createdBy,
+          jobId,
+          id(),
+          input.retry.reason,
+          {
+            parentJobId: input.retry.parentJobId,
+            expectedRevision: input.retry.expectedRevision,
+          },
+        ],
+      );
     await jobEvent(tx, row, "job.ready", { jobId });
     return record({ ...row, config_release_id: input.configReleaseId });
   })();

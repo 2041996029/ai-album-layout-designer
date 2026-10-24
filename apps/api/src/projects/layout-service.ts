@@ -14,12 +14,19 @@ import {
 } from "@album/document";
 import {
   prepareLayout,
+  allocateBook,
+  composeSpread,
   generateCandidates,
   createLayoutCommand,
   type LayoutInput,
   type LayoutPolicy,
 } from "@album/layout";
-import { createJob, type JobRepository, type JobLease } from "@album/jobs";
+import {
+  createJob,
+  type JobRepository,
+  type JobLease,
+  type CreateJobInput,
+} from "@album/jobs";
 import type { RevisionService, RevisionAuthorization } from "./revisions";
 type Dependencies = {
   db: Database;
@@ -58,6 +65,7 @@ export class CloudLayoutService {
     projectId: string,
     input: components["schemas"]["LayoutJobCreate"],
     key: string,
+    retry?: CreateJobInput["retry"],
   ) {
     if (
       !input ||
@@ -130,6 +138,7 @@ export class CloudLayoutService {
           configReleaseId: release.releaseId,
           inputHash: prepared.inputHash,
           payload: prepared.input,
+          ...(retry ? { retry } : {}),
           createdBy: actor.userId,
         },
         key,
@@ -155,6 +164,54 @@ export class CloudLayoutService {
       return job;
     });
   }
+  async retryCloudLayoutJob(
+    actor: Actor,
+    wid: string,
+    jobId: string,
+    expectedRevision: number,
+    reason: string,
+    key: string,
+  ) {
+    const d = this.configured();
+    const replay = await d.db.transaction(async (tx) => {
+      await d.workspaces.authorize(actor, wid, "edit", tx);
+      const retained = (
+        await tx.query(
+          "SELECT k.*,j.parent_job_id,j.created_by,a.reason,a.redacted_details FROM idempotency_keys k LEFT JOIN jobs j ON j.id=k.resource_id AND j.workspace_id=k.workspace_id LEFT JOIN audit_events a ON a.action='job.retry' AND a.target_id=j.id WHERE k.workspace_id=$1 AND k.principal_scope='workspace' AND k.idempotency_key=$2",
+          [wid, key],
+        )
+      ).rows[0];
+      if (!retained) return null;
+      if (
+        retained.operation !== "job.create" ||
+        retained.parent_job_id !== jobId ||
+        retained.created_by !== actor.userId ||
+        retained.reason !== reason ||
+        retained.redacted_details?.expectedRevision !== expectedRevision
+      )
+        fail("IDEMPOTENCY_CONFLICT", 409);
+      return retained.response_json;
+    });
+    if (replay) return replay;
+    const row = await d.db.transaction(async (tx) => {
+      await d.workspaces.authorize(actor, wid, "edit", tx);
+      return (
+        await tx.query(
+          "SELECT j.*,s.manifest FROM jobs j JOIN job_snapshots s ON s.workspace_id=j.workspace_id AND s.id=j.snapshot_id WHERE j.workspace_id=$1 AND j.id=$2 AND j.kind='layout'",
+          [wid, jobId],
+        )
+      ).rows[0];
+    });
+    if (!row) fail("NOT_FOUND", 404);
+    return this.createCloudLayoutJob(
+      actor,
+      wid,
+      row.manifest.input.projectId,
+      { layoutSpec: row.manifest.input },
+      key,
+      { parentJobId: jobId, expectedRevision, reason },
+    );
+  }
   async runCloudLayoutJob(lease: JobLease) {
     const d = this.configured();
     if (lease.job.kind !== "layout") fail("JOB_KIND_MISMATCH", 409);
@@ -169,7 +226,7 @@ export class CloudLayoutService {
     );
     if (!frozen) fail("NOT_FOUND", 404);
     const candidates = await this.candidates(frozen);
-    return d.jobs.finishJob(
+    const committed = await d.jobs.finishJob(
       lease,
       {
         state: candidates.length ? "succeeded" : "failed",
@@ -181,7 +238,27 @@ export class CloudLayoutService {
         },
       },
       async (tx) => {
-        for (const [index, candidate] of candidates.entries())
+        const prepared = await prepareLayout(frozen.input, frozen.policy),
+          allocation = allocateBook(prepared, frozen.saved.doc),
+          template = templateVersions.find(
+            (t) =>
+              t.id === frozen.input.templateRef.id &&
+              t.version === frozen.input.templateRef.version &&
+              t.sha256 === frozen.input.templateRef.sha256,
+          )!;
+        for (const [index, candidate] of candidates.entries()) {
+          if (!allocation.ok) fail("LAYOUT_CONSTRAINTS_UNSATISFIED", 409);
+          const composed = composeSpread(
+              prepared,
+              allocation.value,
+              frozen.saved.doc,
+              template,
+              [],
+              Number(candidate.candidateId.split("_").at(-1)),
+            ),
+            score =
+              composed.reduce((sum, spread) => sum + spread.score.total, 0) /
+              composed.length;
           await tx.query(
             "INSERT INTO layout_candidates(id,workspace_id,job_id,project_id,base_revision_id,candidate_index,seed,score,layout_hash,layout_json,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now()+interval '7 days')",
             [
@@ -192,17 +269,21 @@ export class CloudLayoutService {
               frozen.revisionId,
               index,
               candidate.seed,
-              1,
+              score,
               digest(canonicalJson(candidate)),
               JSON.stringify(candidate),
             ],
           );
+        }
         await tx.query(
           "UPDATE resource_pins SET released_at=clock_timestamp() WHERE workspace_id=$1 AND job_id=$2 AND released_at IS NULL",
           [lease.job.workspaceId, lease.job.jobId],
         );
       },
     );
+    if (!committed)
+      return d.jobs.finishJob(lease, { state: "cancelled", result: {} });
+    return committed;
   }
   async listCandidates(actor: Actor, wid: string, jobId: string) {
     const d = this.configured();

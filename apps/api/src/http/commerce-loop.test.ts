@@ -418,7 +418,72 @@ describe.skipIf(
       warningsAcknowledged: [],
     });
     expect(accepted.statusCode, accepted.body).toBe(202);
-    const jid = accepted.json().data.id;
+    const originalJobId = accepted.json().data.id;
+    const cancelled = await call("POST", `/v1/jobs/${originalJobId}/cancel`, {
+      reason: "retry integration",
+    });
+    expect(cancelled.statusCode, cancelled.body).toBe(202);
+    const preflightPort = runtime.commerce!.options.exports!.preflight,
+      check = preflightPort.check.bind(preflightPort);
+    preflightPort.check = async (...args) => {
+      const report = await check(...args);
+      return {
+        ...report,
+        warnings: [
+          ...report.warnings,
+          {
+            id: "changed-strong-warning",
+            code: "LOW_PPI",
+            path: "spreads[0]",
+            severity: "warning",
+            level: "strong",
+            message: "changed warning",
+          },
+        ],
+      };
+    };
+    const changedWarning = await call(
+      "POST",
+      `/v1/jobs/${originalJobId}/retry`,
+      {
+        expectedRevision: cancelled.json().data.revision,
+        reason: "new warning needs confirmation",
+      },
+    );
+    expect(changedWarning.statusCode, changedWarning.body).toBe(409);
+    expect(changedWarning.json().error.code).toBe("FRESH_PREFLIGHT_REQUIRED");
+    preflightPort.check = check;
+    const retryKey = id(),
+      retryBody = {
+        expectedRevision: cancelled.json().data.revision,
+        reason: "retry integration",
+      };
+    const retried = await call(
+      "POST",
+      `/v1/jobs/${originalJobId}/retry`,
+      retryBody,
+      { "idempotency-key": retryKey },
+    );
+    expect(retried.statusCode, retried.body).toBe(202);
+    const jid = retried.json().data.id;
+    expect(jid).not.toBe(originalJobId);
+    expect(retried.json().data.parentJobId).toBe(originalJobId);
+    const replay = await call(
+      "POST",
+      `/v1/jobs/${originalJobId}/retry`,
+      retryBody,
+      { "idempotency-key": retryKey },
+    );
+    expect(replay.statusCode, replay.body).toBe(202);
+    expect(replay.json().data.id).toBe(jid);
+    expect(
+      (
+        await db.pool.query(
+          "SELECT count(*) FROM ai_album.audit_events WHERE action='job.retry' AND target_id=$1",
+          [jid],
+        )
+      ).rows[0].count,
+    ).toBe("1");
     host = startCommerceHost(runtime, process.env.C4_TEST_REDIS_URL);
     await host.recover();
     await expect

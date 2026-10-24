@@ -10,7 +10,12 @@ import {
   type ExportSnapshot,
   type PreflightReport,
 } from "@album/export";
-import { createJob, type JobRecord, type TerminalCommit } from "@album/jobs";
+import {
+  createJob,
+  type JobRecord,
+  type TerminalCommit,
+  type CreateJobInput,
+} from "@album/jobs";
 import {
   digest,
   fail,
@@ -98,6 +103,7 @@ type AcceptInput = {
   options: ExportOptions;
   snapshotHash: string;
   acknowledgedWarningIds: string[];
+  retry?: CreateJobInput["retry"];
 };
 type Token = {
   v: 1;
@@ -587,6 +593,121 @@ export class ExportService {
       input.preflightToken,
     );
   }
+  /** A retry is a new acceptance under current configuration and source eligibility. */
+  async retryExport(
+    actor: Actor,
+    wid: string,
+    jobId: string,
+    expectedRevision: number,
+    reason: string,
+    key: string,
+  ): Promise<JobRecord> {
+    const context = await this.deps.db.transaction(async (tx) => {
+      await this.deps.authorization.authorize(actor, wid, "edit", tx);
+      const row = (
+        await tx.query(
+          "SELECT j.*,s.manifest,s.manifest_hash,s.warnings_acknowledged FROM jobs j JOIN job_snapshots s ON s.id=j.snapshot_id AND s.workspace_id=j.workspace_id WHERE j.workspace_id=$1 AND j.id=$2 AND j.kind='export'",
+          [wid, jobId],
+        )
+      ).rows[0];
+      if (!row) fail("NOT_FOUND", 404);
+      if (Number(row.revision) !== expectedRevision)
+        fail("REVISION_CONFLICT", 409);
+      if (
+        !["failed", "cancelled"].includes(row.state) ||
+        row.provider_submission_state !== "terminal"
+      )
+        fail("JOB_CONFIRMATION_REQUIRED", 409);
+      if (/OOM|MEMORY_BUDGET|SURFACE_BUDGET/.test(row.error_code ?? ""))
+        fail("RESOURCE_BUDGET_REVIEW_REQUIRED", 409);
+      if (digest(canonical(row.manifest)) !== row.manifest_hash)
+        fail("JOB_SNAPSHOT_CORRUPT", 500);
+      const existing = (
+        await tx.query(
+          "SELECT s.normalized_spec_hash,s.manifest,s.warnings_acknowledged FROM idempotency_keys k JOIN jobs j ON j.id=k.resource_id AND j.workspace_id=k.workspace_id JOIN job_snapshots s ON s.id=j.snapshot_id AND s.workspace_id=j.workspace_id WHERE k.workspace_id=$1 AND k.principal_scope='workspace' AND k.idempotency_key=$2",
+          [wid, key],
+        )
+      ).rows[0];
+      return { row, existing };
+    });
+    const retry = { parentJobId: jobId, expectedRevision, reason },
+      requestHash = digest(canonical({ actor: actor.userId, wid, retry }));
+    if (context.existing) {
+      const stored = context.existing,
+        f = stored.manifest as FrozenExport;
+      return this.accept(
+        actor,
+        wid,
+        {
+          projectId: f.snapshot.projectId,
+          revision: f.snapshot.revision,
+          options: f.snapshot.options,
+          snapshotHash: stored.normalized_spec_hash,
+          acknowledgedWarningIds: stored.warnings_acknowledged,
+          retry,
+        },
+        key,
+        requestHash,
+      );
+    }
+    const frozen = context.row.manifest as FrozenExport;
+    await this.deps.db.transaction(async (tx) => {
+      await this.deps.authorization.authorize(actor, wid, "edit", tx);
+      const current = (
+        await tx.query(
+          "SELECT p.current_revision,r.document_hash,b.resources FROM projects p JOIN project_revisions r ON r.workspace_id=p.workspace_id AND r.project_id=p.id AND r.number=p.current_revision JOIN project_revision_payloads b ON b.revision_id=r.id WHERE p.workspace_id=$1 AND p.id=$2",
+          [wid, frozen.snapshot.projectId],
+        )
+      ).rows[0];
+      if (
+        !current ||
+        Number(current.current_revision) !== frozen.snapshot.revision ||
+        current.document_hash !== frozen.snapshot.docHash ||
+        !same(current.resources, frozen.snapshot.resources)
+      )
+        fail("FRESH_PREFLIGHT_REQUIRED", 409);
+    });
+    const preflight = await this.createPreflight(
+      actor,
+      wid,
+      frozen.snapshot.projectId,
+      {
+        revision: frozen.snapshot.revision,
+        exportSpec: frozen.snapshot.options,
+      },
+      digest("retry.preflight:" + wid + ":" + key),
+    );
+    const warnings = preflight.issues
+        .filter((i) => i.severity !== "blocker")
+        .map((i) => ({ id: i.id, severity: i.severity }))
+        .sort((a, b) => a.id.localeCompare(b.id)),
+      previous = frozen.report.warnings
+        .map((i) => ({
+          id: i.id,
+          severity: i.level === "strong" ? "strong_warning" : "warning",
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+    if (
+      preflight.blocked ||
+      !same(preflight.normalizedSpec, frozen.snapshot.options) ||
+      !same(warnings, previous)
+    )
+      fail("FRESH_PREFLIGHT_REQUIRED", 409);
+    return this.accept(
+      actor,
+      wid,
+      {
+        projectId: frozen.snapshot.projectId,
+        revision: frozen.snapshot.revision,
+        options: preflight.normalizedSpec,
+        snapshotHash: preflight.normalizedSpecHash,
+        acknowledgedWarningIds: context.row.warnings_acknowledged,
+        retry,
+      },
+      key,
+      requestHash,
+    );
+  }
   async acceptExport(
     actor: Actor,
     wid: string,
@@ -621,6 +742,7 @@ export class ExportService {
         inputHash: input.snapshotHash,
         payload: { exportRequestHash: requestHash },
         createdBy: actor.userId,
+        ...(input.retry ? { retry: input.retry } : {}),
       });
       if (old) {
         const stored = (

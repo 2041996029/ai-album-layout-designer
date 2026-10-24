@@ -4152,6 +4152,15 @@ export interface components {
             reason: string;
         };
         ReconcileResult: {
+            /** @description Redacted durable financial differences for live finance review; no photo locators or credentials. */
+            reviews?: {
+                id: string;
+                orderId: string;
+                paidFen: number;
+                refundedFen: number;
+                localState: string;
+                localFulfillmentState: string;
+            }[];
             /** @example prj_demo */
             id: string;
             scope: string;

@@ -1,3 +1,9 @@
+import { bindCommerceRuntime } from "../commerce/runtime";
+import { startCommerceHost } from "../commerce/host";
+import { createApplication } from "../app.module";
+import { ReauthService } from "../auth/reauthentication";
+import { payloadHash, type ConfigPayload } from "../config/types";
+import type { ApiRuntime } from "../http/runtime";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { id, digest } from "@album/server-core";
 import { testDatabase } from "../../test/database";
@@ -17,12 +23,17 @@ import { tmpdir } from "node:os";
 describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
   "durable deterministic cloud layout",
   () => {
-    let db: Awaited<ReturnType<typeof testDatabase>>, root: string;
+    let db: Awaited<ReturnType<typeof testDatabase>>,
+      root: string,
+      app: any,
+      host: ReturnType<typeof startCommerceHost> | undefined;
     beforeAll(async () => {
       db = await testDatabase();
       root = await mkdtemp(tmpdir() + "/layout-c4-");
     });
     afterAll(async () => {
+      await host?.close();
+      await app?.close();
       await db?.close();
       await rm(root, { recursive: true, force: true });
     });
@@ -106,31 +117,16 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         id(),
         "Layout",
       );
-      const rid = id();
-      await db.database.transaction((tx) =>
-        tx.query(
-          "INSERT INTO config_releases(id,environment,release_number,schema_version,manifest_hash,manifest,published_by) VALUES($1,'dev',1,1,$2,'{}',$3)",
-          [rid, digest("layout"), actor.userId],
-        ),
-      );
-      const jobs = new JobRepository(db.database, async () => ({
-        deployment: { global: 2, workspace: 2 },
-        release: { global: 2, workspace: 2 },
-        entitlement: { global: 2, workspace: 2 },
-        leaseSeconds: 60,
-        maxAttempts: 3,
-        retryBackoffSeconds: [10, 30, 90],
-      }));
-      const layout = new CloudLayoutService({
-        db: db.database,
-        workspaces: ws,
-        revisions,
-        jobs,
-        release: async () => ({
-          releaseId: rid,
-          policy: {
+      const rid = id(),
+        payloads: ConfigPayload[] = [
+          {
+            kind: "layout",
             algorithmVersion: "local-layout-v1",
             candidateCount: 3,
+            minPhotosPerSpread: 1,
+            maxPhotosPerSpread: 4,
+            selectionPolicy: "all",
+            duplicatePolicy: "forbid",
             weights: {
               subject: 0.3,
               timeline: 0.2,
@@ -139,8 +135,69 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
               color: 0.1,
             },
           },
-        }),
+          {
+            kind: "queue",
+            workerKind: "layout",
+            maxGlobalConcurrency: 4,
+            maxWorkspaceConcurrency: 2,
+            leaseSeconds: 60,
+            heartbeatSeconds: 5,
+            retryLimit: 3,
+            maxWaitingSeconds: 600,
+            retryBackoffSeconds: [10, 30, 90],
+            maxAttemptsPerTask: 4,
+          },
+        ];
+      const versions = Object.fromEntries(
+          payloads.map((payload) => [
+            payload.kind,
+            {
+              id: id(),
+              namespace: payload.kind,
+              version: 1,
+              revision: 1,
+              environment: "dev",
+              state: "published",
+              payload,
+              payloadHash: payloadHash(payload),
+            },
+          ]),
+        ),
+        manifest = {
+          versions,
+          sourceDrafts: {},
+          reason: "local layout",
+          previousReleaseId: null,
+        };
+      await db.database.transaction(async (tx) => {
+        await tx.query(
+          "INSERT INTO config_releases(id,environment,release_number,schema_version,manifest_hash,manifest,published_by) VALUES($1,'dev',1,1,$2,$3,$4)",
+          [rid, payloadHash(manifest), manifest, actor.userId],
+        );
+        for (const v of Object.values(versions))
+          await tx.query(
+            "INSERT INTO config_release_items(id,release_id,namespace,schema_version,body_hash,body) VALUES($1,$2,$3,1,$4,$5)",
+            [id(), rid, v.namespace, v.payloadHash, v.payload],
+          );
+        await tx.query(
+          "INSERT INTO config_active_releases(id,environment,release_id) VALUES($1,'dev',$2)",
+          [id(), rid],
+        );
       });
+      const runtime: ApiRuntime = {
+        db: db.database,
+        auth,
+        workspaces: ws,
+        revisions,
+        environment: "dev",
+        allowedOrigin: "https://album.test",
+      };
+      await bindCommerceRuntime(
+        runtime,
+        new ReauthService(db.database, auth, {}),
+      );
+      const jobs = runtime.commerce!.jobs,
+        layout = runtime.cloudLayout!;
       const template = templateVersions.find((t) => t.id === "tpl_travel")!;
       const input = {
         layoutSpec: {
@@ -164,6 +221,38 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           seed: 1,
         },
       } as any;
+      const retrySource = await layout.createCloudLayoutJob(
+        actor,
+        wid,
+        doc.projectId,
+        input,
+        id(),
+      );
+      await jobs.requestCancel(actor, wid, retrySource.jobId);
+      const revision = Number(
+        (
+          await db.pool.query(
+            "SELECT revision FROM ai_album.jobs WHERE id=$1",
+            [retrySource.jobId],
+          )
+        ).rows[0].revision,
+      );
+      const retried = await layout.retryCloudLayoutJob(
+        actor,
+        wid,
+        retrySource.jobId,
+        revision,
+        "retry layout",
+        id(),
+      );
+      expect(
+        (
+          await db.pool.query(
+            "SELECT parent_job_id FROM ai_album.jobs WHERE id=$1",
+            [retried.jobId],
+          )
+        ).rows[0].parent_job_id,
+      ).toBe(retrySource.jobId);
       const requestKey = id();
       const accepted = await layout.createCloudLayoutJob(
         actor,
@@ -201,6 +290,7 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         accepted.jobId,
       );
       expect(candidates.length).toBeGreaterThan(0);
+      expect(candidates[0].score).toBeLessThan(1);
       const applied = await layout.applyCloudLayout(
         actor,
         wid,
@@ -225,6 +315,65 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
       await expect(
         layout.listCandidates(actor, foreign, accepted.jobId),
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      if (process.env.C4_TEST_REDIS_URL) {
+        const session = await auth.createWebSession(actor);
+        app = await createApplication(runtime);
+        const call = (
+          method: string,
+          url: string,
+          payload?: unknown,
+          headers: Record<string, string> = {},
+        ) =>
+          app.inject({
+            method,
+            url,
+            payload,
+            headers: {
+              cookie: `album_session=${session.accessToken}`,
+              origin: "https://album.test",
+              "x-csrf-token": session.csrfToken,
+              "x-workspace-id": wid,
+              "idempotency-key": id(),
+              ...headers,
+            },
+          });
+        const acceptedHttp = await call(
+          "POST",
+          `/v1/projects/${doc.projectId}/layout-jobs`,
+          { layoutSpec: { ...input.layoutSpec, baseRevision: 2 } },
+        );
+        expect(acceptedHttp.statusCode, acceptedHttp.body).toBe(202);
+        host = startCommerceHost(runtime, process.env.C4_TEST_REDIS_URL);
+        await host.recover();
+        const httpJob = acceptedHttp.json().data.id;
+        await expect
+          .poll(
+            async () => {
+              const r = await call("GET", `/v1/jobs/${httpJob}`);
+              return r.json().data?.state;
+            },
+            { timeout: 15000 },
+          )
+          .toBe("succeeded");
+        const result = await call(
+          "GET",
+          `/v1/jobs/${httpJob}/layout-candidates`,
+        );
+        expect(result.statusCode, result.body).toBe(200);
+        expect(result.json().data.items.length).toBeGreaterThan(0);
+        const appliedHttp = await call(
+          "POST",
+          `/v1/projects/${doc.projectId}/apply-layout`,
+          {
+            candidateId: result.json().data.items[0].id,
+            baseRevision: 2,
+            commandId: id(),
+          },
+          { "if-match": '"2"' },
+        );
+        expect(appliedHttp.statusCode, appliedHttp.body).toBe(200);
+        expect(appliedHttp.json().data.document.revision).toBe(3);
+      }
       await expect(
         db.pool.query("UPDATE ai_album.layout_candidates SET score=0"),
       ).rejects.toThrow();

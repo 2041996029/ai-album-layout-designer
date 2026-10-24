@@ -111,6 +111,11 @@ export async function bindCommerceRuntime(
   const jobs = new JobRepository(db, policy, async (tx, job, outcome) => {
     await exportTerminalHook(tx, job, outcome);
     await credits.creditTerminalHook(tx, job, outcome);
+    if (job.kind === "layout")
+      await tx.query(
+        "UPDATE resource_pins SET released_at=clock_timestamp() WHERE workspace_id=$1 AND job_id=$2 AND released_at IS NULL",
+        [job.workspaceId, job.jobId],
+      );
   });
   const confirmation = new PaymentConfirmation(
     db,
@@ -183,7 +188,14 @@ export async function bindCommerceRuntime(
       release: async () => {
         const release = await config.loadRelease(),
           p = release.versions.layout?.payload;
-        if (p?.kind !== "layout") fail("CLOUD_LAYOUT_UNCONFIGURED", 503);
+        if (
+          p?.kind !== "layout" ||
+          !Object.values(release.versions).some(
+            (v) =>
+              v.payload.kind === "queue" && v.payload.workerKind === "layout",
+          )
+        )
+          fail("CLOUD_LAYOUT_UNCONFIGURED", 503);
         return {
           releaseId: release.releaseId,
           policy: {

@@ -42,6 +42,7 @@ export type CreateJobInput = {
   snapshotId: string;
   quoteId?: string;
   maxAttempts?: number;
+  retry?: { parentJobId: string; expectedRevision: number; reason: string };
 };
 export type ConcurrencyLimits = { global: number; workspace: number };
 export type ExecutionPolicy = {

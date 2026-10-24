@@ -1,3 +1,4 @@
+import { sqlPage, mapPage, arrayPage } from "./pagination";
 import { fail, id, runIdempotent } from "@album/server-core";
 import type { components } from "@album/contracts";
 import type { ApiRuntime } from "../http/runtime";
@@ -9,11 +10,6 @@ import { sourceCreditFrozenSql } from "./credits";
 import { CONFIG_REGISTRY, payloadHash } from "../config/types";
 type S = components["schemas"];
 const date = (v: any) => new Date(v).toISOString();
-const page = (items: unknown[]) => ({
-  items,
-  nextCursor: null,
-  hasMore: false,
-});
 const need = <T>(v: T | undefined): T => {
   if (!v) fail("UNCONFIGURED", 503);
   return v;
@@ -101,7 +97,7 @@ export function commerceHandlers(
         kind: row.kind,
         state: row.state,
         stage: row.stage,
-        progress: Number(row.progress),
+        progress: row.state === "succeeded" ? 100 : Number(row.progress),
         revision: Number(row.revision),
         createdAt: date(row.created_at),
         updatedAt: date(row.terminal_at ?? row.created_at),
@@ -230,7 +226,22 @@ export function commerceHandlers(
               businessDate,
               lines,
             );
+            const reviews = (
+              await tx.query(
+                "SELECT id,redacted_details FROM audit_events WHERE id=ANY($1::text[])",
+                [result.reviewIds],
+              )
+            ).rows.map((row) => ({
+              id: row.id,
+              orderId: row.redacted_details.statement.orderId,
+              paidFen: row.redacted_details.statement.paidFen,
+              refundedFen: row.redacted_details.statement.refundedFen,
+              localState: row.redacted_details.local?.state ?? "missing",
+              localFulfillmentState:
+                row.redacted_details.local?.fulfillment_state ?? "missing",
+            }));
             const value = {
+              reviews,
               id: id(),
               scope: r.body.scope,
               scannedCount: lines.length,
@@ -268,12 +279,14 @@ export function commerceHandlers(
     async listAuditEvents(r) {
       await finance(r);
       return db.transaction(async (tx) =>
-        page(
-          (
-            await tx.query(
-              "SELECT * FROM audit_events WHERE action LIKE 'commerce.%' AND actor_user_id IS NOT NULL ORDER BY created_at DESC LIMIT 100",
-            )
-          ).rows.map((x) => ({
+        mapPage(
+          await sqlPage(
+            tx,
+            r,
+            "audit",
+            "SELECT * FROM audit_events WHERE action LIKE 'commerce.%' AND actor_user_id IS NOT NULL",
+          ),
+          (x) => ({
             id: x.id,
             actorId: x.actor_user_id,
             action: x.action,
@@ -282,7 +295,7 @@ export function commerceHandlers(
             requestId: x.request_id,
             occurredAt: date(x.created_at),
             reason: x.reason,
-          })),
+          }),
         ),
       );
     },
@@ -290,27 +303,28 @@ export function commerceHandlers(
       await db.transaction((tx) =>
         requireRoles(tx, auth, r.actor, ["platform_ops"]),
       );
-      const rows = (
-        await db.transaction((tx) =>
-          tx.query("SELECT * FROM jobs ORDER BY created_at DESC LIMIT 100"),
-        )
-      ).rows;
-      return page(
-        rows.map((row) => ({
-          id: row.id,
-          workspaceId: row.workspace_id,
-          kind: row.kind,
-          state: row.state,
-          stage: row.stage,
-          progress: Number(row.progress),
-          revision: Number(row.revision),
-          createdAt: date(row.created_at),
-          updatedAt: date(row.terminal_at ?? row.created_at),
-          outputIds: [],
-          configReleaseId: row.config_release_id,
-          providerSubmissionState: row.provider_submission_state,
-        })),
+      const p = await db.transaction((tx) =>
+        sqlPage(
+          tx,
+          r,
+          "admin-jobs",
+          "SELECT j.*,s.config_release_id FROM jobs j JOIN job_snapshots s ON s.id=j.snapshot_id AND s.workspace_id=j.workspace_id",
+        ),
       );
+      return mapPage(p, (row) => ({
+        id: row.id,
+        workspaceId: row.workspace_id,
+        kind: row.kind,
+        state: row.state,
+        stage: row.stage,
+        progress: row.state === "succeeded" ? 100 : Number(row.progress),
+        revision: Number(row.revision),
+        createdAt: date(row.created_at),
+        updatedAt: date(row.terminal_at ?? row.created_at),
+        outputIds: [],
+        configReleaseId: row.config_release_id,
+        providerSubmissionState: row.provider_submission_state,
+      }));
     },
     async adminJobAction(r) {
       await db.transaction((tx) =>
@@ -359,10 +373,11 @@ export function commerceHandlers(
       try {
         active = await s.config.loadRelease();
       } catch {
-        return page([]);
+        return arrayPage(r, "skus", [], "public");
       }
       const v = active.versions.sku;
-      if (v?.payload.kind !== "sku" || !v.payload.enabled) return page([]);
+      if (v?.payload.kind !== "sku" || !v.payload.enabled)
+        return arrayPage(r, "skus", [], "public");
       const row = (
         await db.transaction((tx) =>
           tx.query(
@@ -371,50 +386,65 @@ export function commerceHandlers(
           ),
         )
       ).rows[0];
-      if (!row) return page([]);
+      if (!row) return arrayPage(r, "skus", [], "public");
       const p = v.payload;
-      return page([
-        {
-          id: p.skuId,
-          versionId: row.id,
-          name: p.name,
-          priceFen: p.priceFen,
-          currency: p.currency,
-          durationDays: p.durationDays,
-          creditGrant: p.credits,
-          features: [
-            `${p.durationDays}天`,
-            `${p.credits}点`,
-            ...Object.entries(p.features).map(
-              ([k, v]) => `${k}: ${Array.isArray(v) ? v.join("/") : v}`,
-            ),
-          ],
-          channels: [
-            active.versions.payment?.payload.kind === "payment"
-              ? active.versions.payment.payload.channel
-              : "wechat_pay",
-          ],
-          platforms: [
-            active.versions.payment?.payload.kind === "payment" &&
-            active.versions.payment.payload.channel === "wechat_virtual"
-              ? "mini"
-              : "web",
-          ],
-          state: "published",
-        },
-      ]);
+      const result = arrayPage(
+        r,
+        "skus",
+        [
+          {
+            id: p.skuId,
+            versionId: row.id,
+            name: p.name,
+            priceFen: p.priceFen,
+            currency: p.currency,
+            durationDays: p.durationDays,
+            creditGrant: p.credits,
+            features: [
+              `${p.durationDays}天`,
+              `点数有效期 ${p.creditValidityDays} 天`,
+              `退款规则 ${p.refundPolicyRef.id} v${p.refundPolicyRef.version}`,
+              `${p.credits}点`,
+              ...Object.entries(p.features).map(
+                ([k, v]) => `${k}: ${Array.isArray(v) ? v.join("/") : v}`,
+              ),
+            ],
+            channels: [
+              active.versions.payment?.payload.kind === "payment"
+                ? active.versions.payment.payload.channel
+                : "wechat_pay",
+            ],
+            platforms: [
+              active.versions.payment?.payload.kind === "payment" &&
+              active.versions.payment.payload.channel === "wechat_virtual"
+                ? "mini"
+                : "web",
+            ],
+            state: "published",
+            createdAt: date(row.created_at),
+          },
+        ].filter((sku) => sku.platforms.includes(r.query.platform)),
+        "public",
+      );
+      return {
+        ...result,
+        items: result.items.map(({ createdAt, ...sku }) => sku),
+      };
     },
     async listOrders(r) {
       return scoped(
         r,
         async (tx) =>
-          page(
-            (
-              await tx.query(
-                "SELECT * FROM orders WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 100",
-                [wid(r)],
-              )
-            ).rows.map(orderDto),
+          mapPage(
+            await sqlPage(
+              tx,
+              r,
+              "orders",
+              "SELECT * FROM orders WHERE workspace_id=$1",
+              [wid(r)],
+              wid(r),
+            ),
+            orderDto,
           ),
         "purchase",
       );
@@ -530,17 +560,17 @@ export function commerceHandlers(
       return b.ack;
     },
     async listWorkspaceJobs(r) {
-      const rows = await scoped(
-        r,
-        async (tx) =>
-          (
-            await tx.query(
-              "SELECT id FROM jobs WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 100",
-              [wid(r)],
-            )
-          ).rows,
+      const p = await scoped(r, (tx) =>
+        sqlPage(
+          tx,
+          r,
+          "jobs",
+          "SELECT * FROM jobs WHERE workspace_id=$1",
+          [wid(r)],
+          wid(r),
+        ),
       );
-      return page(await Promise.all(rows.map((x: any) => job(r, x.id))));
+      return mapPage(p, (x: any) => job(r, x.id));
     },
     async getJob(r) {
       return job(r);
@@ -563,8 +593,34 @@ export function commerceHandlers(
       return job(r);
     },
     async retryJob(r) {
-      await job(r);
-      fail("FRESH_PREFLIGHT_REQUIRED", 409);
+      const source = await job(r);
+      const created =
+        source.kind === "export"
+          ? (await s.config.assertNewRequestsAllowed("cloudExport"),
+            await need(s.exports).retryExport(
+              r.actor,
+              wid(r),
+              source.id,
+              r.body.expectedRevision,
+              r.body.reason,
+              key(r),
+            ))
+          : source.kind === "layout"
+            ? await need(runtime.cloudLayout).retryCloudLayoutJob(
+                r.actor,
+                wid(r),
+                source.id,
+                r.body.expectedRevision,
+                r.body.reason,
+                key(r),
+              )
+            : fail(
+                source.kind === "generation"
+                  ? "FRESH_QUOTE_REQUIRED"
+                  : "RETRY_UNCONFIGURED",
+                409,
+              );
+      return job(r, created.jobId);
     },
     async getEntitlements(r) {
       await scoped(r, async () => {});
@@ -589,13 +645,16 @@ export function commerceHandlers(
     },
     async listCreditLedger(r) {
       return scoped(r, async (tx) =>
-        page(
-          (
-            await tx.query(
-              "SELECT * FROM credit_ledger WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 100",
-              [wid(r)],
-            )
-          ).rows.map((x: any) => ({
+        mapPage(
+          await sqlPage(
+            tx,
+            r,
+            "ledger",
+            "SELECT * FROM credit_ledger WHERE workspace_id=$1",
+            [wid(r)],
+            wid(r),
+          ),
+          (x) => ({
             id: x.id,
             operationId: x.operation_id,
             type: ["revoke", "adjustment"].includes(x.entry_type)
@@ -605,7 +664,7 @@ export function commerceHandlers(
             balanceAfter: Number(x.balance_after),
             sourceId: x.lot_id,
             createdAt: date(x.created_at),
-          })),
+          }),
         ),
       );
     },
@@ -619,20 +678,23 @@ export function commerceHandlers(
     },
     async listRedemptions(r) {
       return scoped(r, async (tx) =>
-        page(
-          (
-            await tx.query(
-              "SELECT r.*,ARRAY(SELECT g.id FROM entitlement_grants g WHERE g.workspace_id=r.workspace_id AND g.source_redemption_id=r.id) AS grants,(SELECT coalesce(sum((g.features->>'creditGrant')::bigint),0) FROM entitlement_grants g WHERE g.workspace_id=r.workspace_id AND g.source_redemption_id=r.id AND grant_type='credits') AS credits FROM redemptions r WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 100",
-              [wid(r)],
-            )
-          ).rows.map((x: any) => ({
+        mapPage(
+          await sqlPage(
+            tx,
+            r,
+            "redemptions",
+            "SELECT r.*,ARRAY(SELECT g.id::text FROM entitlement_grants g WHERE g.workspace_id=r.workspace_id AND g.source_redemption_id=r.id) AS grants,(SELECT coalesce(sum((g.features->>'creditGrant')::bigint),0) FROM entitlement_grants g WHERE g.workspace_id=r.workspace_id AND g.source_redemption_id=r.id AND grant_type='credits') AS credits FROM redemptions r WHERE workspace_id=$1",
+            [wid(r)],
+            wid(r),
+          ),
+          (x) => ({
             id: x.id,
             workspaceId: x.workspace_id,
             skuVersionId: x.sku_version_id,
             creditGrant: Number(x.credits),
             entitlementGrantIds: x.grants,
             redeemedAt: date(x.created_at),
-          })),
+          }),
         ),
       );
     },
@@ -655,8 +717,11 @@ export function commerceHandlers(
       return job(r, created.jobId);
     },
     async listJobOutputs(r) {
-      return page(
+      return arrayPage(
+        r,
+        "outputs",
         await need(s.exports).listArtifacts(r.actor, wid(r), r.params.jobId),
+        wid(r),
       );
     },
     async getOutput(r) {
@@ -708,25 +773,18 @@ export function commerceHandlers(
     async queryAdminOrders(r) {
       await finance(r);
       return db.transaction(async (tx) =>
-        page(
-          (
-            await tx.query(
-              "SELECT * FROM orders WHERE ($1::text IS NULL OR workspace_id=$1) ORDER BY created_at DESC LIMIT 100",
-              [r.query.workspaceId ?? null],
-            )
-          ).rows.map(orderDto),
+        mapPage(
+          await sqlPage(tx, r, "admin-orders", "SELECT * FROM orders"),
+          orderDto,
         ),
       );
     },
     async queryAdminRefunds(r) {
       await finance(r);
       return db.transaction(async (tx) =>
-        page(
-          (
-            await tx.query(
-              "SELECT * FROM refunds ORDER BY created_at DESC LIMIT 100",
-            )
-          ).rows.map(refundDto),
+        mapPage(
+          await sqlPage(tx, r, "admin-refunds", "SELECT * FROM refunds"),
+          refundDto,
         ),
       );
     },
@@ -748,12 +806,14 @@ export function commerceHandlers(
     async listRedemptionBatches(r) {
       await finance(r);
       return db.transaction(async (tx) =>
-        page(
-          (
-            await tx.query(
-              "SELECT * FROM redemption_batches ORDER BY created_at DESC LIMIT 100",
-            )
-          ).rows.map(batch),
+        mapPage(
+          await sqlPage(
+            tx,
+            r,
+            "redemption-batches",
+            "SELECT * FROM redemption_batches",
+          ),
+          batch,
         ),
       );
     },
@@ -781,7 +841,19 @@ export function commerceHandlers(
       );
     },
     async listSecretMetadata(r) {
-      return page(await secret(r).listMetadata(r.actor));
+      return db.transaction(async (tx) => {
+        await requireRoles(tx, auth, r.actor, ["platform_ops"]);
+        return mapPage(
+          await sqlPage(
+            tx,
+            r,
+            "secrets",
+            "SELECT * FROM secret_references WHERE environment=$1",
+            [runtime.environment],
+          ),
+          (x) => s.secrets.metadata(x),
+        );
+      });
     },
     async createSecret(r) {
       return secret(r).writeSecret(
@@ -844,23 +916,25 @@ export function commerceHandlers(
       await db.transaction((tx) =>
         requireRoles(tx, auth, r.actor, ["platform_ops", "finance", "content"]),
       );
-      const rows = (
-        await db.transaction((tx) =>
-          tx.query("SELECT id FROM config_drafts WHERE environment=$1", [
-            runtime.environment,
-          ]),
-        )
-      ).rows;
-      const items = [];
-      for (const row of rows) {
+      const p = await db.transaction((tx) =>
+        sqlPage(
+          tx,
+          r,
+          "config-drafts",
+          "SELECT * FROM config_drafts WHERE environment=$1",
+          [runtime.environment],
+        ),
+      );
+      const mapped = await mapPage(p, async (row) => {
         try {
-          items.push(
-            (await draft(r, await config(r).getConfigDraft(r.actor, row.id)))
-              .summary,
-          );
-        } catch {}
-      }
-      return page(items);
+          return (
+            await draft(r, await config(r).getConfigDraft(r.actor, row.id))
+          ).summary;
+        } catch {
+          return null;
+        }
+      });
+      return { ...mapped, items: mapped.items.filter((x) => x !== null) };
     },
     async publishConfig(r) {
       const v = await config(r).getConfigDraft(r.actor, r.params.draftId);
@@ -886,15 +960,16 @@ export function commerceHandlers(
       await db.transaction((tx) =>
         requireRoles(tx, auth, r.actor, ["platform_ops", "finance", "content"]),
       );
-      const rows = (
-        await db.transaction((tx) =>
-          tx.query(
-            "SELECT id FROM config_releases WHERE environment=$1 ORDER BY created_at DESC LIMIT 100",
-            [runtime.environment],
-          ),
-        )
-      ).rows;
-      return page(await Promise.all(rows.map((row) => release(r, row.id))));
+      const p = await db.transaction((tx) =>
+        sqlPage(
+          tx,
+          r,
+          "config-releases",
+          "SELECT * FROM config_releases WHERE environment=$1",
+          [runtime.environment],
+        ),
+      );
+      return mapPage(p, (row) => release(r, row.id));
     },
     async rollbackConfig(r) {
       const active = await s.config.loadRelease();

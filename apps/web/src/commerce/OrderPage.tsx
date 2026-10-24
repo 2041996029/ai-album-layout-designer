@@ -1,3 +1,4 @@
+import { PagedMore } from "./PagedMore";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useState } from "react";
 import { api, id, ifMatch, type DTO, type Page } from "../cloud/api";
@@ -24,6 +25,8 @@ export function OrderPage({
   workspaceId: string;
 }): React.JSX.Element {
   const [orders, setOrders] = useState<DTO<"Order">[]>([]),
+    [nextOrders, setNextOrders] = useState<string | null>(null),
+    [nextRedemptions, setNextRedemptions] = useState<string | null>(null),
     [redemptions, setRedemptions] = useState<DTO<"Redemption">[]>([]),
     [error, setError] = useState(""),
     [code, setCode] = useState(""),
@@ -40,6 +43,8 @@ export function OrderPage({
           `/workspaces/${id(workspaceId)}/redemptions`,
         ),
       ]);
+      setNextOrders(o.nextCursor);
+      setNextRedemptions(r.nextCursor);
       setOrders(o.items);
       setRedemptions(r.items);
     } catch (e) {
@@ -176,6 +181,15 @@ export function OrderPage({
           <p>扫码后请查询服务端确认结果，权益发放以服务端记录为准。</p>
         </aside>
       )}
+      <PagedMore<DTO<"Order">>
+        path={`/workspaces/${id(workspaceId)}/orders`}
+        cursor={nextOrders}
+        label="加载更多订单"
+        onPage={(p) => {
+          setOrders((v) => [...v, ...p.items]);
+          setNextOrders(p.nextCursor);
+        }}
+      />
       <label>
         退款原因
         <input
@@ -221,6 +235,15 @@ export function OrderPage({
           </label>
           <button disabled={busy || !code.trim()}>兑换</button>
         </form>
+        <PagedMore<DTO<"Redemption">>
+          path={`/workspaces/${id(workspaceId)}/redemptions`}
+          cursor={nextRedemptions}
+          label="加载更多兑换"
+          onPage={(p) => {
+            setRedemptions((v) => [...v, ...p.items]);
+            setNextRedemptions(p.nextCursor);
+          }}
+        />
         {redemptions.map((r) => (
           <p key={r.id}>
             <code>{r.id}</code> · 已兑换 {r.creditGrant} 点
