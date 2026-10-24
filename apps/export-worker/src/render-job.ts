@@ -5,6 +5,13 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import {
+  persistStage,
+  markPutSettled,
+  recoverStagedArtifacts,
+} from "./staged-cleanup";
+import { verifyPdf, type PdfBrand } from "./pdf-validation";
+export { verifyPdf } from "./pdf-validation";
+import {
   PDFDocument,
   PDFDict,
   PDFName,
@@ -47,7 +54,7 @@ export interface RenderPort {
     frozen: FrozenExport,
     ack: string[],
     signal: AbortSignal,
-  ): Promise<RenderedArtifact[]>;
+  ): Promise<RenderedArtifact[]> | AsyncIterable<RenderedArtifact>;
 }
 export type ProcessLimits = { memoryBytes: number; timeoutMs?: number };
 /** Linux process-tree budget includes Chromium children. A killed attempt is never retried as an OOM. */
@@ -57,6 +64,10 @@ export async function runBoundedNode(
   signal: AbortSignal,
   limits: ProcessLimits,
   env: NodeJS.ProcessEnv = {},
+  protocol?: (
+    message: any,
+    send: (message: unknown) => Promise<void>,
+  ) => Promise<void>,
 ): Promise<void> {
   signal.throwIfAborted();
   if (
@@ -65,14 +76,18 @@ export async function runBoundedNode(
     limits.memoryBytes > 2 * 1024 ** 3
   )
     fail("INVALID_MEMORY_BUDGET");
+  const detached = process.env.ALBUM_SUPERVISED_ATTEMPT !== "1";
   const child = spawn(
     process.execPath,
     ["--max-old-space-size=1536", "--import", "tsx", script, ...args],
     {
       cwd: repoRoot,
-      detached: true,
+      detached,
+      serialization: "advanced",
       env: { ...process.env, ...env },
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: protocol
+        ? ["ignore", "pipe", "pipe", "ipc"]
+        : ["ignore", "pipe", "pipe"],
     },
   );
   let stderr = "",
@@ -82,15 +97,30 @@ export async function runBoundedNode(
     failure ??= error;
     if (child.pid) {
       try {
-        process.kill(-child.pid, "SIGKILL");
+        if (detached) process.kill(-child.pid, "SIGKILL");
+        else child.kill("SIGKILL");
       } catch {}
     }
   };
+  if (protocol)
+    child.on("message", (message) => {
+      void protocol(
+        message,
+        (value) =>
+          new Promise<void>((resolve, reject) =>
+            child.send!(value as any, (error) =>
+              error ? reject(error) : resolve(),
+            ),
+          ),
+      ).catch((error) =>
+        kill(error instanceof Error ? error : new Error("RENDER_FAILED")),
+      );
+    });
   const abort = () => kill(new Error("RENDER_ABORTED"));
   signal.addEventListener("abort", abort, { once: true });
   if (signal.aborted) abort();
-  child.stdout.resume();
-  child.stderr.on("data", (chunk: Buffer) => {
+  child.stdout!.resume();
+  child.stderr!.on("data", (chunk: Buffer) => {
     stderr = (stderr + chunk.toString()).slice(-4096);
   });
   const timeout = setTimeout(
@@ -171,6 +201,11 @@ export async function runBoundedNode(
     clearInterval(timer);
     clearTimeout(timeout);
     signal.removeEventListener("abort", abort);
+    if (detached && child.pid) {
+      try {
+        process.kill(-child.pid, "SIGKILL");
+      } catch {}
+    }
   }
 }
 
@@ -217,46 +252,16 @@ async function verifyRaster(
   if (info.width !== surface.pixelWidth || info.height !== surface.pixelHeight)
     fail("ARTIFACT_INVALID");
 }
-async function verifyPdf(bytes: Uint8Array, surfaces: SurfaceSpec[]) {
-  const pdf = await PDFDocument.load(bytes);
-  if (pdf.getPageCount() !== surfaces.length) fail("ARTIFACT_INVALID");
-  for (const [index, page] of pdf.getPages().entries()) {
-    const s = surfaces[index],
-      media = page.getMediaBox(),
-      trim = page.getTrimBox(),
-      bleed = page.getBleedBox(),
-      pt = 72 / 25.4;
-    const close = (a: number, b: number) => Math.abs(a - b) < 0.0001;
-    if (
-      !close(media.width, (s.trimWidthMm + 2 * s.bleedMm) * pt) ||
-      !close(media.height, (s.trimHeightMm + 2 * s.bleedMm) * pt) ||
-      !close(trim.x, s.bleedMm * pt) ||
-      !close(trim.y, s.bleedMm * pt) ||
-      !close(trim.width, s.trimWidthMm * pt) ||
-      !close(trim.height, s.trimHeightMm * pt) ||
-      !close(bleed.width, media.width) ||
-      !close(bleed.height, media.height)
-    )
-      fail("ARTIFACT_INVALID");
-    const xobjects = page.node
-      .Resources()
-      ?.lookup(PDFName.of("XObject"), PDFDict);
-    let image = false;
-    for (const ref of xobjects?.values() ?? []) {
-      const stream = pdf.context.lookup(ref);
-      if (
-        stream instanceof PDFRawStream &&
-        stream.dict.get(PDFName.of("Subtype")) === PDFName.of("Image")
-      ) {
-        const w = stream.dict.lookup(PDFName.of("Width"), PDFNumber).asNumber(),
-          h = stream.dict.lookup(PDFName.of("Height"), PDFNumber).asNumber();
-        if (w === s.pixelWidth && h === s.pixelHeight) image = true;
-        if (w * h > 50_000_000) fail("ARTIFACT_INVALID");
-      }
-    }
-    if (!image) fail("ARTIFACT_INVALID");
-  }
+async function brandRaster(width: number) {
+  const font = Math.max(12, Math.round(width / 55)),
+    w = Math.max(180, Math.round(font * 8)),
+    h = font * 2;
+  const svg = Buffer.from(
+    `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#fff" fill-opacity="0.65"/><text x="10" y="${Math.round(font * 1.4)}" font-family="sans-serif" font-size="${font}" fill="#555">Album</text></svg>`,
+  );
+  return sharp(svg).png().toBuffer();
 }
+
 async function watermark(
   bytes: Uint8Array,
   format: "png" | "jpeg" | "pdf",
@@ -264,19 +269,10 @@ async function watermark(
   dpi: number,
   quality: number,
 ) {
-  const make = async (width: number, height: number) => {
-    const font = Math.max(12, Math.round(width / 55)),
-      w = Math.max(180, Math.round(font * 8)),
-      h = font * 2;
-    const svg = Buffer.from(
-      `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#fff" fill-opacity="0.65"/><text x="10" y="${Math.round(font * 1.4)}" font-family="sans-serif" font-size="${font}" fill="#555">Album</text></svg>`,
-    );
-    return sharp(svg).png().toBuffer();
-  };
   if (format === "pdf") {
     const pdf = await PDFDocument.load(bytes);
     for (const [i, page] of pdf.getPages().entries()) {
-      const png = await make(surfaces[i].pixelWidth, surfaces[i].pixelHeight),
+      const png = await brandRaster(surfaces[i].pixelWidth),
         image = await pdf.embedPng(png);
       const w = Math.min(page.getWidth() / 4, (image.width * 72) / dpi),
         h = (w * image.height) / image.width;
@@ -289,7 +285,7 @@ async function watermark(
     }
     return new Uint8Array(await pdf.save());
   }
-  const overlay = await make(surfaces[0].pixelWidth, surfaces[0].pixelHeight);
+  const overlay = await brandRaster(surfaces[0].pixelWidth);
   const output = sharp(bytes)
     .composite([{ input: overlay, gravity: "southeast" }])
     .withMetadata({ density: dpi });
@@ -302,7 +298,8 @@ async function watermark(
   );
 }
 
-export class CliRenderer implements RenderPort {
+export { CliRenderer } from "./isolated-renderer";
+export class LocalCliRenderer implements RenderPort {
   constructor(
     private options: { objects: ObjectStore; chromiumPath?: string },
   ) {}
@@ -401,6 +398,81 @@ export class CliRenderer implements RenderPort {
         manifest.files.some((f: any, i: number) => f.filename !== expected[i])
       )
         fail("ARTIFACT_ORDER_MISMATCH");
+      let pdfReferences: Uint8Array[] | undefined;
+      let pdfBrands: PdfBrand[] | undefined;
+      if (format === "pdf") {
+        const reference = await freezeSnapshot(
+          {
+            doc: snapshot.doc,
+            docHash: snapshot.docHash,
+            resources: snapshot.resources,
+            savedAt: snapshot.createdAt,
+          },
+          { ...snapshot.options, format: "png" },
+          snapshot.createdAt,
+        );
+        const referencePath = join(dir, "reference.json"),
+          referenceAck = join(dir, "reference-ack.json"),
+          referenceOutput = join(dir, "references");
+        await writeFile(referencePath, JSON.stringify(reference));
+        await writeFile(
+          referenceAck,
+          JSON.stringify({
+            snapshotHash: reference.snapshotHash,
+            warningIds: ack,
+          }),
+        );
+        await runBoundedNode(
+          "apps/render-cli/src/main.ts",
+          [
+            "--bundle",
+            bundlePath,
+            "--snapshot",
+            referencePath,
+            "--output",
+            referenceOutput,
+            "--acknowledgements",
+            referenceAck,
+          ],
+          signal,
+          {
+            memoryBytes:
+              Math.min(2048, frozen.policy.workerBudgetMiB) * 1024 ** 2,
+          },
+          {
+            CHROMIUM_PATH:
+              this.options.chromiumPath ?? process.env.CHROMIUM_PATH,
+          },
+        );
+        pdfReferences = [];
+        for (const surface of surfaces) {
+          const png = await readFile(
+            join(referenceOutput, surface.fileStem + ".png"),
+          );
+          await verifyRaster(png, surface, snapshot.options.dpi, "png");
+          pdfReferences.push(png);
+        }
+        if (frozen.entitlements.brandWatermark) {
+          pdfBrands = [];
+          for (const s of surfaces) {
+            const pixels = await brandRaster(s.pixelWidth),
+              meta = await sharp(pixels).metadata(),
+              pageWidth = ((s.trimWidthMm + 2 * s.bleedMm) * 72) / 25.4;
+            const width = Math.min(
+                pageWidth / 4,
+                (meta.width! * 72) / snapshot.options.dpi,
+              ),
+              height = (width * meta.height!) / meta.width!;
+            pdfBrands.push({
+              pixels,
+              width,
+              height,
+              x: pageWidth - width - 6,
+              y: 6,
+            });
+          }
+        }
+      }
       const result: RenderedArtifact[] = [];
       let total = 0;
       for (const [index, file] of manifest.files.entries()) {
@@ -410,7 +482,7 @@ export class CliRenderer implements RenderPort {
         let bytes: Uint8Array = await readFile(join(output, file.filename));
         if (bytes.length !== file.byteLength || digest(bytes) !== file.sha256)
           fail("ARTIFACT_HASH_MISMATCH");
-        if (format === "pdf") await verifyPdf(bytes, surfaces);
+        if (format === "pdf") await verifyPdf(bytes, surfaces, pdfReferences);
         else
           await verifyRaster(
             bytes,
@@ -426,7 +498,8 @@ export class CliRenderer implements RenderPort {
             snapshot.options.dpi,
             frozen.policy.jpegQuality,
           );
-          if (format === "pdf") await verifyPdf(bytes, surfaces);
+          if (format === "pdf")
+            await verifyPdf(bytes, surfaces, pdfReferences, pdfBrands);
           else
             await verifyRaster(
               bytes,
@@ -487,6 +560,14 @@ export class ExportWorker {
       identity: RendererIdentity;
     },
   ) {}
+  recoverStagedArtifacts(limit = 100, jobId?: string) {
+    return recoverStagedArtifacts(
+      this.deps.db,
+      this.deps.objects,
+      limit,
+      jobId,
+    );
+  }
   private async load(lease: JobLease) {
     return this.deps.db.transaction(async (tx) => {
       const row = (
@@ -552,10 +633,7 @@ export class ExportWorker {
     });
   }
   async renderExportJob(lease: JobLease, signal: AbortSignal): Promise<void> {
-    const uploaded: StorageLocator[] = [];
-    let committed = false,
-      publishAttempted = false,
-      cleanupSafe = true;
+    let committed = false;
     try {
       const input = await this.load(lease);
       if (!input) return;
@@ -579,12 +657,12 @@ export class ExportWorker {
       )
         fail("STORAGE_UNCONFIGURED");
       const pending: {
-        artifact: RenderedArtifact;
+        artifact: Omit<RenderedArtifact, "bytes"> & { byteLength: number };
         locator: StorageLocator;
         objectId: string;
         artifactId: string;
       }[] = [];
-      for (const artifact of artifacts) {
+      for await (const artifact of artifacts) {
         signal.throwIfAborted();
         if (
           !/^[A-Za-z0-9_.-]+$/.test(artifact.filename) ||
@@ -611,9 +689,21 @@ export class ExportWorker {
           sha256: artifact.sha256,
           variant: "export",
         };
-        // Track before PUT: a provider may create an object and lose its response.
-        uploaded.push(locator);
-        await this.deps.objects.put(locator, artifact.bytes);
+        const objectId = id(),
+          artifactId = id();
+        const stageId = await persistStage(this.deps.db, lease, {
+          objectId,
+          artifactId,
+          profileVersionId: storage.profileVersionId,
+          locator,
+          byteLength: artifact.bytes.length,
+          mime: artifact.mime,
+        });
+        try {
+          await this.deps.objects.put(locator, artifact.bytes);
+        } finally {
+          await markPutSettled(this.deps.db, stageId);
+        }
         const head = await this.deps.objects.head(locator),
           downloaded = await this.deps.objects.read(locator);
         if (
@@ -623,10 +713,15 @@ export class ExportWorker {
           downloaded.length !== artifact.bytes.length
         )
           fail("ARTIFACT_STORAGE_MISMATCH");
-        pending.push({ artifact, locator, objectId: id(), artifactId: id() });
+        const { bytes, ...metadata } = artifact;
+        pending.push({
+          artifact: { ...metadata, byteLength: bytes.length },
+          locator,
+          objectId,
+          artifactId,
+        });
       }
       signal.throwIfAborted();
-      publishAttempted = true;
       committed = await this.deps.jobs.finishJob(
         lease,
         {
@@ -660,7 +755,7 @@ export class ExportWorker {
                 locator.key,
                 locator.objectVersionId,
                 artifact.sha256,
-                artifact.bytes.length,
+                artifact.byteLength,
                 artifact.mime,
               ],
             );
@@ -675,7 +770,7 @@ export class ExportWorker {
                 lease.fence,
                 input.frozen.snapshot.options.format,
                 artifact.sha256,
-                artifact.bytes.length,
+                artifact.byteLength,
                 artifact.width ?? null,
                 artifact.height ?? null,
               ],
@@ -701,35 +796,12 @@ export class ExportWorker {
           definite: true,
         });
     } finally {
-      // COMMIT may succeed even when its connection loses the response. Never delete an object
-      // whose publication is unresolved: reconcile durable output identity before cleanup.
-      if (!committed && publishAttempted) {
-        try {
-          committed = await this.deps.db.transaction(
-            async (tx) =>
-              !!(
-                await tx.query(
-                  "SELECT 1 FROM job_outputs x JOIN jobs j ON j.workspace_id=x.workspace_id AND j.id=x.job_id JOIN storage_objects o ON o.workspace_id=x.workspace_id AND o.id=x.storage_object_id WHERE x.workspace_id=$1 AND x.job_id=$2 AND j.state='succeeded' AND o.object_key=ANY($3::text[]) LIMIT 1",
-                  [
-                    lease.job.workspaceId,
-                    lease.job.jobId,
-                    uploaded.map((l) => l.key),
-                  ],
-                )
-              ).rows.length,
-          );
-        } catch {
-          cleanupSafe = false;
-        }
+      // The intent survives COMMIT/DELETE/connection uncertainty and is retried by the runtime.
+      try {
+        await this.recoverStagedArtifacts(100, lease.job.jobId);
+      } catch {
+        /* Durable stage identity remains unsent for recovery. */
       }
-      if (!committed && cleanupSafe)
-        for (const locator of uploaded) {
-          try {
-            await this.deps.objects.remove(locator);
-          } catch {
-            /* Orphan has an unguessable private key, and no output ever authorizes it. */
-          }
-        }
     }
   }
 }

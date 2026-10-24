@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "vitest";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -19,11 +19,19 @@ import {
   type ExportPolicy,
   type EntitlementSnapshot,
 } from "../../api/src/exports/service";
-import { ExportWorker, CliRenderer } from "./render-job";
+import {
+  ExportWorker,
+  CliRenderer,
+  verifyPdf,
+  runBoundedNode,
+} from "./render-job";
 import { JobRepository, type JobLease } from "@album/jobs";
 import { digest, id, type Actor } from "@album/server-core";
 import {
   preflight,
+  freezeSnapshot,
+  planSurfaces,
+  encodePdf,
   authorizeExport,
   type ExportOptions,
   type ExportSnapshot,
@@ -947,5 +955,245 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
       );
       expect(job.state).toBe("queued");
     });
+    it.each(["corrupt-painted", "unused-cmyk", "swapped-pages"] as const)(
+      "rejects PDF %s despite plausible dictionaries and boxes",
+      async (mode) => {
+        const saved = await revisions.load(actor, wid, pid, 12);
+        const snap = await freezeSnapshot(
+          saved,
+          {
+            ...options,
+            dpi: 72,
+            view: "singlePage",
+            pageIds: ["spread_1:left", "spread_1:right"],
+          },
+          saved.savedAt,
+        );
+        const surfaces = planSurfaces(snap);
+        const expected = await Promise.all(
+          surfaces.map((s, i) =>
+            sharp({
+              create: {
+                width: s.pixelWidth,
+                height: s.pixelHeight,
+                channels: 3,
+                background: i ? "#00f" : "#f00",
+              },
+            })
+              .png()
+              .toBuffer(),
+          ),
+        );
+        const {
+          PDFDocument,
+          PDFName,
+          PDFArray,
+          drawObject,
+          pushGraphicsState,
+          popGraphicsState,
+          scale,
+        } = await import("pdf-lib");
+        const good = await encodePdf(
+          surfaces.map((surface, i) => ({
+            surface,
+            mime: "image/png" as const,
+            bytes: expected[i],
+          })),
+          snap,
+        );
+        await verifyPdf(good, surfaces, expected);
+        const pdf = await PDFDocument.load(good);
+        if (mode === "swapped-pages") {
+          const pages = pdf.getPages();
+          pdf.removePage(1);
+          pdf.insertPage(0, pages[1]);
+        } else {
+          const page = pdf.getPage(0),
+            s = surfaces[0];
+          page.node
+            .Resources()!
+            .set(PDFName.of("XObject"), pdf.context.obj({}));
+          const corrupt = pdf.context.stream(new Uint8Array([1, 2, 3]), {
+            Type: "XObject",
+            Subtype: "Image",
+            Width: s.pixelWidth,
+            Height: s.pixelHeight,
+            ColorSpace: mode === "unused-cmyk" ? "DeviceCMYK" : "DeviceRGB",
+            BitsPerComponent: 8,
+            Filter: mode === "unused-cmyk" ? "DCTDecode" : "FlateDecode",
+          });
+          const name = page.node.newXObject(
+            "Bad",
+            pdf.context.register(corrupt),
+          );
+          page.node.set(PDFName.of("Contents"), pdf.context.obj([]));
+          if (mode === "corrupt-painted")
+            page.pushOperators(
+              pushGraphicsState(),
+              scale(page.getWidth(), page.getHeight()),
+              drawObject(name),
+              popGraphicsState(),
+            );
+        }
+        await expect(
+          verifyPdf(await pdf.save(), surfaces, expected),
+        ).rejects.toThrow("ARTIFACT_INVALID");
+      },
+    );
+    it("can terminate resource preparation while a storage read is still blocked", async () => {
+      const job = await accept({ ...options, dpi: 72 }),
+        held = await lease(job.jobId),
+        controller = new AbortController();
+      let unblock!: () => void, entered!: () => void;
+      const seen = new Promise<void>((r) => (entered = r)),
+        gate = new Promise<void>((r) => (unblock = r));
+      const realRead = objects.read.bind(objects);
+      objects.read = async (locator) => {
+        entered();
+        await gate;
+        return realRead(locator);
+      };
+      const execution = worker.renderExportJob(held, controller.signal);
+      await seen;
+      controller.abort(new Error("abort-preparation"));
+      const completed = await Promise.race([
+        execution.then(() => true),
+        new Promise<boolean>((r) => setTimeout(() => r(false), 500)),
+      ]);
+      unblock();
+      await execution;
+      expect(completed).toBe(true);
+      expect(
+        await rows(
+          "SELECT id FROM resource_pins WHERE job_id=$1 AND released_at IS NULL",
+          [job.jobId],
+        ),
+      ).toHaveLength(0);
+    }, 180000);
+    it.each(["preparation", "postprocessing"])(
+      "kills an over-budget %s allocation without killing the consumer and releases fenced holds",
+      async (phase) => {
+        const job = await accept({ ...options, dpi: 72 });
+        const script = root + "/" + phase + ".ts",
+          marker = root + "/" + phase + ".entered";
+        await writeFile(
+          script,
+          `import {writeFileSync} from 'node:fs';writeFileSync(${JSON.stringify(marker)},'${phase}');const bytes=Buffer.alloc(640*1024*1024,1);setTimeout(()=>process.exit(bytes[0]===1?0:1),2000);`,
+        );
+        const limited = new ExportWorker({
+          db: db.database,
+          jobs,
+          objects,
+          storage,
+          identity: rendererIdentity,
+          renderer: {
+            render: async (_frozen, _ack, signal) => {
+              await runBoundedNode(script, [], signal, {
+                memoryBytes: 512 * 1024 ** 2,
+              });
+              return [];
+            },
+          },
+        });
+        await limited.renderExportJob(
+          await lease(job.jobId),
+          new AbortController().signal,
+        );
+        expect(await readFile(marker, "utf8")).toBe(phase);
+        expect(
+          (
+            await rows("SELECT state,error_code FROM jobs WHERE id=$1", [
+              job.jobId,
+            ])
+          )[0],
+        ).toEqual({ state: "failed", error_code: "RESOURCE_EXHAUSTED" });
+        expect(
+          await rows("SELECT id FROM resource_pins WHERE released_at IS NULL"),
+        ).toHaveLength(0);
+        expect(
+          (
+            await rows(
+              "SELECT state FROM storage_quota_reservations WHERE operation_id=$1",
+              [job.jobId],
+            )
+          )[0].state,
+        ).toBe("released");
+      },
+      180000,
+    );
+    it.each(["delete-outage", "lost-put-response", "database-outage"] as const)(
+      "durably retries staged cleanup after %s and preserves a current attempt",
+      async (mode) => {
+        const job = await accept({ ...options, dpi: 72 }),
+          held = await lease(job.jobId);
+        const put = objects.put.bind(objects),
+          remove = objects.remove.bind(objects),
+          transaction = db.database.transaction.bind(db.database);
+        let staged: any,
+          locator: any,
+          failDelete = true,
+          dbOffline = false;
+        objects.remove = async (value) => {
+          if (failDelete) throw Error("STORAGE_OFFLINE");
+          return remove(value);
+        };
+        objects.put = async (value, bytes) => {
+          staged = (
+            await rows(
+              "SELECT * FROM outbox WHERE aggregate_id=$1 AND event_type='export.staged'",
+              [job.jobId],
+            )
+          )[0];
+          locator = value;
+          await put(value, bytes);
+          if (mode === "database-outage") dbOffline = true;
+          else if (mode === "lost-put-response")
+            throw Error("PUT_RESPONSE_LOST");
+          else await jobs.requestCancel(actor, wid, job.jobId);
+        };
+        db.database.transaction = async (work) => {
+          if (dbOffline) throw Error("DATABASE_OFFLINE");
+          return transaction(work);
+        };
+        try {
+          await worker.renderExportJob(held, new AbortController().signal);
+        } catch {
+          if (mode !== "database-outage")
+            throw Error("unexpected worker failure");
+        } finally {
+          dbOffline = false;
+          db.database.transaction = transaction;
+        }
+        expect(staged).toBeTruthy();
+        expect(staged.payload.locator).toEqual(locator);
+        expect(
+          (await rows("SELECT sent_at FROM outbox WHERE id=$1", [staged.id]))[0]
+            .sent_at,
+        ).toBeNull();
+        failDelete = false;
+        if (mode === "database-outage") {
+          await worker.recoverStagedArtifacts(100, job.jobId);
+          expect(await objects.read(locator)).toBeTruthy();
+          await jobs.requestCancel(actor, wid, job.jobId);
+          await jobs.finishJob(held, { state: "cancelled", result: {} });
+          await worker.recoverStagedArtifacts(100, job.jobId);
+          expect(await objects.read(locator)).toBeTruthy(); // unresolved PUT cannot be deleted merely because its job ended
+          await rows(
+            "UPDATE outbox SET payload=jsonb_set(payload,'{unsettledUntil}',to_jsonb((clock_timestamp()-interval '1 second')::text)) WHERE id=$1",
+            [staged.id],
+          );
+        }
+        await worker.recoverStagedArtifacts(100, job.jobId);
+        await expect(objects.read(locator)).rejects.toThrow();
+        expect(
+          (await rows("SELECT sent_at FROM outbox WHERE id=$1", [staged.id]))[0]
+            .sent_at,
+        ).not.toBeNull();
+        expect(
+          await rows("SELECT id FROM job_outputs WHERE job_id=$1", [job.jobId]),
+        ).toHaveLength(0);
+      },
+      180000,
+    );
   },
 );

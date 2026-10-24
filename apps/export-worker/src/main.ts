@@ -94,10 +94,24 @@ export function startExportWorker(options: {
     },
     { connection: options.queue.opts.connection, concurrency: 1 },
   );
+  let cleaning = false;
+  const cleanupTimer = setInterval(async () => {
+    if (cleaning) return;
+    cleaning = true;
+    try {
+      await executor.recoverStagedArtifacts(100);
+    } catch {
+      /* Durable intents remain available. */
+    } finally {
+      cleaning = false;
+    }
+  }, 10000);
+  cleanupTimer.unref();
   return {
     jobs,
     executor,
     close: async () => {
+      clearInterval(cleanupTimer);
       for (const controller of active)
         controller.abort(new Error("WORKER_SHUTDOWN"));
       await worker.close();
