@@ -262,12 +262,6 @@ export class RefundService {
       fail("IDEMPOTENCY_KEY_REQUIRED", 428);
     const result = await this.db.transaction(async (tx) => {
       await this.workspaces.authorize(actor, wid, "purchase", tx);
-      await this.options.reauth.verifyFresh(
-        actor,
-        this.request.reauthProof ?? "",
-        "billing_refund",
-        tx,
-      );
       await tx.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
         `workspace:${wid}:${key}`,
       ]);
@@ -301,6 +295,14 @@ export class RefundService {
         if (durable.request_hash !== hash) fail("IDEMPOTENCY_MISMATCH", 409);
         return { refundId: durable.id, state: durable.state as RefundState };
       }
+      // Current authorization applies to replay too; a one-use proof is consumed
+      // only after both completed replay records have been ruled out.
+      await this.options.reauth.verifyFresh(
+        actor,
+        this.request.reauthProof ?? "",
+        "billing_refund",
+        tx,
+      );
       const order = (
         await tx.query(
           "SELECT * FROM orders WHERE workspace_id=$1 AND id=$2 FOR UPDATE",
@@ -800,12 +802,6 @@ export class RefundService {
       fail("REFUND_POLICY_UNCONFIGURED", 503);
     return this.db.transaction(async (tx) => {
       await requireRoles(tx, this.auth, actor, ["finance"]);
-      await this.options.reauth.verifyFresh(
-        actor,
-        this.request.reauthProof ?? "",
-        "admin_operations",
-        tx,
-      );
       const target = (
         await tx.query("SELECT workspace_id FROM refunds WHERE id=$1", [
           refundId,
@@ -845,6 +841,13 @@ export class RefundService {
           fail("IDEMPOTENCY_MISMATCH", 409);
         return r.state as RefundState;
       }
+      // Replaying an authorized completed decision must not consume another proof.
+      await this.options.reauth.verifyFresh(
+        actor,
+        this.request.reauthProof ?? "",
+        "admin_operations",
+        tx,
+      );
       if (Number(r.revision) !== decision.expectedRevision)
         fail("REVISION_CONFLICT", 409);
       if (r.state !== "manual_review") fail("REFUND_DECISION_INVALID", 409);

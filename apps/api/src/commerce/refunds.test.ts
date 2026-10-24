@@ -18,6 +18,7 @@ import { createJob, JobRepository } from "@album/jobs";
 import type { PoolClient } from "pg";
 import { testDatabase } from "../../test/database";
 import { AuthService } from "../auth/identity";
+import { ReauthService } from "../auth/reauthentication";
 import { WorkspaceService } from "../workspaces/service";
 import {
   payloadHash,
@@ -1135,6 +1136,164 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           )
         )[0],
       ).toEqual({ available: "0", reserved: "8" });
+    });
+    it("replays a request with its consumed real proof and retries post-commit cancellation under live authorization", async () => {
+      const oid = await purchase(),
+        reservation = await reserve(20),
+        key = id(),
+        proof = id();
+      const auth = new AuthService(db.database, {
+        secret: "test-only-secret-for-credit-32-bytes",
+        environment: "dev",
+      });
+      await rows(
+        "INSERT INTO reauth_proofs(token_hash,user_id,session_id,purpose,expires_at) VALUES($1,$2,$3,'billing_refund',now()+interval '5 minutes')",
+        [auth.hash(proof), actor.userId, actor.sessionId],
+      );
+      let cancellationAttempts = 0;
+      const service = new RefundService(
+        db.database,
+        auth,
+        new WorkspaceService(db.database, auth),
+        adapters,
+        refunds,
+        {
+          reauth: new ReauthService(db.database, auth, {}),
+          now: () => clock,
+          jobs: {
+            requestCancel: async (a, w, j) => {
+              if (++cancellationAttempts === 1) throw Error("CANCEL_RETRY");
+              return refundJobs.requestCancel(a, w, j);
+            },
+          },
+        },
+      ).withRequest({ reauthProof: proof });
+      await expect(request(oid, key, service)).rejects.toThrow("CANCEL_RETRY");
+      expect(
+        (
+          await rows(
+            "SELECT consumed_at FROM reauth_proofs WHERE token_hash=$1",
+            [auth.hash(proof)],
+          )
+        )[0].consumed_at,
+      ).not.toBeNull();
+      const original = (
+        await rows("SELECT id FROM refunds WHERE order_id=$1", [oid])
+      )[0].id;
+      expect(await request(oid, key, service)).toEqual({
+        refundId: original,
+        state: "requested",
+      });
+      expect(cancellationAttempts).toBe(2);
+      expect(
+        (
+          await rows("SELECT state FROM jobs WHERE id=$1", [reservation.jobId])
+        )[0].state,
+      ).toBe("cancelled");
+      await expect(
+        service.requestRefund(actor, wid, oid, "Changed payload", key),
+      ).rejects.toThrow("IDEMPOTENCY_MISMATCH");
+      await rows("DELETE FROM idempotency_keys WHERE workspace_id=$1", [wid]);
+      expect((await request(oid, key, service)).refundId).toBe(original);
+      const other = await purchase();
+      await expect(request(other, id(), service)).rejects.toThrow(
+        "REAUTH_REQUIRED",
+      );
+      await rows(
+        "UPDATE workspace_members SET role='viewer' WHERE workspace_id=$1 AND user_id=$2",
+        [wid, actor.userId],
+      );
+      await expect(request(oid, key, service)).rejects.toThrow("FORBIDDEN");
+      expect(
+        await rows("SELECT id FROM refunds WHERE order_id=$1", [oid]),
+      ).toHaveLength(1);
+    });
+    it("replays a finance decision with its consumed real proof while retaining conflict and revoked-role checks", async () => {
+      const oid = await purchase(),
+        r = await request(
+          oid,
+          id(),
+          refundService.withRequest({ amountFen: 41 }),
+        );
+      await rows(
+        "INSERT INTO admin_role_assignments(id,user_id,role) VALUES($1,$2,'finance') ON CONFLICT(user_id,role) DO UPDATE SET revoked_at=NULL",
+        [id(), actor.userId],
+      );
+      const auth = new AuthService(db.database, {
+          secret: "test-only-secret-for-credit-32-bytes",
+          environment: "dev",
+        }),
+        proof = id(),
+        key = id();
+      await rows(
+        "INSERT INTO reauth_proofs(token_hash,user_id,session_id,purpose,expires_at) VALUES($1,$2,$3,'admin_operations',now()+interval '5 minutes')",
+        [auth.hash(proof), actor.userId, actor.sessionId],
+      );
+      const service = new RefundService(
+        db.database,
+        auth,
+        new WorkspaceService(db.database, auth),
+        adapters,
+        refunds,
+        {
+          reauth: new ReauthService(db.database, auth, {}),
+          jobs: refundJobs,
+          now: () => clock,
+          financePolicy: async () => ({ dualReviewRequired: false }),
+        },
+      ).withRequest({ reauthProof: proof });
+      const decision = {
+        decision: "reject" as const,
+        expectedRevision: 1,
+        reason: "Reviewed receipt",
+      };
+      expect(await service.decideRefund(actor, r.refundId, decision, key)).toBe(
+        "failed",
+      );
+      expect(
+        (
+          await rows(
+            "SELECT consumed_at FROM reauth_proofs WHERE token_hash=$1",
+            [auth.hash(proof)],
+          )
+        )[0].consumed_at,
+      ).not.toBeNull();
+      expect(await service.decideRefund(actor, r.refundId, decision, key)).toBe(
+        "failed",
+      );
+      await expect(
+        service.decideRefund(
+          actor,
+          r.refundId,
+          { ...decision, reason: "Changed payload" },
+          key,
+        ),
+      ).rejects.toThrow("IDEMPOTENCY_MISMATCH");
+      await rows("DELETE FROM idempotency_keys WHERE workspace_id=$1", [wid]);
+      expect(await service.decideRefund(actor, r.refundId, decision, key)).toBe(
+        "failed",
+      );
+      const next = await request(
+        oid,
+        id(),
+        refundService.withRequest({ amountFen: 41 }),
+      );
+      await expect(
+        service.decideRefund(actor, next.refundId, decision, id()),
+      ).rejects.toThrow("REAUTH_REQUIRED");
+      await rows(
+        "UPDATE admin_role_assignments SET revoked_at=clock_timestamp() WHERE user_id=$1 AND role='finance'",
+        [actor.userId],
+      );
+      await expect(
+        service.decideRefund(actor, r.refundId, decision, key),
+      ).rejects.toThrow("FORBIDDEN");
+      expect(
+        await rows(
+          "SELECT id FROM audit_events WHERE target_id=$1 AND action='commerce.refund_decision'",
+          [r.refundId],
+        ),
+      ).toHaveLength(1);
     });
   },
 );
