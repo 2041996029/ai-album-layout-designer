@@ -553,7 +553,24 @@ export class RefundService {
     event: VerifiedRefundEvent,
     refundId: string,
   ): Promise<RefundState> {
-    const binding = this.adapters.bindingFor(event);
+    return this.applyVerifiedReceipt(event, refundId, this.adapters.bindingFor(event));
+  }
+  /** Replay only durable receipts that passed signature and complete business validation.
+   * The process never recreates registry proof from caller-supplied JSON. */
+  async recoverVerifiedReceipts(limit: number): Promise<number> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1000) fail("INVALID_LIMIT",422);
+    const receipts = await this.db.transaction(async tx => (await tx.query(
+      "SELECT DISTINCT ON (r.id) r.id,e.redacted_event,e.body_hash FROM refunds r JOIN payment_events e ON e.payment_attempt_id=r.payment_attempt_id AND e.redacted_event->>'refundId'=r.id WHERE r.state='manual_review' AND r.reason_code='VERIFIED_RECEIPT_REVIEW' AND e.event_kind='refund_succeeded' AND e.verified_at IS NOT NULL ORDER BY r.id,e.created_at DESC LIMIT $1",[limit])).rows);
+    let completed=0;
+    for (const receipt of receipts) {
+      const event=receipt.redacted_event as VerifiedRefundEvent;
+      if(payloadHash(event)!==receipt.body_hash)fail("REFUND_RECEIPT_CORRUPT",500);
+      const snapshot=await this.db.transaction(tx=>frozenOrderSnapshot(tx,event.orderId));
+      if(await this.applyVerifiedReceipt(event,receipt.id,snapshot.bindingId)==="succeeded")completed++;
+    }
+    return completed;
+  }
+  private async applyVerifiedReceipt(event:VerifiedRefundEvent,refundId:string,binding:string):Promise<RefundState> {
     return this.db.transaction(async (tx) => {
       for (const identity of [
         `refund-event:${event.channel}:${event.merchantId}:${event.eventId}`,

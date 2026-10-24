@@ -46,6 +46,7 @@ export type {
 
 type AuthPort = Pick<AuthService, "assertActor">;
 export type ConfigOptions = {
+  onPublished?: (tx: PoolClient, release: ConfigRelease) => Promise<void>;
   environment: Environment;
   reauth: Pick<ReauthService, "verifyFresh">;
   /** Controlled clock for tests. Production uses the database clock inside transactions. */
@@ -945,6 +946,7 @@ export class ConfigService {
         previousReleaseId,
       },
     );
+    await this.options.onPublished?.(tx, {releaseId, versions, versionIds:Object.values(versions).map(v=>v.id), effectiveAt:at.toISOString()});
     return deepFreeze({
       releaseId,
       versions,

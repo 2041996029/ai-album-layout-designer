@@ -26,6 +26,7 @@ export function startExportWorker(options: {
   heartbeatSeconds: number;
   chromiumPath?: string;
   onTerminal?: TerminalCommit;
+  runOtherJob?: (jobId:string)=>Promise<void>;
 }) {
   if (
     !Number.isInteger(options.heartbeatSeconds) ||
@@ -61,7 +62,7 @@ export function startExportWorker(options: {
             )
           ).rows[0],
       );
-      if (!exportJob) return;
+      if (!exportJob) {await options.runOtherJob?.(message.data.jobId);return;}
       let lease = await jobs.claimJob(
         message.data.jobId,
         options.workerId,

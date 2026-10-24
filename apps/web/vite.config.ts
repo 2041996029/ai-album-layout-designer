@@ -11,6 +11,7 @@ export default defineConfig({
     emptyOutDir: true,
     rolldownOptions: {
       input: {
+        commerce: fileURLToPath(new URL("commerce.html", import.meta.url)),
         main: fileURLToPath(new URL("index.html", import.meta.url)),
         render: fileURLToPath(new URL("render.html", import.meta.url)),
       },

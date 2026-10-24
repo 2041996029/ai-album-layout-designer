@@ -12,6 +12,12 @@ import type { PrivacyExportService } from "../auth/privacy-export";
 import type { LocalObjectStore } from "../assets/object-store";
 import type { BindingService } from "../auth/bindings";
 export interface ApiRuntime {
+  cloudLayout?: import("../projects/layout-service").CloudLayoutService;
+  commerce?: import("../commerce/runtime").CommerceRuntime;
+  operationHandlers?: Record<
+    string,
+    (request: any, reply: any) => Promise<unknown>
+  >;
   db: Database;
   auth: AuthService;
   workspaces: WorkspaceService;

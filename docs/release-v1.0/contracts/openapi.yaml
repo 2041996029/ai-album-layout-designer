@@ -12105,6 +12105,50 @@ paths:
           $ref: '#/components/responses/Unavailable'
         '500':
           $ref: '#/components/responses/InternalError'
+  /admin/workspaces/{workspaceId}/adjustments:
+    post:
+      operationId: createFinancialAdjustment
+      tags:
+        - Commerce
+      summary: 审核工单对应的来源额度或会员调整
+      description: Live finance role and fresh admin_operations reauthentication
+        required. Immutable source-linked ledger and audit. No payment capture or
+        order is fabricated.
+      security:
+        - WebCookie: []
+          CsrfToken: []
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/ReauthenticationProof"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinancialAdjustmentCreate"
+      responses:
+        "201":
+          description: 已记录财务调整
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancialAdjustmentResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+      x-module: C4
 components:
   schemas:
     Id:
@@ -15243,6 +15287,10 @@ components:
           - $ref: '#/components/schemas/VirtualPaymentMini'
           discriminator:
             propertyName: kind
+            mapping:
+              qr: '#/components/schemas/PaymentQr'
+              mini_jsapi: '#/components/schemas/PaymentMini'
+              mini_virtual: '#/components/schemas/VirtualPaymentMini' 
       required:
       - attemptId
       - expiresAt
@@ -16185,8 +16233,15 @@ components:
       - verifiedChecks
       - expiresAt
       - createdAt
-      - jobId
       additionalProperties: false
+      allOf:
+      - if:
+          properties:
+            state:
+              enum: [queued, running]
+        then:
+          required: [jobId]
+
     ConfigChange:
       type: object
       properties:
@@ -21462,6 +21517,74 @@ components:
         - status
         - variants
       additionalProperties: false
+
+    FinancialAdjustmentCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          enum:
+            - credits
+            - membership
+          type: string
+        sourceGrantId: &a1
+          type: string
+          minLength: 1
+          maxLength: 128
+        creditDelta:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        durationDays:
+          type: integer
+          minimum: 1
+          maximum: 3660
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        ticketId: *a1
+      required:
+        - kind
+        - sourceGrantId
+        - reason
+        - ticketId
+
+    FinancialAdjustment:
+      type: object
+      additionalProperties: false
+      properties:
+        id: &a1
+          type: string
+          minLength: 1
+          maxLength: 128
+        workspaceId: *a1
+        sourceGrantId: *a1
+        grantId: *a1
+        kind:
+          type: string
+          enum:
+            - credits
+            - membership
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - workspaceId
+        - sourceGrantId
+        - kind
+        - createdAt
+
+    FinancialAdjustmentResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: '#/components/schemas/FinancialAdjustment'
+        requestId:
+          $ref: '#/components/schemas/Id'
+      required: [data, requestId]
 
   parameters:
     IdempotencyKey:

@@ -41,6 +41,12 @@ export async function bindContractHttp(
   const fastify = app.getHttpAdapter().getInstance(),
     { contract, resolve, validate } = await loadContracts();
   await fastify.register(cookie);
+  fastify.removeContentTypeParser('application/json');
+  fastify.addContentTypeParser('application/json',{parseAs:'buffer'},(request:any,body:any,done:any)=>{
+    request.rawBody=body;
+    if (/^\/v1\/(payment|refund)-callbacks\//.test(request.url)) return done(null,body);
+    try { done(null,JSON.parse(body.toString('utf8'))); } catch { done(Object.assign(new Error('INVALID_JSON'),{statusCode:400})); }
+  });
   fastify.addHook("onRequest", async (r: any, reply: any) => {
     if (r.headers.origin === runtime.allowedOrigin)
       reply
@@ -58,13 +64,15 @@ export async function bindContractHttp(
       )
       .header(
         "Access-Control-Allow-Headers",
-        "Content-Type,Authorization,X-CSRF-Token,X-Workspace-Id,X-QR-Poll-Token,X-Browser-Nonce,Idempotency-Key,If-Match,X-Share-Access-Token",
+        "Content-Type,Authorization,X-CSRF-Token,X-Workspace-Id,X-QR-Poll-Token,X-Browser-Nonce,Idempotency-Key,If-Match,X-Share-Access-Token,X-Reauthentication-Proof",
       )
       .status(204)
       .send();
   });
   const publicOperations = new Set([
     "getCapabilities",
+    "receivePaymentCallback",
+    "receiveRefundCallback",
     "loginWechatMini",
     "createSmsChallenge",
     "loginSmsWeb",
@@ -817,6 +825,18 @@ export async function bindContractHttp(
       );
       return projectDto(r.actor, w, projectId);
     },
+    async createLayoutJob(r) {
+      const accepted=await requireService(runtime.cloudLayout).createCloudLayoutJob(r.actor,wid(r),r.params.projectId,r.body,key(r));
+      return requireService(runtime.commerce).jobs && runtime.operationHandlers!.getJob({...r,params:{...r.params,jobId:accepted.jobId}},null);
+    },
+    async listLayoutCandidates(r) {
+      return {items:await requireService(runtime.cloudLayout).listCandidates(r.actor,wid(r),r.params.jobId),nextCursor:null,hasMore:false};
+    },
+    async applyLayout(r) {
+      if(expected(r)!==r.body.baseRevision)fail('REVISION_CONFLICT',409);
+      const saved=await requireService(runtime.cloudLayout).applyCloudLayout(r.actor,wid(r),r.params.projectId,r.body.candidateId,r.body.baseRevision,key(r));
+      return projectDto(r.actor,wid(r),r.params.projectId,saved.doc.revision);
+    },
     async getProject(r) {
       return projectDto(
         r.actor,
@@ -1008,9 +1028,10 @@ export async function bindContractHttp(
       return accepted();
     },
   };
+  Object.assign(handlers,runtime.operationHandlers??{});
   for (const [path, item] of Object.entries(contract.paths) as any) {
     for (const [method, operation] of Object.entries(item) as any) {
-      if (operation["x-module"] !== "C3") continue;
+      if (operation["x-module"] !== "C3" && operation["x-module"] !== "C4" && !handlers[operation.operationId]) continue;
       const op = operation.operationId,
         status = Number(
           Object.keys(operation.responses).find((v) => v.startsWith("2")),
@@ -1057,7 +1078,7 @@ export async function bindContractHttp(
               operation.requestBody && resolve(operation.requestBody);
             if (body?.required && request.body === undefined)
               fail("BODY_REQUIRED", 422);
-            if (request.body !== undefined && body)
+            if (request.body !== undefined && body && !["receivePaymentCallback","receiveRefundCallback"].includes(op))
               validate(
                 body.content?.["application/json"]?.schema,
                 request.body,
@@ -1139,11 +1160,12 @@ export async function bindContractHttp(
                 projectId: "projects",
                 shareId: "share_links",
                 notificationId: "notifications",
+                jobId:"jobs", orderId:"orders", refundId:"refunds", outputId:"job_outputs",
               };
               const target = Object.entries(targets).find(
                 ([name]) => request.params[name],
               );
-              if (target && !request.params.workspaceId) {
+              if (target && !request.params.workspaceId && !path.startsWith("/admin/")) {
                 const [name, table] = target;
                 const found = await runtime.db.transaction(async (tx) => {
                   await runtime.auth.assertActor(tx, request.actor);
@@ -1166,6 +1188,7 @@ export async function bindContractHttp(
             const handler = handlers[op];
             if (!handler) fail("UNCONFIGURED", 503);
             const data = await handler(request, reply);
+            if (["receivePaymentCallback","receiveRefundCallback"].includes(op)) return reply.status(status).send(data);
             const envelope = { data, requestId };
             const response = resolve(operation.responses[String(status)]);
             try {

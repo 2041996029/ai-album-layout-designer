@@ -2764,6 +2764,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/workspaces/{workspaceId}/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 审核工单对应的来源额度或会员调整
+         * @description Live finance role and fresh admin_operations reauthentication required. Immutable source-linked ledger and audit. No payment capture or order is fabricated.
+         */
+        post: operations["createFinancialAdjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3636,7 +3656,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "PaymentQr";
+            kind: "qr";
             qrPayload: string;
         };
         PaymentMini: {
@@ -3644,7 +3664,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "PaymentMini";
+            kind: "mini_jsapi";
             appId: string;
             timeStamp: string;
             nonceStr: string;
@@ -3658,7 +3678,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "VirtualPaymentMini";
+            kind: "mini_virtual";
             offerId: string;
             buyQuantity: number;
             /** @enum {string} */
@@ -3933,8 +3953,8 @@ export interface components {
             expiresAt: string;
             /** Format: date-time */
             createdAt: string;
-            jobId: components["schemas"]["Id"];
-        };
+            jobId?: components["schemas"]["Id"];
+        } & unknown;
         ConfigChange: {
             path: string;
             effect: string;
@@ -5499,6 +5519,29 @@ export interface components {
                     height: number;
                 };
             };
+        };
+        FinancialAdjustmentCreate: {
+            /** @enum {string} */
+            kind: "credits" | "membership";
+            sourceGrantId: string;
+            creditDelta?: number;
+            durationDays?: number;
+            reason: string;
+            ticketId: string;
+        };
+        FinancialAdjustment: {
+            id: string;
+            workspaceId: string;
+            sourceGrantId: string;
+            grantId?: string;
+            /** @enum {string} */
+            kind: "credits" | "membership";
+            /** Format: date-time */
+            createdAt: string;
+        };
+        FinancialAdjustmentResponse: {
+            data: components["schemas"]["FinancialAdjustment"];
+            requestId: components["schemas"]["Id"];
         };
         crop: {
             x: number;
@@ -13547,6 +13590,47 @@ export interface operations {
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createFinancialAdjustment: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Required replay key 16–128 printable ASCII. Workspace scope unique for 7 days across write endpoints; same canonical request/method/path returns original response, different payload returns 409 IDEMPOTENCY_MISMATCH. User scope before workspace selection. Callback dedup uses authenticated provider event ID instead.
+                 * @example demo_key_0000000000000001
+                 */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /**
+                 * @description Fresh purpose-bound server-issued proof; required for privileged secret/financial/ownership/deletion actions; never logged.
+                 * @example demo_key_0000000000000001
+                 */
+                "X-Reauthentication-Proof": components["parameters"]["ReauthenticationProof"];
+            };
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinancialAdjustmentCreate"];
+            };
+        };
+        responses: {
+            /** @description 已记录财务调整 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialAdjustmentResponse"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
             503: components["responses"]["Unavailable"];
         };
     };

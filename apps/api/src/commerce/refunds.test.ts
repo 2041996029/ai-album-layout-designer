@@ -929,6 +929,17 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         )[0],
       ).toEqual({ reserved: "0", revoked: "20" });
     });
+    it("recovers an already verified receipt after job terminal without another channel delivery", async () => {
+      const oid=await purchase(),rsv=await reserve(20),lease=(await refundJobs.claimJob(rsv.jobId,"recover-worker",clock.toISOString()))!;
+      const r=await request(oid),e=proof(oid,r.refundId);
+      expect(await confirm(e)).toBe("manual_review");
+      expect(await refundService.recoverVerifiedReceipts(100)).toBe(0);
+      await refundJobs.finishJob(lease,{state:"cancelled",result:{}});
+      expect(await refundService.recoverVerifiedReceipts(100)).toBe(1);
+      expect(await refundService.recoverVerifiedReceipts(100)).toBe(0);
+      expect((await rows("SELECT state FROM refunds WHERE id=$1",[r.refundId]))[0].state).toBe("succeeded");
+      expect((await rows("SELECT reserved,revoked FROM credit_lots WHERE workspace_id=$1",[wid]))[0]).toEqual({reserved:"0",revoked:"20"});
+    });
     it("applies forced partial receipt proportionally and leaves terminal remainder spendable", async () => {
       const oid = await purchase();
       const r = await request(
