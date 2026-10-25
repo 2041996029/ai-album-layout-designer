@@ -18,6 +18,8 @@ import type {
 } from "./types";
 
 type Row = Record<string, any>;
+export const isResourceFailure = (code: string | null | undefined) =>
+  /RESOURCE_EXHAUSTED|OOM|MEMORY_BUDGET|SURFACE_BUDGET/.test(code ?? "");
 const terminal = (state: string) =>
   ["succeeded", "failed", "cancelled"].includes(state);
 const select =
@@ -83,14 +85,16 @@ export async function createJob(
   await tx.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
     "workspace:" + input.workspaceId + ":" + key,
   ]);
-  const requestHash = digest(
-    canonical({
-      operation: "job.create",
-      ...input,
-      snapshotId: undefined,
-      maxAttempts,
-    }),
-  );
+  const requestHash =
+    input.idempotencyRequestHash ??
+    digest(
+      canonical({
+        operation: "job.create",
+        ...input,
+        snapshotId: undefined,
+        maxAttempts,
+      }),
+    );
   const existing = await tx.query(
     "SELECT * FROM idempotency_keys WHERE workspace_id=$1 AND principal_scope='workspace' AND idempotency_key=$2 FOR UPDATE",
     [input.workspaceId, key],
@@ -133,7 +137,7 @@ export async function createJob(
         parent.provider_submission_state !== "terminal"
       )
         fail("JOB_CONFIRMATION_REQUIRED", 409);
-      if (/OOM|MEMORY_BUDGET|SURFACE_BUDGET/.test(parent.error_code ?? ""))
+      if (isResourceFailure(parent.error_code))
         fail("RESOURCE_BUDGET_REVIEW_REQUIRED", 409);
       if (!input.retry.reason?.trim() || input.retry.reason.length > 300)
         fail("REASON_REQUIRED", 422);

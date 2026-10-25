@@ -176,11 +176,14 @@ export class ConfigService {
     actor: Actor,
     purpose: "admin_publish" | "admin_operations" = "admin_publish",
   ) {
-    if (
-      purpose === "admin_publish" &&
-      !actor.platformPermissions.includes("config:publish")
-    )
-      fail("FORBIDDEN", 403);
+    // platform.config.publish is backed by live administrator assignments. The
+    // affected namespaces are separately authorized on every execution/replay.
+    if (purpose === "admin_publish")
+      await requireRoles(tx, this.auth, actor, [
+        "platform_ops",
+        "finance",
+        "content",
+      ]);
     await this.options.reauth.verifyFresh(
       actor,
       this.request.reauthProof ?? "",
@@ -772,6 +775,7 @@ export class ConfigService {
     testIds: string[],
     reason: string,
     expectedCurrentRelease: string | null,
+    clientGuard?: { configHash: string; revision: number },
   ): Promise<ConfigRelease> {
     requireReason(reason);
     if (
@@ -785,7 +789,7 @@ export class ConfigService {
       versionIds: [...versionIds].sort(),
       testIds: [...testIds].sort(),
       reason,
-      expectedCurrentRelease,
+      ...(clientGuard ? { clientGuard } : { expectedCurrentRelease }),
     });
     const input = await this.db.transaction(async (tx) => {
       const drafts = [];
@@ -802,6 +806,15 @@ export class ConfigService {
     });
     if (input.replay) return deepFreeze(input.replay);
     const candidates = input.drafts;
+    if (
+      clientGuard &&
+      candidates.some(
+        (d) =>
+          d.body_hash !== clientGuard.configHash ||
+          Number(d.revision) !== clientGuard.revision,
+      )
+    )
+      fail("REVISION_CONFLICT", 409);
     const allPayloads = new Map(
       Object.values(input.active?.manifest.versions ?? {}).map((version) => [
         version.namespace,
@@ -964,11 +977,25 @@ export class ConfigService {
     releaseId: string,
     expectedCurrentRelease: string,
     reason: string,
+    clientTestIds?: string[],
   ): Promise<ConfigRelease> {
     requireReason(reason);
     const source = await this.loadRelease(releaseId);
+    const sourceDrafts: Record<string, SourceDraft> = await this.db.transaction(
+      async (tx) =>
+        (
+          await tx.query(
+            "SELECT manifest->'sourceDrafts' AS drafts FROM config_releases WHERE id=$1 AND environment=$2",
+            [releaseId, this.options.environment],
+          )
+        ).rows[0]?.drafts ?? {},
+    );
     const scope = `config:rollback:${this.options.environment}:${actor.userId}`,
-      hash = payloadHash({ releaseId, expectedCurrentRelease, reason });
+      hash = payloadHash({
+        releaseId,
+        reason,
+        ...(clientTestIds ? { testIds: [...clientTestIds].sort() } : {}),
+      });
     const replay = await this.db.transaction(async (tx) => {
       for (const namespace of Object.keys(source.versions))
         await this.authorize(tx, actor, namespace);
@@ -1014,7 +1041,7 @@ export class ConfigService {
         if ((await this.clock(tx)).getTime() - validationStarted >= 300_000)
           fail("CONFIG_TEST_EXPIRED", 409);
         const versions: Record<string, ConfigVersion> = {},
-          sources = {};
+          sources = sourceDrafts;
         for (const old of Object.values(source.versions))
           versions[old.namespace] = {
             ...old,

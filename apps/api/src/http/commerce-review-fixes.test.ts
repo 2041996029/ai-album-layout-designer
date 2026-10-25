@@ -174,6 +174,162 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
       await app?.close();
       await db?.close();
     });
+    it("publishes and rolls back through real authentication with stable HTTP replay and live role checks", async () => {
+      expect(
+        (await runtime.auth.authenticate(session.accessToken, "web"))
+          .platformPermissions,
+      ).toEqual([]);
+      const config = runtime.commerce!.config;
+      const payload = {
+        kind: "share",
+        defaultPrivate: true,
+        sharingEnabled: true,
+        maxShareTtlSeconds: 3600,
+        downloadTtlSeconds: 60,
+        revokeMode: "shortLivedUrl",
+        allowOriginalDownload: false,
+      } as const;
+      async function publish(sharingEnabled: boolean) {
+        let base: number | null = null;
+        try {
+          base = (await config.loadRelease()).versions.share.version;
+        } catch {}
+        const draft = await config.createConfigDraft(
+          session.actor,
+          "share",
+          { ...payload, sharingEnabled },
+          base,
+        );
+        const test = await config.testConfigDraft(
+          session.actor,
+          draft.id,
+          "schema",
+        );
+        const headers = {
+          "idempotency-key": id(),
+          "if-match": `"${draft.revision}"`,
+          "x-reauthentication-proof": await proof("admin_publish"),
+        };
+        const body = {
+          configHash: draft.payloadHash,
+          testIds: [test.id],
+          reason: "release review",
+        };
+        const url = `/v1/admin/config/drafts/${draft.id}/publish`;
+        const first = await call("POST", url, body, headers);
+        expect(first.statusCode, first.body).toBe(200);
+        return { draft, test, url, headers, body, result: first.json().data };
+      }
+      const first = await publish(true);
+      expect(
+        (await call("POST", first.url, first.body, first.headers)).json().data,
+      ).toEqual(first.result);
+      const second = await publish(false);
+      expect(
+        (await call("POST", first.url, first.body, first.headers)).json().data,
+      ).toEqual(first.result);
+      expect(
+        (
+          await call(
+            "POST",
+            first.url,
+            { ...first.body, reason: "changed" },
+            first.headers,
+          )
+        ).statusCode,
+      ).toBe(409);
+      const rollbackHeaders = {
+        "idempotency-key": id(),
+        "x-reauthentication-proof": await proof("admin_publish"),
+      };
+      const rollbackBody = {
+        sourceReleaseId: first.result.id,
+        testIds: [first.test.id],
+        reason: "restore",
+      };
+      const rollback = await call(
+        "POST",
+        "/v1/admin/config/rollback",
+        rollbackBody,
+        rollbackHeaders,
+      );
+      expect(rollback.statusCode, rollback.body).toBe(200);
+      expect(
+        (
+          await call(
+            "POST",
+            "/v1/admin/config/rollback",
+            rollbackBody,
+            rollbackHeaders,
+          )
+        ).json().data,
+      ).toEqual(rollback.json().data);
+      await publish(true);
+      expect(
+        (
+          await call(
+            "POST",
+            "/v1/admin/config/rollback",
+            rollbackBody,
+            rollbackHeaders,
+          )
+        ).json().data,
+      ).toEqual(rollback.json().data);
+      const count = (
+        await db.pool.query("SELECT count(*) FROM ai_album.config_releases")
+      ).rows[0].count;
+      await db.database.transaction((tx) =>
+        tx.query(
+          "UPDATE admin_role_assignments SET role='finance' WHERE user_id=$1",
+          [session.actor.userId],
+        ),
+      );
+      try {
+        expect(
+          (await call("POST", first.url, first.body, first.headers)).statusCode,
+        ).toBe(403);
+        expect(
+          (
+            await call(
+              "POST",
+              "/v1/admin/config/rollback",
+              rollbackBody,
+              rollbackHeaders,
+            )
+          ).statusCode,
+        ).toBe(403);
+      } finally {
+        await db.database.transaction((tx) =>
+          tx.query(
+            "UPDATE admin_role_assignments SET role='platform_ops' WHERE user_id=$1",
+            [session.actor.userId],
+          ),
+        );
+      }
+      await db.database.transaction((tx) =>
+        tx.query(
+          "UPDATE admin_role_assignments SET revoked_at=clock_timestamp() WHERE user_id=$1",
+          [session.actor.userId],
+        ),
+      );
+      try {
+        expect(
+          (await call("POST", second.url, second.body, second.headers))
+            .statusCode,
+        ).toBe(403);
+      } finally {
+        await db.database.transaction((tx) =>
+          tx.query(
+            "UPDATE admin_role_assignments SET revoked_at=NULL WHERE user_id=$1",
+            [session.actor.userId],
+          ),
+        );
+      }
+      expect(
+        (await db.pool.query("SELECT count(*) FROM ai_album.config_releases"))
+          .rows[0].count,
+      ).toBe(count);
+    });
     it("binds human challenges to session, purpose, linked identity, expiry and one use", async () => {
       const availability = await call("GET", "/v1/auth/reauthentication");
       expect(availability.json().data).toMatchObject({

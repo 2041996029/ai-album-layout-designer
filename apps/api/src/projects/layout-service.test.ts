@@ -253,6 +253,41 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           )
         ).rows[0].parent_job_id,
       ).toBe(retrySource.jobId);
+      // Begin with the actual failure normalizer; production stores RESOURCE_EXHAUSTED.
+      const oom = await layout.createCloudLayoutJob(
+        actor,
+        wid,
+        doc.projectId,
+        input,
+        id(),
+      );
+      const oomLease = await jobs.claimJob(
+        oom.jobId,
+        "oom-test",
+        new Date().toISOString(),
+      );
+      await jobs.failAttempt(oomLease!, {
+        code: "OOM",
+        retryable: false,
+        definite: true,
+      });
+      const oomRow = (
+        await db.pool.query(
+          "SELECT error_code,revision FROM ai_album.jobs WHERE id=$1",
+          [oom.jobId],
+        )
+      ).rows[0];
+      expect(oomRow.error_code).toBe("RESOURCE_EXHAUSTED");
+      await expect(
+        layout.retryCloudLayoutJob(
+          actor,
+          wid,
+          oom.jobId,
+          Number(oomRow.revision),
+          "same specification",
+          id(),
+        ),
+      ).rejects.toMatchObject({ code: "RESOURCE_BUDGET_REVIEW_REQUIRED" });
       const requestKey = id();
       const accepted = await layout.createCloudLayoutJob(
         actor,
@@ -261,6 +296,14 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         input,
         requestKey,
       );
+      const counts = async () =>
+        (
+          await db.pool.query(
+            "SELECT (SELECT count(*) FROM ai_album.job_snapshots WHERE workspace_id=$1) AS snapshots,(SELECT count(*) FROM ai_album.resource_pins WHERE workspace_id=$1) AS pins",
+            [wid],
+          )
+        ).rows[0];
+      const beforeReplay = await counts();
       expect(
         (
           await layout.createCloudLayoutJob(
@@ -272,6 +315,16 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           )
         ).jobId,
       ).toBe(accepted.jobId);
+      expect(await counts()).toEqual(beforeReplay);
+      await expect(
+        layout.createCloudLayoutJob(
+          actor,
+          wid,
+          doc.projectId,
+          { layoutSpec: { ...input.layoutSpec, seed: 99 } },
+          requestKey,
+        ),
+      ).rejects.toMatchObject({ code: "IDEMPOTENCY_CONFLICT" });
       const lease = await jobs.claimJob(
         accepted.jobId,
         "layout-test",
@@ -300,6 +353,35 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         id(),
       );
       expect(applied.doc.revision).toBe(2);
+      const nextRelease = id();
+      await db.database.transaction(async (tx) => {
+        await tx.query(
+          "INSERT INTO config_releases(id,environment,release_number,schema_version,manifest_hash,manifest,published_by) VALUES($1,'dev',2,1,$2,$3,$4)",
+          [nextRelease, payloadHash(manifest), manifest, actor.userId],
+        );
+        for (const v of Object.values(versions))
+          await tx.query(
+            "INSERT INTO config_release_items(id,release_id,namespace,schema_version,body_hash,body) VALUES($1,$2,$3,1,$4,$5)",
+            [id(), nextRelease, v.namespace, v.payloadHash, v.payload],
+          );
+        await tx.query(
+          "UPDATE config_active_releases SET release_id=$1 WHERE environment='dev'",
+          [nextRelease],
+        );
+      });
+      const afterApply = await counts();
+      expect(
+        (
+          await layout.createCloudLayoutJob(
+            actor,
+            wid,
+            doc.projectId,
+            input,
+            requestKey,
+          )
+        ).jobId,
+      ).toBe(accepted.jobId);
+      expect(await counts()).toEqual(afterApply);
       await expect(
         layout.applyCloudLayout(
           actor,

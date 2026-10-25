@@ -102,6 +102,15 @@ export function commerceHandlers(
         createdAt: date(row.created_at),
         updatedAt: date(row.terminal_at ?? row.created_at),
         outputIds: row.outputs,
+        ...(row.error_code
+          ? {
+              error: {
+                code: row.error_code,
+                message: row.error_code,
+                retryable: false,
+              },
+            }
+          : {}),
         configReleaseId: row.config_release_id,
         providerSubmissionState: row.provider_submission_state,
         ...(row.parent_job_id ? { parentJobId: row.parent_job_id } : {}),
@@ -762,6 +771,46 @@ export function commerceHandlers(
         sha256: output.sha256,
       };
     },
+    async getAdminOrderSourceGrants(r) {
+      return db.transaction(async (tx) => {
+        await requireRoles(tx, auth, r.actor, ["finance"]);
+        const order = (
+          await tx.query("SELECT id,workspace_id FROM orders WHERE id=$1", [
+            r.params.orderId,
+          ])
+        ).rows[0];
+        if (!order) fail("NOT_FOUND", 404);
+        const grants = (
+          await tx.query(
+            `SELECT g.*,${sourceCreditFrozenSql()} AS frozen,
+          COALESCE(l.available,0) AS available,COALESCE(l.reserved,0) AS reserved,
+          (g.state='active' AND g.ends_at>clock_timestamp() AND NOT (${sourceCreditFrozenSql()})) AS eligible
+          FROM entitlement_grants g LEFT JOIN credit_lots l ON l.workspace_id=g.workspace_id AND l.source_grant_id=g.id
+          WHERE g.workspace_id=$1 AND g.source_order_id=$2 ORDER BY g.grant_type,g.id`,
+            [order.workspace_id, order.id],
+          )
+        ).rows;
+        return {
+          orderId: order.id,
+          workspaceId: order.workspace_id,
+          items: grants.map((g) => ({
+            id: g.id,
+            kind: g.grant_type,
+            state: g.state,
+            startsAt: date(g.starts_at),
+            endsAt: date(g.ends_at),
+            frozen: g.frozen,
+            eligible: g.eligible,
+            ...(g.grant_type === "credits"
+              ? {
+                  availableCredits: Number(g.available),
+                  reservedCredits: Number(g.reserved),
+                }
+              : {}),
+          })),
+        } satisfies S["OrderSourceGrants"];
+      });
+    },
     async queryAdminOrders(r) {
       await finance(r);
       return db.transaction(async (tx) =>
@@ -930,8 +979,6 @@ export function commerceHandlers(
     },
     async publishConfig(r) {
       const v = await config(r).getConfigDraft(r.actor, r.params.draftId);
-      if (v.payloadHash !== r.body.configHash || v.revision !== expected(r))
-        fail("REVISION_CONFLICT", 409);
       let active = null;
       try {
         active = (await s.config.loadRelease()).releaseId;
@@ -942,6 +989,7 @@ export function commerceHandlers(
         r.body.testIds,
         r.body.reason,
         active,
+        { configHash: r.body.configHash, revision: expected(r) },
       );
       return release(r, result.releaseId);
     },
@@ -970,6 +1018,7 @@ export function commerceHandlers(
         r.body.sourceReleaseId,
         active.releaseId,
         r.body.reason,
+        r.body.testIds,
       );
       return release(r, result.releaseId);
     },

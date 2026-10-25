@@ -75,8 +75,38 @@ export class CloudLayoutService {
     )
       fail("INVALID_LAYOUT_SPEC", 422);
     const d = this.configured(),
-      release = await d.release(),
-      spec = input.layoutSpec as LayoutInput;
+      spec = input.layoutSpec as LayoutInput,
+      requestHash = digest(
+        canonicalJson({
+          actor: actor.userId,
+          wid,
+          projectId,
+          input,
+          ...(retry ? { retry } : {}),
+        }),
+      );
+    const replay = async (tx: import("pg").PoolClient) => {
+      if (!key || key.length > 128) fail("IDEMPOTENCY_KEY_REQUIRED", 428);
+      await tx.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+        "workspace:" + wid + ":" + key,
+      ]);
+      await d.workspaces.authorize(actor, wid, "edit", tx);
+      const old = (
+        await tx.query(
+          "SELECT * FROM idempotency_keys WHERE workspace_id=$1 AND principal_scope='workspace' AND idempotency_key=$2 FOR UPDATE",
+          [wid, key],
+        )
+      ).rows[0];
+      if (
+        old &&
+        (old.operation !== "job.create" || old.request_hash !== requestHash)
+      )
+        fail("IDEMPOTENCY_CONFLICT", 409);
+      return old?.response_json;
+    };
+    const old = await d.db.transaction(replay);
+    if (old) return old;
+    const release = await d.release();
     let prepared;
     try {
       prepared = await prepareLayout(spec, release.policy);
@@ -100,7 +130,8 @@ export class CloudLayoutService {
         fail("RESOURCE_VERSION_MISMATCH", 409);
     }
     return d.db.transaction(async (tx) => {
-      await d.workspaces.authorize(actor, wid, "edit", tx);
+      const old = await replay(tx);
+      if (old) return old;
       const revision = (
         await tx.query(
           "SELECT r.id,p.current_revision FROM project_revisions r JOIN projects p ON p.id=r.project_id AND p.workspace_id=r.workspace_id WHERE r.workspace_id=$1 AND r.project_id=$2 AND r.number=$3 FOR SHARE OF p",
@@ -137,6 +168,7 @@ export class CloudLayoutService {
           snapshotId,
           configReleaseId: release.releaseId,
           inputHash: prepared.inputHash,
+          idempotencyRequestHash: requestHash,
           payload: prepared.input,
           ...(retry ? { retry } : {}),
           createdBy: actor.userId,

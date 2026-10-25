@@ -553,24 +553,99 @@ export class RefundService {
     event: VerifiedRefundEvent,
     refundId: string,
   ): Promise<RefundState> {
-    return this.applyVerifiedReceipt(event, refundId, this.adapters.bindingFor(event));
+    return this.applyVerifiedReceipt(
+      event,
+      refundId,
+      this.adapters.bindingFor(event),
+    );
+  }
+  /** Persist recency before any provider/read work. Outbox is the restart-safe
+   * scheduler; job dispatch ignores these refund-specific event types. */
+  async claimRecovery(kind: "pending" | "receipt", limit: number) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1000)
+      fail("INVALID_LIMIT", 422);
+    return this.db.transaction(async (tx) => {
+      const eventType = "refund.recover." + kind;
+      const predicate =
+        kind === "pending"
+          ? "r.state IN ('requested','submitted','unknown')"
+          : "r.state='manual_review' AND r.reason_code='VERIFIED_RECEIPT_REVIEW' AND EXISTS(SELECT 1 FROM payment_events e WHERE e.payment_attempt_id=r.payment_attempt_id AND e.redacted_event->>'refundId'=r.id AND e.event_kind='refund_succeeded' AND e.verified_at IS NOT NULL)";
+      await tx.query(
+        `INSERT INTO outbox(id,created_at,workspace_id,event_key,aggregate_kind,aggregate_id,event_type,payload)
+        SELECT md5($1||r.id),r.created_at,r.workspace_id,md5($1||r.id),'refund',r.id,$1,'{}' FROM refunds r WHERE ${predicate} ON CONFLICT(event_key) DO NOTHING`,
+        [eventType],
+      );
+      return (
+        await tx.query(
+          `WITH selected AS (
+        SELECT o.id,r.id AS refund_id,r.order_id,r.workspace_id FROM outbox o JOIN refunds r ON r.id=o.aggregate_id
+        WHERE o.aggregate_kind='refund' AND o.event_type=$1 AND o.available_at<=clock_timestamp() AND ${predicate}
+        ORDER BY o.available_at,o.created_at,o.id LIMIT $2 FOR UPDATE OF o SKIP LOCKED
+      ) UPDATE outbox o SET available_at=clock_timestamp()+interval '30 seconds',sent_at=clock_timestamp(),delivery_attempts=least(o.delivery_attempts+1,1000000)
+        FROM selected s WHERE o.id=s.id RETURNING s.refund_id AS id,s.order_id,s.workspace_id`,
+          [eventType, limit],
+        )
+      ).rows;
+    });
+  }
+  async recoverPending(limit: number) {
+    const rows = await this.claimRecovery("pending", limit);
+    for (const row of rows) {
+      try {
+        const snapshot = await this.db.transaction((tx) =>
+          frozenOrderSnapshot(tx, row.order_id, row.workspace_id),
+        );
+        await this.processRefund(row.id, this.payments.get(snapshot.bindingId));
+      } catch {
+        /* Original binding or query may be unavailable; the durable due time advances. */
+      }
+    }
+    return rows.length;
   }
   /** Replay only durable receipts that passed signature and complete business validation.
    * The process never recreates registry proof from caller-supplied JSON. */
   async recoverVerifiedReceipts(limit: number): Promise<number> {
-    if (!Number.isInteger(limit) || limit < 1 || limit > 1000) fail("INVALID_LIMIT",422);
-    const receipts = await this.db.transaction(async tx => (await tx.query(
-      "SELECT DISTINCT ON (r.id) r.id,e.redacted_event,e.body_hash FROM refunds r JOIN payment_events e ON e.payment_attempt_id=r.payment_attempt_id AND e.redacted_event->>'refundId'=r.id WHERE r.state='manual_review' AND r.reason_code='VERIFIED_RECEIPT_REVIEW' AND e.event_kind='refund_succeeded' AND e.verified_at IS NOT NULL ORDER BY r.id,e.created_at DESC LIMIT $1",[limit])).rows);
-    let completed=0;
-    for (const receipt of receipts) {
-      const event=receipt.redacted_event as VerifiedRefundEvent;
-      if(payloadHash(event)!==receipt.body_hash)fail("REFUND_RECEIPT_CORRUPT",500);
-      const snapshot=await this.db.transaction(tx=>frozenOrderSnapshot(tx,event.orderId));
-      if(await this.applyVerifiedReceipt(event,receipt.id,snapshot.bindingId)==="succeeded")completed++;
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1000)
+      fail("INVALID_LIMIT", 422);
+    const claims = await this.claimRecovery("receipt", limit);
+    let completed = 0;
+    for (const claim of claims) {
+      try {
+        const receipt = await this.db.transaction(
+          async (tx) =>
+            (
+              await tx.query(
+                "SELECT e.redacted_event,e.body_hash FROM payment_events e WHERE e.redacted_event->>'refundId'=$1 AND e.event_kind='refund_succeeded' AND e.verified_at IS NOT NULL ORDER BY e.created_at DESC LIMIT 1",
+                [claim.id],
+              )
+            ).rows[0],
+        );
+        if (!receipt) continue;
+        const event = receipt.redacted_event as VerifiedRefundEvent;
+        if (payloadHash(event) !== receipt.body_hash)
+          fail("REFUND_RECEIPT_CORRUPT", 500);
+        const snapshot = await this.db.transaction((tx) =>
+          frozenOrderSnapshot(tx, event.orderId),
+        );
+        if (
+          (await this.applyVerifiedReceipt(
+            event,
+            claim.id,
+            snapshot.bindingId,
+          )) === "succeeded"
+        )
+          completed++;
+      } catch {
+        /* Preserve the obligation, continue the fair batch, retry later. */
+      }
     }
     return completed;
   }
-  private async applyVerifiedReceipt(event:VerifiedRefundEvent,refundId:string,binding:string):Promise<RefundState> {
+  private async applyVerifiedReceipt(
+    event: VerifiedRefundEvent,
+    refundId: string,
+    binding: string,
+  ): Promise<RefundState> {
     return this.db.transaction(async (tx) => {
       for (const identity of [
         `refund-event:${event.channel}:${event.merchantId}:${event.eventId}`,

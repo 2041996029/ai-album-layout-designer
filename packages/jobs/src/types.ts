@@ -40,6 +40,8 @@ export type CreateJobInput = {
   payload: unknown;
   createdBy: string;
   snapshotId: string;
+  /** Stable client-operation hash, supplied only by the accepting service. */
+  idempotencyRequestHash?: string;
   quoteId?: string;
   maxAttempts?: number;
   retry?: { parentJobId: string; expectedRevision: number; reason: string };

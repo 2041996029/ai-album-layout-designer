@@ -2380,6 +2380,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{orderId}/source-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询订单的来源授权供财务调整选择
+         * @description Finance-only discovery scoped to the selected order. Contains eligibility and financial identifiers only; no resource locators or secrets.
+         */
+        get: operations["getAdminOrderSourceGrants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders": {
         parameters: {
             query?: never;
@@ -5632,6 +5652,29 @@ export interface components {
         FinancialAdjustmentResponse: {
             data: components["schemas"]["FinancialAdjustment"];
             requestId: components["schemas"]["Id"];
+        };
+        OrderSourceGrant: {
+            id: string;
+            /** @enum {string} */
+            kind: "credits" | "membership";
+            state: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            frozen: boolean;
+            eligible: boolean;
+            availableCredits?: number;
+            reservedCredits?: number;
+        };
+        OrderSourceGrants: {
+            orderId: string;
+            workspaceId: string;
+            items: components["schemas"]["OrderSourceGrant"][];
+        };
+        OrderSourceGrantsResponse: {
+            data: components["schemas"]["OrderSourceGrants"];
+            requestId: string;
         };
         crop: {
             x: number;
@@ -12666,6 +12709,31 @@ export interface operations {
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["Unavailable"];
+        };
+    };
+    getAdminOrderSourceGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Order source grants */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderSourceGrantsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     queryAdminOrders: {

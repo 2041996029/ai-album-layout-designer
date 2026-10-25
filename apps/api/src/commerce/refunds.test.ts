@@ -508,6 +508,89 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
       });
       return refundService.confirmVerifiedRefund(verified, e.refundId);
     }
+    it("durably rotates more than 100 pending refund obligations across recovery restart", async () => {
+      const ids: string[] = [];
+      for (let i = 0; i < 101; i++)
+        ids.push((await request(await purchase())).refundId);
+      expect(await refundService.recoverPending(100)).toBe(100);
+      expect(submissions).toBe(100);
+      expect(
+        (await rows("SELECT state FROM refunds WHERE id=$1", [ids[100]]))[0]
+          .state,
+      ).toBe("requested");
+      const restarted = refundService.withRequest({});
+      expect(await restarted.recoverPending(100)).toBe(1);
+      expect(submissions).toBe(101);
+      expect(
+        (await rows("SELECT state FROM refunds WHERE id=$1", [ids[100]]))[0]
+          .state,
+      ).toBe("unknown");
+      await rows(
+        "UPDATE outbox SET available_at=clock_timestamp() WHERE aggregate_kind='refund'",
+      );
+      await restarted.recoverPending(100);
+      expect(submissions).toBe(101); // submitted intents only query; never charge/refund twice
+      expect(queries).toBeGreaterThanOrEqual(100);
+    }, 60000);
+    it("durably rotates more than 100 verified receipts past unresolved active jobs", async () => {
+      const leases: any[] = [],
+        ids: string[] = [];
+      const fairJobs = new JobRepository(
+        db.database,
+        async () => ({
+          deployment: { global: 1000, workspace: 1000 },
+          release: { global: 1000, workspace: 1000 },
+          entitlement: { global: 1000, workspace: 1000 },
+          leaseSeconds: 120,
+          maxAttempts: 3,
+          retryBackoffSeconds: [10, 30, 90],
+        }),
+        credits.creditTerminalHook,
+      );
+      try {
+        for (let i = 0; i < 101; i++) {
+          const oid = await purchase(),
+            reservation = await reserve(20),
+            lease = (await fairJobs.claimJob(
+              reservation.jobId,
+              "receipt-recovery",
+              clock.toISOString(),
+            ))!,
+            r = await request(oid);
+          leases.push(lease);
+          ids.push(r.refundId);
+          expect(await confirm(proof(oid, r.refundId))).toBe("manual_review");
+        }
+        expect(await refundService.recoverVerifiedReceipts(100)).toBe(0);
+        await fairJobs.finishJob(leases[100], {
+          state: "cancelled",
+          result: {},
+        });
+        const restarted = refundService.withRequest({});
+        expect(await restarted.recoverVerifiedReceipts(100)).toBe(1);
+        expect(
+          (await rows("SELECT state FROM refunds WHERE id=$1", [ids[100]]))[0]
+            .state,
+        ).toBe("succeeded");
+        expect(
+          (
+            await rows(
+              "SELECT count(*) AS n FROM refunds WHERE workspace_id=$1 AND state='manual_review'",
+              [wid],
+            )
+          )[0].n,
+        ).toBe("100");
+      } finally {
+        for (const lease of leases)
+          if (lease)
+            await fairJobs.finishJob(lease, { state: "cancelled", result: {} });
+        await rows(
+          "UPDATE outbox SET available_at=clock_timestamp() WHERE aggregate_kind='refund' AND workspace_id=$1",
+          [wid],
+        );
+        await refundService.recoverVerifiedReceipts(1000);
+      }
+    }, 120000);
     it("freezes only source lots before submission and blocks concurrent consumption", async () => {
       const oid = await purchase();
       const r = await request(oid);
@@ -769,6 +852,10 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
             [oid],
           )
         )[0].id;
+        await rows(
+          "INSERT INTO config_active_releases(id,environment,release_id) VALUES($1,'dev',$2) ON CONFLICT(environment) DO UPDATE SET release_id=excluded.release_id",
+          [id(), persisted],
+        );
         const payload: ExportPolicy = {
           kind: "export",
           allowedFormats: ["png"],
@@ -930,15 +1017,35 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
       ).toEqual({ reserved: "0", revoked: "20" });
     });
     it("recovers an already verified receipt after job terminal without another channel delivery", async () => {
-      const oid=await purchase(),rsv=await reserve(20),lease=(await refundJobs.claimJob(rsv.jobId,"recover-worker",clock.toISOString()))!;
-      const r=await request(oid),e=proof(oid,r.refundId);
+      const oid = await purchase(),
+        rsv = await reserve(20),
+        lease = (await refundJobs.claimJob(
+          rsv.jobId,
+          "recover-worker",
+          clock.toISOString(),
+        ))!;
+      const r = await request(oid),
+        e = proof(oid, r.refundId);
       expect(await confirm(e)).toBe("manual_review");
       expect(await refundService.recoverVerifiedReceipts(100)).toBe(0);
-      await refundJobs.finishJob(lease,{state:"cancelled",result:{}});
+      await refundJobs.finishJob(lease, { state: "cancelled", result: {} });
+      await rows(
+        "UPDATE outbox SET available_at=clock_timestamp() WHERE aggregate_kind='refund'",
+      );
       expect(await refundService.recoverVerifiedReceipts(100)).toBe(1);
       expect(await refundService.recoverVerifiedReceipts(100)).toBe(0);
-      expect((await rows("SELECT state FROM refunds WHERE id=$1",[r.refundId]))[0].state).toBe("succeeded");
-      expect((await rows("SELECT reserved,revoked FROM credit_lots WHERE workspace_id=$1",[wid]))[0]).toEqual({reserved:"0",revoked:"20"});
+      expect(
+        (await rows("SELECT state FROM refunds WHERE id=$1", [r.refundId]))[0]
+          .state,
+      ).toBe("succeeded");
+      expect(
+        (
+          await rows(
+            "SELECT reserved,revoked FROM credit_lots WHERE workspace_id=$1",
+            [wid],
+          )
+        )[0],
+      ).toEqual({ reserved: "0", revoked: "20" });
     });
     it("applies forced partial receipt proportionally and leaves terminal remainder spendable", async () => {
       const oid = await purchase();

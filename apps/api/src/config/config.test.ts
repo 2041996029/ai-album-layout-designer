@@ -446,12 +446,18 @@ describe("configuration transactions on PostgreSQL", () => {
       "CONFIG_TEST_STALE",
     );
   });
-  it("requires live platform role, explicit publish permission, and a fresh session-bound proof", async () => {
+  it("requires live publish authority and a fresh session-bound proof", async () => {
     const { draft, test } = await tested();
     await expect(
       service.publishConfig(ops, [draft.id], [test.id], "no proof", null),
     ).rejects.toThrow("REAUTH_REQUIRED");
     const noPermission = { ...ops, platformPermissions: [] };
+    await db.database.transaction((tx) =>
+      tx.query(
+        "UPDATE admin_role_assignments SET revoked_at=clock_timestamp() WHERE user_id=$1",
+        [ops.userId],
+      ),
+    );
     await expect(
       service
         .withRequest({ reauthProof: await proof() })

@@ -2,7 +2,6 @@ import { Queue, Worker } from "bullmq";
 import { BullMqScheduler, OutboxDispatcher } from "@album/jobs";
 import type { ApiRuntime } from "../http/runtime";
 import { startExportWorker } from "../../../export-worker/src/main";
-import { frozenOrderSnapshot } from "../payments/orders";
 /** SQL recovery survives an empty Redis queue and process restarts. Each cycle is bounded. */
 export function startCommerceHost(runtime: ApiRuntime, redisUrl?: string) {
   const s = runtime.commerce!;
@@ -83,27 +82,7 @@ export function startCommerceHost(runtime: ApiRuntime, redisUrl?: string) {
   let running: Promise<void> | undefined;
   const recover = async () => {
     await s.orders.reconcileDue(100);
-    const rows = await runtime.db.transaction(
-      async (tx) =>
-        (
-          await tx.query(
-            "SELECT r.id,r.order_id,r.workspace_id FROM refunds r WHERE r.state IN ('requested','submitted','unknown') ORDER BY r.created_at LIMIT 100",
-          )
-        ).rows,
-    );
-    for (const row of rows) {
-      try {
-        const snapshot = await runtime.db.transaction((tx) =>
-          frozenOrderSnapshot(tx, row.order_id, row.workspace_id),
-        );
-        await s.refunds.processRefund(
-          row.id,
-          s.payments.get(snapshot.bindingId),
-        );
-      } catch {
-        /* Original frozen obligations stay durable for next cycle. */
-      }
-    }
+    await s.refunds.recoverPending(100);
     await s.refunds.recoverVerifiedReceipts(100);
     await dispatcher?.dispatchOutbox(100);
     await s.exports?.expireArtifacts(100);

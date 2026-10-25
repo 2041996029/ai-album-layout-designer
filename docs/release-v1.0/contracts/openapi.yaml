@@ -10245,6 +10245,44 @@ paths:
               $ref: '#/components/schemas/AdminJobAction'
       x-idempotency-scope: workspace resolved from target or request; otherwise authenticated user or pre-auth browser
         challenge
+  /admin/orders/{orderId}/source-grants:
+    get:
+      operationId: getAdminOrderSourceGrants
+      tags:
+        - Operations
+      summary: 查询订单的来源授权供财务调整选择
+      description: Finance-only discovery scoped to the selected order. Contains
+        eligibility and financial identifiers only; no resource locators or
+        secrets.
+      x-module: C4
+      x-requirement-ids:
+        - PAY-01
+        - ADM-01
+      x-required-permission: platform.finance.read
+      security:
+        - WebCookie: []
+        - MiniBearer: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      responses:
+        "200":
+          description: Order source grants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderSourceGrantsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /admin/orders:
     get:
       operationId: queryAdminOrders
@@ -21819,6 +21857,73 @@ components:
         requestId:
           $ref: '#/components/schemas/Id'
       required: [data, requestId]
+
+    OrderSourceGrant:
+      type: object
+      additionalProperties: false
+      properties:
+        id: &sourceGrantOpaque
+          type: string
+          minLength: 1
+          maxLength: 128
+        kind:
+          type: string
+          enum:
+            - credits
+            - membership
+        state:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        frozen:
+          type: boolean
+        eligible:
+          type: boolean
+        availableCredits:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        reservedCredits:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+      required:
+        - id
+        - kind
+        - state
+        - startsAt
+        - endsAt
+        - frozen
+        - eligible
+    OrderSourceGrants:
+      type: object
+      additionalProperties: false
+      properties:
+        orderId: *sourceGrantOpaque
+        workspaceId: *sourceGrantOpaque
+        items:
+          type: array
+          maxItems: 2
+          items:
+            $ref: "#/components/schemas/OrderSourceGrant"
+      required:
+        - orderId
+        - workspaceId
+        - items
+    OrderSourceGrantsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/OrderSourceGrants"
+        requestId: *sourceGrantOpaque
+      required:
+        - data
+        - requestId
 
   parameters:
     IdempotencyKey:
