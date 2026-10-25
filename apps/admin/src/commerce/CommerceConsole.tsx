@@ -17,6 +17,7 @@ export function CommerceConsole(): React.JSX.Element {
     [ticket, setTicket] = useState(""),
     [workspace, setWorkspace] = useState(""),
     [source, setSource] = useState(""),
+    [sourceOptions, setSourceOptions] = useState<DTO<"OrderSourceGrants">>(),
     [amount, setAmount] = useState(1),
     [kind, setKind] = useState<"credits" | "membership">("credits"),
     [sku, setSku] = useState(""),
@@ -131,6 +132,25 @@ export function CommerceConsole(): React.JSX.Element {
             </span>
             <strong>{o.amountFen} 分</strong>
             <small>{o.workspaceId}</small>
+            {o.fulfillmentState === "fulfilled" && (
+              <button
+                onClick={async () => {
+                  try {
+                    const grants = await api<DTO<"OrderSourceGrants">>(
+                      `/admin/orders/${id(o.id)}/source-grants`,
+                    );
+                    setSourceOptions(grants);
+                    setWorkspace(grants.workspaceId);
+                    setSource("");
+                    setStatus(`已加载订单 ${o.id} 的来源授权`);
+                  } catch (e) {
+                    setError(String(e));
+                  }
+                }}
+              >
+                选择此订单的调整来源
+              </button>
+            )}
           </article>
         ))}
       </section>
@@ -280,12 +300,37 @@ export function CommerceConsole(): React.JSX.Element {
             工作区
             <input
               value={workspace}
-              onChange={(e) => setWorkspace(e.target.value)}
+              onChange={(e) => {
+                setWorkspace(e.target.value);
+                setSource("");
+              }}
             />
           </label>
           <label>
-            来源授权 ID
-            <input value={source} onChange={(e) => setSource(e.target.value)} />
+            来源授权
+            <select
+              aria-label="来源授权"
+              value={source}
+              onChange={(e) => {
+                setSource(e.target.value);
+                const grant = sourceOptions?.items.find(
+                  (g) => g.id === e.target.value,
+                );
+                if (grant) setKind(grant.kind);
+              }}
+            >
+              <option value="">先从订单查询选择来源</option>
+              {sourceOptions?.workspaceId === workspace &&
+                sourceOptions.items.map((g) => (
+                  <option key={g.id} value={g.id} disabled={!g.eligible}>
+                    {g.kind === "credits"
+                      ? `点数 · 可用 ${g.availableCredits} · 预占 ${g.reservedCredits}`
+                      : "会员"}{" "}
+                    · {g.id} · {g.eligible ? "可调整" : "不可调整"} · 到期{" "}
+                    {g.endsAt}
+                  </option>
+                ))}
+            </select>
           </label>
           <label>
             类型

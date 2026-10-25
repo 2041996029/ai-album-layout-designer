@@ -254,11 +254,12 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         ).rows[0].parent_job_id,
       ).toBe(retrySource.jobId);
       // Begin with the actual failure normalizer; production stores RESOURCE_EXHAUSTED.
+      const oomInput = { layoutSpec: { ...input.layoutSpec, seed: 44 } };
       const oom = await layout.createCloudLayoutJob(
         actor,
         wid,
         doc.projectId,
-        input,
+        oomInput,
         id(),
       );
       const oomLease = await jobs.claimJob(
@@ -287,6 +288,9 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           "same specification",
           id(),
         ),
+      ).rejects.toMatchObject({ code: "RESOURCE_BUDGET_REVIEW_REQUIRED" });
+      await expect(
+        layout.createCloudLayoutJob(actor, wid, doc.projectId, oomInput, id()),
       ).rejects.toMatchObject({ code: "RESOURCE_BUDGET_REVIEW_REQUIRED" });
       const requestKey = id();
       const accepted = await layout.createCloudLayoutJob(
@@ -369,6 +373,17 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           [nextRelease],
         );
       });
+      // The same stable input is admissible after a reviewed published budget/release.
+      // It must use the current saved revision for fresh admission.
+      const reviewed = await layout.createCloudLayoutJob(
+        actor,
+        wid,
+        doc.projectId,
+        { layoutSpec: { ...oomInput.layoutSpec, baseRevision: 2 } },
+        id(),
+      );
+      expect(reviewed.state).toBe("queued");
+      await jobs.requestCancel(actor, wid, reviewed.jobId);
       const afterApply = await counts();
       expect(
         (
@@ -419,6 +434,9 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
               ...headers,
             },
           });
+        const failedHttp = await call("GET", `/v1/jobs/${oom.jobId}`);
+        expect(failedHttp.statusCode, failedHttp.body).toBe(200);
+        expect(failedHttp.json().data.error.code).toBe("RESOURCE_EXHAUSTED");
         const acceptedHttp = await call(
           "POST",
           `/v1/projects/${doc.projectId}/layout-jobs`,

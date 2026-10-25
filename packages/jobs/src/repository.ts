@@ -122,6 +122,15 @@ export async function createJob(
       (snapshot.quote_id ?? undefined) !== input.quoteId
     )
       fail("JOB_SNAPSHOT_MISMATCH", 409);
+    // A new wizard/key must not bypass the known-OOM restriction. Only these
+    // deterministic kinds have a stable accepted spec/resource hash here.
+    if (["export", "layout"].includes(input.kind)) {
+      const known = await tx.query(
+        "SELECT 1 FROM jobs j JOIN job_snapshots s ON s.workspace_id=j.workspace_id AND s.id=j.snapshot_id WHERE j.workspace_id=$1 AND j.kind=$2 AND j.state='failed' AND j.error_code='RESOURCE_EXHAUSTED' AND s.config_release_id=$3 AND s.normalized_spec_hash=$4 LIMIT 1",
+        [input.workspaceId, input.kind, input.configReleaseId, input.inputHash],
+      );
+      if (known.rowCount) fail("RESOURCE_BUDGET_REVIEW_REQUIRED", 409);
+    }
     if (input.retry) {
       const parent = (
         await tx.query(

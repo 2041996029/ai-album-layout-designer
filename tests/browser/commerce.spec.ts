@@ -451,3 +451,17 @@ test("refund action verifies a human code for billing purpose and internally sen
   await expect.poll(() => refunded).toBe(true);
   await expect(page.getByText("refund-human", { exact: true })).toBeVisible();
 });
+
+test("cloud export stays unavailable without a published configured capability", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.getByRole("link", { name: "云端导出", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "云端导出", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("尚未配置或暂不可用");
+  await expect(
+    page.getByRole("button", { name: "检查云端导出", exact: true }),
+  ).toBeDisabled();
+});

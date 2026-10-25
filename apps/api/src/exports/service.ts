@@ -12,12 +12,14 @@ import {
 } from "@album/export";
 import {
   createJob,
+  isResourceFailure,
   type JobRecord,
   type TerminalCommit,
   type CreateJobInput,
 } from "@album/jobs";
 import {
   digest,
+  ServiceError,
   fail,
   id,
   type Actor,
@@ -173,6 +175,13 @@ export class ExportService {
     )
       fail("RENDERER_UNCONFIGURED", 503);
   }
+  private async transactionTime(tx: PoolClient): Promise<string> {
+    return this.deps.clock
+      ? this.clock()
+      : new Date(
+          (await tx.query("SELECT clock_timestamp() AS at")).rows[0].at,
+        ).toISOString();
+  }
   private async lockKey(tx: PoolClient, wid: string, key: string) {
     if (!key || key.length > 128) fail("IDEMPOTENCY_KEY_REQUIRED", 428);
     await tx.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
@@ -264,14 +273,13 @@ export class ExportService {
       fail("PREFLIGHT_STALE", 409);
     }
   }
-  private async prepare(
+  private async capture(
     tx: PoolClient,
     actor: Actor,
     wid: string,
     pid: string,
     revision: number,
     options: ExportOptions,
-    ack?: string[],
   ) {
     await this.deps.authorization.authorize(actor, wid, "edit", tx);
     if (!Number.isSafeInteger(revision) || revision < 1)
@@ -295,42 +303,6 @@ export class ExportService {
     );
     if (snapshot.projectId !== pid || snapshot.revision !== revision)
       fail("STORAGE_CORRUPT", 500);
-    const release = await this.deps.config.loadRelease();
-    const policies = Object.values(release.versions)
-      .map((v) => v.payload)
-      .filter((p): p is ExportPolicy => p.kind === "export");
-    if (policies.length !== 1) fail("EXPORT_UNCONFIGURED", 503);
-    const policy = policies[0];
-    if (
-      !policy.allowedDpis.includes(options.dpi) ||
-      !policy.allowedFormats.includes(options.format)
-    )
-      fail("EXPORT_DISABLED", 403);
-    const entitlements = structuredClone(
-      await this.deps.entitlements.getEntitlements(wid, this.clock()),
-    );
-    if (
-      entitlements.workspaceId !== wid ||
-      ![72, 150, 300].includes(entitlements.maxDpi) ||
-      !Number.isSafeInteger(entitlements.maxConcurrentExports) ||
-      entitlements.maxConcurrentExports < 0 ||
-      !Number.isSafeInteger(entitlements.storageLimitBytes) ||
-      entitlements.storageLimitBytes < 0 ||
-      !Array.isArray(entitlements.grantIds) ||
-      typeof entitlements.brandWatermark !== "boolean"
-    )
-      fail("ENTITLEMENTS_UNCONFIGURED", 503);
-    if (options.dpi > entitlements.maxDpi) fail("EXPORT_ENTITLEMENT", 402);
-    const surfaces = planSurfaces(snapshot);
-    if (
-      !surfaces.length ||
-      surfaces.some(
-        (s) =>
-          s.pixelWidth * s.pixelHeight >
-          Math.min(50_000_000, policy.maxSurfacePixels),
-      )
-    )
-      fail("PIXEL_BUDGET", 422);
     const objectRows = (
       await tx.query(
         "SELECT o.*,r.font_version_id FROM project_revision_resources r JOIN storage_objects o ON o.workspace_id=r.storage_workspace_id AND o.id=r.storage_object_id WHERE r.revision_id=$1 ORDER BY o.workspace_id,o.id FOR SHARE OF o",
@@ -372,50 +344,207 @@ export class ExportService {
       if (!a || !asset.license.usable) fail("RESOURCE_UNAVAILABLE", 422);
     }
     for (const font of snapshot.resources.fonts) {
-      const licensed = (
-        await tx.query(
-          "SELECT l.id FROM editor_font_bundles b JOIN license_versions l ON l.id=b.license_version_id WHERE b.workspace_id=$1 AND b.id=$2 AND b.version=$3 AND b.state='published' AND l.embedding_allowed AND l.valid_from<=clock_timestamp() AND (l.valid_until IS NULL OR l.valid_until>clock_timestamp()) UNION ALL SELECT l.id FROM font_versions v JOIN fonts f ON f.id=v.font_id JOIN license_versions l ON l.id=v.license_version_id WHERE v.font_id=$2 AND v.version=$3 AND f.state='published' AND v.embedding_allowed AND l.embedding_allowed AND l.valid_from<=clock_timestamp() AND (l.valid_until IS NULL OR l.valid_until>clock_timestamp())",
-          [wid, font.id, font.version],
-        )
-      ).rows;
+      // Lock eligibility rows in the final capture so a concurrent withdrawal
+      // cannot pass between validation and immutable pin insertion.
+      const localLicense = await tx.query(
+        "SELECT l.id FROM editor_font_bundles b JOIN license_versions l ON l.id=b.license_version_id WHERE b.workspace_id=$1 AND b.id=$2 AND b.version=$3 AND b.state='published' AND l.embedding_allowed AND l.valid_from<=clock_timestamp() AND (l.valid_until IS NULL OR l.valid_until>clock_timestamp()) FOR SHARE OF b,l",
+        [wid, font.id, font.version],
+      );
+      const globalLicense = await tx.query(
+        "SELECT l.id FROM font_versions v JOIN fonts f ON f.id=v.font_id JOIN license_versions l ON l.id=v.license_version_id WHERE v.font_id=$1 AND v.version=$2 AND f.state='published' AND v.embedding_allowed AND l.embedding_allowed AND l.valid_from<=clock_timestamp() AND (l.valid_until IS NULL OR l.valid_until>clock_timestamp()) FOR SHARE OF f,v,l",
+        [font.id, font.version],
+      );
+      const licensed = [...localLicense.rows, ...globalLicense.rows];
       if (!font.license.usable || !licensed.length)
         fail("FONT_UNLICENSED", 422);
     }
-    // Read immutable old locators, never current asset/profile routing. This includes every original.
-    for (const pin of pins) {
-      const bytes = await this.deps.objects.read(pin.locator);
-      if (bytes.length !== pin.bytes || digest(bytes) !== pin.locator.sha256)
-        fail("RESOURCE_HASH_MISMATCH", 422);
-    }
-    const report = await this.deps.preflight.check(
-      snapshot,
-      pins,
-      new AbortController().signal,
-      ack,
+    return { row, snapshot, pins };
+  }
+  private async prepare(
+    actor: Actor,
+    wid: string,
+    pid: string,
+    revision: number,
+    options: ExportOptions,
+    ack?: string[],
+  ) {
+    const release = await this.deps.config.loadRelease();
+    const policies = Object.values(release.versions)
+      .map((v) => v.payload)
+      .filter((p): p is ExportPolicy => p.kind === "export");
+    if (policies.length !== 1) fail("EXPORT_UNCONFIGURED", 503);
+    const policy = policies[0];
+    if (
+      !policy.allowedDpis.includes(options.dpi) ||
+      !policy.allowedFormats.includes(options.format)
+    )
+      fail("EXPORT_DISABLED", 403);
+    const entitlements = structuredClone(
+      await this.deps.entitlements.getEntitlements(wid, this.clock()),
     );
     if (
-      report.estimatedBytes >
-      Math.min(768, policy.browserBudgetMiB, policy.workerBudgetMiB) * 1024 ** 2
+      entitlements.workspaceId !== wid ||
+      ![72, 150, 300].includes(entitlements.maxDpi) ||
+      !Number.isSafeInteger(entitlements.maxConcurrentExports) ||
+      entitlements.maxConcurrentExports < 0 ||
+      !Number.isSafeInteger(entitlements.storageLimitBytes) ||
+      entitlements.storageLimitBytes < 0 ||
+      !Array.isArray(entitlements.grantIds) ||
+      typeof entitlements.brandWatermark !== "boolean"
     )
-      fail("MEMORY_BUDGET", 422);
+      fail("ENTITLEMENTS_UNCONFIGURED", 503);
+    if (options.dpi > entitlements.maxDpi) fail("EXPORT_ENTITLEMENT", 402);
+    const { row, snapshot, pins } = await this.deps.db.transaction((tx) =>
+      this.capture(tx, actor, wid, pid, revision, options),
+    );
+    const surfaces = planSurfaces(snapshot);
     if (
-      report.snapshotHash !== snapshot.snapshotHash ||
-      !same(report.surfaces, surfaces)
+      !surfaces.length ||
+      surfaces.some(
+        (s) =>
+          s.pixelWidth * s.pixelHeight >
+          Math.min(50_000_000, policy.maxSurfacePixels),
+      )
+    )
+      fail("PIXEL_BUDGET", 422);
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(new ServiceError("PREFLIGHT_TIMEOUT", 503));
+        controller.abort();
+      }, 120_000);
+      timer.unref();
+    });
+    try {
+      return await Promise.race([
+        timeout,
+        (async () => {
+          // Storage and browser work run without a checked-out SQL connection.
+          for (const pin of pins) {
+            controller.signal.throwIfAborted();
+            const bytes = await this.deps.objects.read(
+              pin.locator,
+              controller.signal,
+            );
+            if (
+              bytes.length !== pin.bytes ||
+              digest(bytes) !== pin.locator.sha256
+            )
+              fail("RESOURCE_HASH_MISMATCH", 422);
+          }
+          controller.signal.throwIfAborted();
+          const report = await this.deps.preflight.check(
+            snapshot,
+            pins,
+            controller.signal,
+            ack,
+          );
+          if (
+            report.estimatedBytes >
+            Math.min(768, policy.browserBudgetMiB, policy.workerBudgetMiB) *
+              1024 ** 2
+          )
+            fail("MEMORY_BUDGET", 422);
+          if (
+            report.snapshotHash !== snapshot.snapshotHash ||
+            !same(report.surfaces, surfaces)
+          )
+            fail("PREFLIGHT_STALE", 409);
+          const hash = digest(
+            canonical({
+              snapshotHash: snapshot.snapshotHash,
+              pins,
+              releaseId: release.releaseId,
+              policy,
+              entitlements: policyEntitlement(entitlements),
+              renderer: this.deps.renderer,
+              warnings: report.warnings,
+              blockers: report.blockers,
+            }),
+          );
+          return {
+            row,
+            snapshot,
+            pins,
+            release,
+            policy,
+            entitlements,
+            report,
+            hash,
+          };
+        })(),
+      ]);
+    } finally {
+      clearTimeout(timer!);
+      controller.abort();
+    }
+  }
+  private async revalidate(
+    tx: PoolClient,
+    actor: Actor,
+    wid: string,
+    pid: string,
+    revision: number,
+    options: ExportOptions,
+    p: Awaited<ReturnType<ExportService["prepare"]>>,
+  ) {
+    const current = await this.capture(tx, actor, wid, pid, revision, options);
+    if (
+      current.row.id !== p.row.id ||
+      current.snapshot.snapshotHash !== p.snapshot.snapshotHash ||
+      !same(current.pins, p.pins)
     )
       fail("PREFLIGHT_STALE", 409);
-    const hash = digest(
-      canonical({
-        snapshotHash: snapshot.snapshotHash,
-        pins,
-        releaseId: release.releaseId,
-        policy,
-        entitlements: policyEntitlement(entitlements),
-        renderer: this.deps.renderer,
-        warnings: report.warnings,
-        blockers: report.blockers,
-      }),
+    const active = await tx.query(
+      "SELECT 1 FROM config_active_releases WHERE release_id=$1 FOR SHARE",
+      [p.release.releaseId],
     );
-    return { row, snapshot, pins, release, policy, entitlements, report, hash };
+    if (!active.rowCount) fail("PREFLIGHT_STALE", 409);
+    await this.deps.entitlements.verifyAcceptance?.(tx, wid, p.entitlements);
+  }
+  private async preflightReplay(
+    tx: PoolClient,
+    actor: Actor,
+    wid: string,
+    pid: string,
+    key: string,
+    requestHash: string,
+  ): Promise<components["schemas"]["PreflightResult"] | null> {
+    await this.deps.authorization.authorize(actor, wid, "edit", tx);
+    await this.lockKey(tx, wid, key);
+    const old = (
+      await tx.query(
+        "SELECT * FROM idempotency_keys WHERE workspace_id=$1 AND principal_scope='workspace' AND idempotency_key=$2",
+        [wid, key],
+      )
+    ).rows[0];
+    if (old) {
+      if (
+        old.operation !== "export.preflight" ||
+        old.request_hash !== requestHash
+      )
+        fail("IDEMPOTENCY_CONFLICT", 409);
+      const result =
+        old.response_json as components["schemas"]["PreflightResult"];
+      return result.blocked
+        ? result
+        : {
+            ...result,
+            preflightToken: await this.token(tx, {
+              v: 1,
+              actor: actor.userId,
+              wid,
+              pid,
+              revision: result.revision,
+              preflightId: result.id,
+              options: result.normalizedSpec,
+              hash: result.normalizedSpecHash,
+              expiresAt: result.expiresAt,
+            }),
+          };
+    }
+    return null;
   }
   async createPreflight(
     actor: Actor,
@@ -424,53 +553,43 @@ export class ExportService {
     input: components["schemas"]["PreflightRequest"],
     key: string,
   ): Promise<components["schemas"]["PreflightResult"]> {
+    const requestHash = digest(
+      canonical({ actor: actor.userId, wid, pid, input }),
+    );
+    const replay = await this.deps.db.transaction((tx) =>
+      this.preflightReplay(tx, actor, wid, pid, key, requestHash),
+    );
+    if (replay) return replay;
+    const p = await this.prepare(
+      actor,
+      wid,
+      pid,
+      input.revision,
+      input.exportSpec,
+    );
     return this.deps.db.transaction(async (tx) => {
-      await this.deps.authorization.authorize(actor, wid, "edit", tx);
-      await this.lockKey(tx, wid, key);
-      const requestHash = digest(
-        canonical({ actor: actor.userId, wid, pid, input }),
+      const replay = await this.preflightReplay(
+        tx,
+        actor,
+        wid,
+        pid,
+        key,
+        requestHash,
       );
-      const old = (
-        await tx.query(
-          "SELECT * FROM idempotency_keys WHERE workspace_id=$1 AND principal_scope='workspace' AND idempotency_key=$2",
-          [wid, key],
-        )
-      ).rows[0];
-      if (old) {
-        if (
-          old.operation !== "export.preflight" ||
-          old.request_hash !== requestHash
-        )
-          fail("IDEMPOTENCY_CONFLICT", 409);
-        const result =
-          old.response_json as components["schemas"]["PreflightResult"];
-        return result.blocked
-          ? result
-          : {
-              ...result,
-              preflightToken: await this.token(tx, {
-                v: 1,
-                actor: actor.userId,
-                wid,
-                pid,
-                revision: result.revision,
-                preflightId: result.id,
-                options: result.normalizedSpec,
-                hash: result.normalizedSpecHash,
-                expiresAt: result.expiresAt,
-              }),
-            };
-      }
-      const p = await this.prepare(
+      if (replay) return replay;
+      await this.revalidate(
         tx,
         actor,
         wid,
         pid,
         input.revision,
         input.exportSpec,
+        p,
       );
       const preflightId = id(),
-        expiresAt = new Date(Date.parse(this.clock()) + 300000).toISOString();
+        expiresAt = new Date(
+          Date.parse(await this.transactionTime(tx)) + 300000,
+        ).toISOString();
 
       const token = await this.token(tx, {
         v: 1,
@@ -618,7 +737,7 @@ export class ExportService {
         row.provider_submission_state !== "terminal"
       )
         fail("JOB_CONFIRMATION_REQUIRED", 409);
-      if (/OOM|MEMORY_BUDGET|SURFACE_BUDGET/.test(row.error_code ?? ""))
+      if (isResourceFailure(row.error_code))
         fail("RESOURCE_BUDGET_REVIEW_REQUIRED", 409);
       if (digest(canonical(row.manifest)) !== row.manifest_hash)
         fail("JOB_SNAPSHOT_CORRUPT", 500);
@@ -716,6 +835,44 @@ export class ExportService {
   ): Promise<JobRecord> {
     return this.accept(actor, wid, input, key, digest(canonical(input)));
   }
+  private async acceptanceReplay(
+    tx: PoolClient,
+    actor: Actor,
+    wid: string,
+    input: AcceptInput,
+    key: string,
+    requestHash: string,
+  ): Promise<JobRecord | null> {
+    await this.deps.authorization.authorize(actor, wid, "edit", tx);
+    await this.lockKey(tx, wid, key);
+    const old = (
+      await tx.query(
+        "SELECT * FROM idempotency_keys WHERE workspace_id=$1 AND principal_scope='workspace' AND idempotency_key=$2",
+        [wid, key],
+      )
+    ).rows[0];
+    const jobInput = (releaseId: string, snapshotId: string) => ({
+      workspaceId: wid,
+      kind: "export" as const,
+      configReleaseId: releaseId,
+      snapshotId,
+      inputHash: input.snapshotHash,
+      payload: { exportRequestHash: requestHash },
+      createdBy: actor.userId,
+      ...(input.retry ? { retry: input.retry } : {}),
+    });
+    if (old) {
+      const stored = (
+        await tx.query(
+          "SELECT s.id,s.config_release_id FROM jobs j JOIN job_snapshots s ON s.workspace_id=j.workspace_id AND s.id=j.snapshot_id WHERE j.workspace_id=$1 AND j.id=$2",
+          [wid, old.resource_id],
+        )
+      ).rows[0];
+      if (!stored) fail("IDEMPOTENCY_CONFLICT", 409);
+      return createJob(tx, jobInput(stored.config_release_id, stored.id), key);
+    }
+    return null;
+  }
   private async accept(
     actor: Actor,
     wid: string,
@@ -725,15 +882,37 @@ export class ExportService {
     token?: Token,
     rawToken?: string,
   ): Promise<JobRecord> {
+    const replay = await this.deps.db.transaction((tx) =>
+      this.acceptanceReplay(tx, actor, wid, input, key, requestHash),
+    );
+    if (replay) return replay;
+    const p = await this.prepare(
+      actor,
+      wid,
+      input.projectId,
+      input.revision,
+      input.options,
+      input.acknowledgedWarningIds,
+    );
+    if (input.snapshotHash !== p.hash) fail("PREFLIGHT_STALE", 409);
+    if (p.report.blockers.length) fail("PREFLIGHT_BLOCKED", 422);
+    const expected = p.report.warnings.map((i) => i.id);
+    if (
+      new Set(input.acknowledgedWarningIds).size !==
+        input.acknowledgedWarningIds.length ||
+      !same([...expected].sort(), [...input.acknowledgedWarningIds].sort())
+    )
+      fail("WARNINGS_UNACKNOWLEDGED", 422);
     return this.deps.db.transaction(async (tx) => {
-      await this.deps.authorization.authorize(actor, wid, "edit", tx);
-      await this.lockKey(tx, wid, key);
-      const old = (
-        await tx.query(
-          "SELECT * FROM idempotency_keys WHERE workspace_id=$1 AND principal_scope='workspace' AND idempotency_key=$2",
-          [wid, key],
-        )
-      ).rows[0];
+      const old = await this.acceptanceReplay(
+        tx,
+        actor,
+        wid,
+        input,
+        key,
+        requestHash,
+      );
+      if (old) return old;
       const jobInput = (releaseId: string, snapshotId: string) => ({
         workspaceId: wid,
         kind: "export" as const,
@@ -744,46 +923,18 @@ export class ExportService {
         createdBy: actor.userId,
         ...(input.retry ? { retry: input.retry } : {}),
       });
-      if (old) {
-        const stored = (
-          await tx.query(
-            "SELECT s.id,s.config_release_id FROM jobs j JOIN job_snapshots s ON s.workspace_id=j.workspace_id AND s.id=j.snapshot_id WHERE j.workspace_id=$1 AND j.id=$2",
-            [wid, old.resource_id],
-          )
-        ).rows[0];
-        if (!stored) fail("IDEMPOTENCY_CONFLICT", 409);
-        return createJob(
-          tx,
-          jobInput(stored.config_release_id, stored.id),
-          key,
-        );
-      }
-      if (token && Date.parse(token.expiresAt) <= Date.parse(this.clock()))
-        fail("PREFLIGHT_STALE", 409);
-      const p = await this.prepare(
+      await this.revalidate(
         tx,
         actor,
         wid,
         input.projectId,
         input.revision,
         input.options,
+        p,
       );
-      if (input.snapshotHash !== p.hash) fail("PREFLIGHT_STALE", 409);
-      if (p.report.blockers.length) fail("PREFLIGHT_BLOCKED", 422);
-      const expected = p.report.warnings.map((i) => i.id);
-      if (
-        new Set(input.acknowledgedWarningIds).size !==
-          input.acknowledgedWarningIds.length ||
-        !same([...expected].sort(), [...input.acknowledgedWarningIds].sort())
-      )
-        fail("WARNINGS_UNACKNOWLEDGED", 422);
-      // Reuse the exact C1 authority boundary, including strong warning acknowledgement.
-      await this.deps.preflight.check(
-        p.snapshot,
-        p.pins,
-        new AbortController().signal,
-        input.acknowledgedWarningIds,
-      );
+      const at = await this.transactionTime(tx);
+      if (token && Date.parse(token.expiresAt) <= Date.parse(at))
+        fail("PREFLIGHT_STALE", 409);
       const preflight = (
         await tx.query(
           "SELECT * FROM export_preflights WHERE workspace_id=$1 AND project_id=$2 AND revision_id=$3 AND normalized_spec_hash=$4 AND expires_at>$5::timestamptz" +
@@ -794,7 +945,7 @@ export class ExportService {
             input.projectId,
             p.row.id,
             p.hash,
-            this.clock(),
+            at,
             ...(token ? [token.preflightId, digest(rawToken!)] : []),
           ],
         )
@@ -805,7 +956,6 @@ export class ExportService {
         !same(preflight.warnings, p.report.warnings)
       )
         fail("PREFLIGHT_STALE", 409);
-      await this.deps.entitlements.verifyAcceptance?.(tx, wid, p.entitlements);
       // Same lock as C3 asset admission; all category rows are counted while serialized.
       await tx.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
         wid + ":assets",

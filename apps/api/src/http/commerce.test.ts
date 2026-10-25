@@ -117,6 +117,7 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
     it("requires a live finance role for admin read/adjustment and ops for secrets", async () => {
       for (const url of [
         "/v1/admin/orders",
+        "/v1/admin/orders/unknown/source-grants",
         "/v1/admin/redemption-batches",
         "/v1/admin/secrets",
       ]) {
@@ -177,9 +178,26 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           [source, wid, oid],
         );
       });
+      const discovery = await call(
+        "GET",
+        `/v1/admin/orders/${oid}/source-grants`,
+      );
+      expect(discovery.statusCode, discovery.body).toBe(200);
+      expect(discovery.json().data).toMatchObject({
+        orderId: oid,
+        workspaceId: wid,
+        items: [{ id: source, kind: "credits", eligible: true, frozen: false }],
+      });
+      expect(JSON.stringify(discovery.json())).not.toMatch(
+        /secret|locator|original|object_key/,
+      );
+      expect(
+        (await call("GET", `/v1/admin/orders/${id()}/source-grants`))
+          .statusCode,
+      ).toBe(404);
       const body = {
           kind: "credits",
-          sourceGrantId: source,
+          sourceGrantId: discovery.json().data.items[0].id,
           creditDelta: 5,
           reason: "工单复核",
           ticketId: "ticket-42",

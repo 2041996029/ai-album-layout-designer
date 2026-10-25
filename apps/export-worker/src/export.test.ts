@@ -1,4 +1,12 @@
-import { beforeAll, afterAll, beforeEach, describe, it, expect } from "vitest";
+import {
+  beforeAll,
+  afterAll,
+  beforeEach,
+  describe,
+  it,
+  expect,
+  vi,
+} from "vitest";
 import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -207,6 +215,10 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
         "INSERT INTO config_releases(id,environment,release_number,schema_version,manifest_hash,manifest,published_by) VALUES($1,'dev',1,1,$2,'{}',$3)",
         [releaseId, digest("release"), actor.userId],
       );
+      await rows(
+        "INSERT INTO config_active_releases(id,environment,release_id) VALUES($1,'dev',$2) ON CONFLICT(environment) DO UPDATE SET release_id=excluded.release_id",
+        [id(), releaseId],
+      );
       entitlement = {
         workspaceId: wid,
         at: clock(),
@@ -359,6 +371,179 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
       ).toContain("/v1/dev-objects/");
     }, 180000);
 
+    it("releases project/session locks during external storage and revalidates saves and revocation before acceptance", async () => {
+      const saved = await revisions.load(actor, wid, pid, 12);
+      const originalRead = objects.read.bind(objects);
+      let entered!: () => void, resume!: () => void;
+      let seen = new Promise<void>((r) => {
+        entered = r;
+      });
+      let gate = new Promise<void>((r) => {
+        resume = r;
+      });
+      const suspendedRead = async (
+        locator: Parameters<typeof originalRead>[0],
+        signal?: AbortSignal,
+      ) => {
+        entered();
+        await gate;
+        return originalRead(locator, signal);
+      };
+      objects.read = suspendedRead;
+      const running = prepare({ ...options, dpi: 72 });
+      await seen;
+      expect(db.pool.totalCount).toBe(db.pool.idleCount);
+      objects.read = originalRead;
+      try {
+        await db.database.transaction((tx) =>
+          tx.query(
+            "SELECT id FROM projects WHERE workspace_id=$1 AND id=$2 FOR UPDATE NOWAIT",
+            [wid, pid],
+          ),
+        );
+        await revisions.saveCloudRevision(
+          actor,
+          wid,
+          saved.doc,
+          12,
+          saved.resources,
+          id(),
+        );
+      } finally {
+        resume();
+      }
+      const p = await running;
+      expect(p.revision).toBe(12); // immutable saved input survives a concurrent save
+      expect(
+        (
+          await rows("SELECT current_revision FROM projects WHERE id=$1", [pid])
+        )[0].current_revision,
+      ).toBe("13");
+      expect(await rows("SELECT id FROM jobs")).toHaveLength(0);
+      seen = new Promise<void>((r) => {
+        entered = r;
+      });
+      gate = new Promise<void>((r) => {
+        resume = r;
+      });
+      objects.read = suspendedRead;
+      const acceptance = service.acceptPreflightExport(
+        actor,
+        {
+          workspaceId: wid,
+          projectId: pid,
+          revision: 12,
+          preflightToken: p.preflightToken!,
+          normalizedSpecHash: p.normalizedSpecHash,
+          warningsAcknowledged: [],
+        },
+        id(),
+      );
+      // Attach rejection before resuming the race, so test code never leaves an unhandled promise.
+      const denied = expect(acceptance).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+      await seen;
+      await rows(
+        "UPDATE workspace_members SET role='viewer' WHERE workspace_id=$1 AND user_id=$2",
+        [wid, actor.userId],
+      );
+      resume();
+      await denied;
+      expect(await rows("SELECT id FROM jobs")).toHaveLength(0);
+      expect(await rows("SELECT id FROM resource_pins")).toHaveLength(0);
+      objects.read = originalRead;
+    });
+    it("bounds stalled preflight I/O and aborts it without retaining a SQL connection", async () => {
+      const originalRead = objects.read.bind(objects),
+        originalTimer = globalThis.setTimeout;
+      const timer = vi
+        .spyOn(globalThis, "setTimeout")
+        .mockImplementation(((
+          fn: (...args: any[]) => void,
+          ms?: number,
+          ...args: any[]
+        ) =>
+          originalTimer(
+            fn,
+            ms === 120_000 ? 20 : ms,
+            ...args,
+          )) as typeof setTimeout);
+      let aborted = false;
+      objects.read = async (_locator, signal) =>
+        new Promise((_resolve, reject) => {
+          signal!.addEventListener(
+            "abort",
+            () => {
+              aborted = true;
+              reject(signal!.reason);
+            },
+            { once: true },
+          );
+        });
+      try {
+        await expect(prepare({ ...options, dpi: 72 })).rejects.toMatchObject({
+          code: "PREFLIGHT_TIMEOUT",
+          status: 503,
+        });
+        expect(aborted).toBe(true);
+        expect(db.pool.totalCount).toBe(db.pool.idleCount);
+        expect(await rows("SELECT id FROM export_preflights")).toHaveLength(0);
+        expect(await rows("SELECT id FROM jobs")).toHaveLength(0);
+      } finally {
+        objects.read = originalRead;
+        timer.mockRestore();
+      }
+    });
+    it("rejects unchanged export retries after actual OOM normalization", async () => {
+      const job = await accept({ ...options, dpi: 150 }),
+        claimed = await lease(job.jobId);
+      await jobs.failAttempt(claimed, {
+        code: "OOM",
+        retryable: false,
+        definite: true,
+      });
+      const failed = (
+        await rows("SELECT error_code,revision FROM jobs WHERE id=$1", [
+          job.jobId,
+        ])
+      )[0];
+      expect(failed.error_code).toBe("RESOURCE_EXHAUSTED");
+      await expect(
+        service.retryExport(
+          actor,
+          wid,
+          job.jobId,
+          Number(failed.revision),
+          "same options",
+          id(),
+        ),
+      ).rejects.toMatchObject({ code: "RESOURCE_BUDGET_REVIEW_REQUIRED" });
+      await expect(accept({ ...options, dpi: 150 })).rejects.toMatchObject({
+        code: "RESOURCE_BUDGET_REVIEW_REQUIRED",
+      });
+      expect(await rows("SELECT id FROM jobs")).toHaveLength(1);
+      const reduced = await accept({ ...options, dpi: 72 });
+      expect(reduced.state).toBe("queued");
+      await jobs.requestCancel(actor, wid, reduced.jobId);
+      // A separately reviewed release/budget also permits otherwise identical work.
+      const priorConfig = dependencies.config.loadRelease;
+      const reviewedRelease = id();
+      await rows(
+        "INSERT INTO config_releases(id,environment,release_number,schema_version,manifest_hash,manifest,published_by) VALUES($1,'dev',2,1,$2,'{}',$3)",
+        [reviewedRelease, digest("reviewed budget"), actor.userId],
+      );
+      await rows(
+        "UPDATE config_active_releases SET release_id=$1 WHERE environment='dev'",
+        [reviewedRelease],
+      );
+      dependencies.config.loadRelease = async () => ({
+        ...(await priorConfig()),
+        releaseId: reviewedRelease,
+      });
+      const reviewed = await accept({ ...options, dpi: 150 });
+      expect(reviewed.state).toBe("queued");
+    });
     it("replays a workspace key concurrently without creating extra snapshots, pins or quota holds; changed request conflicts", async () => {
       const p = await prepare();
       const key = id();

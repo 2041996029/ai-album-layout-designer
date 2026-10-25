@@ -11,7 +11,7 @@ export interface StorageLocator {
 }
 export interface ObjectStore {
   put(locator: StorageLocator, bytes: Uint8Array): Promise<void>;
-  read(locator: StorageLocator): Promise<Uint8Array>;
+  read(locator: StorageLocator, signal?: AbortSignal): Promise<Uint8Array>;
   head(locator: StorageLocator): Promise<{ bytes: number; sha256: string }>;
   remove(locator: StorageLocator): Promise<void>;
   sign(
@@ -21,9 +21,7 @@ export interface ObjectStore {
   ): Promise<string>;
 }
 export interface QuotaPolicyPort {
-  readQuota(
-    workspaceId: string,
-  ): Promise<{
+  readQuota(workspaceId: string): Promise<{
     limitBytes: number;
     maxProjectPhotos: number;
     projectLimit?: number;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, setSession, type DTO } from "../cloud/api";
 import { MembershipPage } from "./MembershipPage";
 import { OrderPage } from "./OrderPage";
+import { CloudExportPage } from "../export/CloudExportPage";
 import { TaskCenter } from "../jobs/TaskCenter";
 import { CommerceConsole } from "../../../admin/src/commerce/CommerceConsole";
 import "./commerce.css";
@@ -29,6 +30,7 @@ export function CommerceApp() {
           {[
             ["membership", "会员与点数"],
             ["orders", "订单与兑换"],
+            ["export", "云端导出"],
             ["tasks", "任务中心"],
           ].map(([r, label]) => (
             <a
@@ -49,6 +51,8 @@ export function CommerceApp() {
         {workspaceId ? (
           route.startsWith("orders") ? (
             <OrderPage workspaceId={workspaceId} />
+          ) : route === "export" ? (
+            <CloudExportPage workspaceId={workspaceId} />
           ) : route === "tasks" ? (
             <TaskCenter workspaceId={workspaceId} />
           ) : (

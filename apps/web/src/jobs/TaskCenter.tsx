@@ -64,7 +64,8 @@ export function TaskCenter({
       )}
       {!jobs.length && (
         <div className="empty-state">
-          暂无云端任务。接受导出后，可在这里跟踪进度。
+          暂无云端任务。<a href="#export">导出已保存的云相册</a>
+          后，可在这里跟踪进度。
         </div>
       )}
       <div className="task-grid">
@@ -102,22 +103,32 @@ export function TaskCenter({
                 取消任务
               </button>
             )}
-            {["failed", "cancelled"].includes(j.state) && (
-              <button
-                onClick={async () => {
-                  try {
-                    await api(`/jobs/${id(j.id)}/retry`, "POST", {
-                      expectedRevision: j.revision,
-                      reason: "用户重试",
-                    });
-                    await refresh();
-                  } catch (e) {
-                    setError(String(e));
-                  }
-                }}
-              >
-                重试
-              </button>
+            {["failed", "cancelled"].includes(j.state) &&
+              !/RESOURCE_EXHAUSTED|OOM|MEMORY_BUDGET|SURFACE_BUDGET/.test(
+                j.error?.code ?? "",
+              ) && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await api(`/jobs/${id(j.id)}/retry`, "POST", {
+                        expectedRevision: j.revision,
+                        reason: "用户重试",
+                      });
+                      await refresh();
+                    } catch (e) {
+                      setError(String(e));
+                    }
+                  }}
+                >
+                  重试
+                </button>
+              )}
+            {/RESOURCE_EXHAUSTED|OOM|MEMORY_BUDGET|SURFACE_BUDGET/.test(
+              j.error?.code ?? "",
+            ) && (
+              <p>
+                资源预算不足，请降低导出规格并<a href="#export">重新预检</a>。
+              </p>
             )}
             {j.state === "succeeded" &&
               j.outputIds.map((output) => (

@@ -41,8 +41,8 @@ export class LocalObjectStore implements ObjectStore {
       },
     );
   }
-  async read(l: StorageLocator) {
-    return new Uint8Array(await readFile(this.path(l)));
+  async read(l: StorageLocator, signal?: AbortSignal) {
+    return new Uint8Array(await readFile(this.path(l), { signal }));
   }
   async head(l: StorageLocator) {
     const b = await this.read(l);
