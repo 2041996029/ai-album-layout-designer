@@ -4,6 +4,7 @@ on:
     branches: [feat/album-development]
     paths:
       - 'apps/web/**'
+      - 'apps/admin/**'
       - 'packages/**'
       - 'docs/release-v1.0/contracts/schemas/**'
       - 'package.json'
@@ -35,6 +36,12 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:unit
       - run: npm run build
+      - run: npm run build:admin
+      - name: Assemble C4 preview
+        run: |
+          mkdir -p apps/web/dist/admin
+          cp -R apps/admin/dist/. apps/web/dist/admin/
+          node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("apps/web/dist/deployment.json", JSON.stringify({stage:"C4",commit:process.env.GITHUB_SHA,builtAt:new Date().toISOString()}))'
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
