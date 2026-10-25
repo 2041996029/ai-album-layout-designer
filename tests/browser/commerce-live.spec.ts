@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { tsImport } from "tsx/esm/api";
 async function finalUiFixture(
   origin: string,
@@ -16,6 +16,17 @@ async function finalUiFixture(
   return module.finalUiFixture(origin);
 }
 
+async function closeLiveFixture(
+  page: Page,
+  fixture: Awaited<ReturnType<typeof finalUiFixture>>,
+) {
+  // Remove the bridge first and drain its in-flight callbacks. Then stop all
+  // browser polling before closing the API/database they were forwarding into.
+  await page.unrouteAll({ behavior: "wait" });
+  await page.close();
+  await fixture.close();
+}
+
 test("saved project cloud export reaches real server warning acknowledgement and durable job", async ({
   page,
   baseURL,
@@ -25,6 +36,16 @@ test("saved project cloud export reaches real server warning acknowledgement and
     "Disposable PostgreSQL required",
   );
   const fixture = await finalUiFixture(baseURL!);
+  let releaseProbe!: () => void,
+    probeForwarded = false,
+    probeScheduled = false;
+  let probeStarted!: () => void;
+  const probeEntered = new Promise<void>((resolve) => {
+    probeStarted = resolve;
+  });
+  const probeGate = new Promise<void>((resolve) => {
+    releaseProbe = resolve;
+  });
   try {
     await page
       .context()
@@ -38,12 +59,21 @@ test("saved project cloud export reaches real server warning acknowledgement and
     await page.route("**/v1/**", async (route) => {
       const req = route.request(),
         url = new URL(req.url());
+      const teardownProbe = req.headers()["x-teardown-probe"] === "1";
+      if (teardownProbe) {
+        probeStarted();
+        await probeGate;
+      }
       const response = await fixture.app.inject({
         method: req.method(),
         url: url.pathname + url.search,
         payload: req.postData() ?? undefined,
         headers: await req.allHeaders(),
       });
+      if (teardownProbe) {
+        expect(response.statusCode, response.body).toBe(200);
+        probeForwarded = true;
+      }
       await route.fulfill({
         status: response.statusCode,
         headers: { "content-type": "application/json" },
@@ -92,8 +122,20 @@ test("saved project cloud export reaches real server warning acknowledgement and
         )
       ).rows[0].count,
     ).toBe("1");
+    // Hold a real TaskCenter request immediately before injection while teardown begins.
+    // This forces the CI transport race instead of relying on the five-second poll timer.
+    await page.evaluate((wid) => {
+      void fetch(`/v1/workspaces/${wid}/jobs`, {
+        headers: { "X-Teardown-Probe": "1" },
+      });
+    }, fixture.wid);
+    await probeEntered;
+    probeScheduled = true;
+    setTimeout(releaseProbe, 50);
   } finally {
-    await fixture.close();
+    if (!probeScheduled) releaseProbe();
+    await closeLiveFixture(page, fixture);
+    if (probeScheduled) expect(probeForwarded).toBe(true);
   }
 });
 
@@ -182,6 +224,6 @@ test("finance selects a visible paid order and discovered grant before a real so
       ).statusCode,
     ).toBe(403);
   } finally {
-    await fixture.close();
+    await closeLiveFixture(page, fixture);
   }
 });
