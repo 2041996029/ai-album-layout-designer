@@ -1,87 +1,64 @@
 import { test, expect, type Page } from "@playwright/test";
 import { tsImport } from "tsx/esm/api";
-async function finalUiFixture(
-  origin: string,
-): Promise<
-  Awaited<
-    ReturnType<
-      (typeof import("../../apps/api/test/final-ui-fixture"))["finalUiFixture"]
-    >
-  >
-> {
-  const module = await tsImport(
-    "../../apps/api/test/final-ui-fixture.ts",
-    import.meta.url,
-  );
-  return module.finalUiFixture(origin);
+import { commerceHttpOrigin } from "./harness/commerce-http";
+async function finalUiFixture() {
+  const transport = await commerceHttpOrigin();
+  let fixture:
+    | Awaited<
+        ReturnType<
+          (typeof import("../../apps/api/test/final-ui-fixture"))["finalUiFixture"]
+        >
+      >
+    | undefined;
+  try {
+    const module = await tsImport(
+      "../../apps/api/test/final-ui-fixture.ts",
+      import.meta.url,
+    );
+    fixture = await module.finalUiFixture(transport.origin);
+    await fixture!.app.listen(0, "127.0.0.1");
+    transport.bindApi(await fixture!.app.getUrl());
+    return { ...fixture!, transport };
+  } catch (error) {
+    await transport.stop();
+    await fixture?.close();
+    throw error;
+  }
 }
-
 async function closeLiveFixture(
   page: Page,
   fixture: Awaited<ReturnType<typeof finalUiFixture>>,
 ) {
-  // Remove the bridge first and drain its in-flight callbacks. Then stop all
-  // browser polling before closing the API/database they were forwarding into.
-  await page.unrouteAll({ behavior: "wait" });
-  await page.close();
-  await fixture.close();
+  try {
+    // Drain genuine HTTP responses before stopping the page and API. No
+    // Playwright interception/route ownership survives the test boundary.
+    await fixture.transport.stop();
+    await page.close();
+  } finally {
+    await fixture.close();
+  }
 }
 
 test("saved project cloud export reaches real server warning acknowledgement and durable job", async ({
   page,
-  baseURL,
 }) => {
   test.skip(
     !process.env.C3_TEST_DATABASE_URL,
     "Disposable PostgreSQL required",
   );
-  const fixture = await finalUiFixture(baseURL!);
-  let releaseProbe!: () => void,
-    probeForwarded = false,
-    probeScheduled = false;
-  let probeStarted!: () => void;
-  const probeEntered = new Promise<void>((resolve) => {
-    probeStarted = resolve;
-  });
-  const probeGate = new Promise<void>((resolve) => {
-    releaseProbe = resolve;
-  });
+  const fixture = await finalUiFixture();
+  let probeScheduled = false;
   try {
-    await page
-      .context()
-      .addCookies([
-        {
-          name: "album_session",
-          value: fixture.session.accessToken,
-          url: baseURL!,
-        },
-      ]);
-    await page.route("**/v1/**", async (route) => {
-      const req = route.request(),
-        url = new URL(req.url());
-      const teardownProbe = req.headers()["x-teardown-probe"] === "1";
-      if (teardownProbe) {
-        probeStarted();
-        await probeGate;
-      }
-      const response = await fixture.app.inject({
-        method: req.method(),
-        url: url.pathname + url.search,
-        payload: req.postData() ?? undefined,
-        headers: await req.allHeaders(),
-      });
-      if (teardownProbe) {
-        expect(response.statusCode, response.body).toBe(200);
-        probeForwarded = true;
-      }
-      await route.fulfill({
-        status: response.statusCode,
-        headers: { "content-type": "application/json" },
-        body: response.body,
-      });
-    });
+    await page.context().addCookies([
+      {
+        name: "album_session",
+        value: fixture.session.accessToken,
+        url: fixture.transport.origin,
+      },
+    ]);
+
     await page.goto(
-      `/tests/browser/harness/commerce.html?workspace=${fixture.wid}`,
+      `${fixture.transport.origin}/commerce.html?workspace=${fixture.wid}`,
     );
     await page.getByRole("link", { name: "云端导出", exact: true }).click();
     await page.getByLabel("已保存的云相册").selectOption(fixture.pid);
@@ -122,58 +99,41 @@ test("saved project cloud export reaches real server warning acknowledgement and
         )
       ).rows[0].count,
     ).toBe("1");
-    // Hold a real TaskCenter request immediately before injection while teardown begins.
-    // This forces the CI transport race instead of relying on the five-second poll timer.
+    // Hold a genuine loopback TaskCenter request while HTTP shutdown begins.
+    // The API must remain open until the delayed request has returned HTTP 200.
     await page.evaluate((wid) => {
       void fetch(`/v1/workspaces/${wid}/jobs`, {
         headers: { "X-Teardown-Probe": "1" },
       });
     }, fixture.wid);
-    await probeEntered;
+    await fixture.transport.probe.entered;
     probeScheduled = true;
-    setTimeout(releaseProbe, 50);
+    setTimeout(fixture.transport.probe.release, 50);
   } finally {
-    if (!probeScheduled) releaseProbe();
+    if (!probeScheduled) fixture.transport.probe.release();
     await closeLiveFixture(page, fixture);
-    if (probeScheduled) expect(probeForwarded).toBe(true);
+    if (probeScheduled) expect(fixture.transport.probe.forwarded()).toBe(true);
   }
 });
 
 test("finance selects a visible paid order and discovered grant before a real source-bound adjustment", async ({
   page,
-  baseURL,
 }) => {
   test.skip(
     !process.env.C3_TEST_DATABASE_URL,
     "Disposable PostgreSQL required",
   );
-  const fixture = await finalUiFixture(baseURL!);
+  const fixture = await finalUiFixture();
   try {
-    await page
-      .context()
-      .addCookies([
-        {
-          name: "album_session",
-          value: fixture.session.accessToken,
-          url: baseURL!,
-        },
-      ]);
-    await page.route("**/v1/**", async (route) => {
-      const req = route.request(),
-        url = new URL(req.url());
-      const response = await fixture.app.inject({
-        method: req.method(),
-        url: url.pathname + url.search,
-        payload: req.postData() ?? undefined,
-        headers: await req.allHeaders(),
-      });
-      await route.fulfill({
-        status: response.statusCode,
-        headers: { "content-type": "application/json" },
-        body: response.body,
-      });
-    });
-    await page.goto("/tests/browser/harness/commerce.html?admin=1");
+    await page.context().addCookies([
+      {
+        name: "album_session",
+        value: fixture.session.accessToken,
+        url: fixture.transport.origin,
+      },
+    ]);
+
+    await page.goto(`${fixture.transport.origin}/commerce.html?admin=1`);
     await expect(
       page.getByText(fixture.orderId, { exact: true }),
     ).toBeVisible();
