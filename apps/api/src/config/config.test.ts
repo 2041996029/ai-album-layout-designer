@@ -296,8 +296,8 @@ describe("approved HTTPS policy", () => {
   });
 });
 
-// This suite deliberately fails without a disposable database; skipped SQL is not evidence.
-describe("configuration transactions on PostgreSQL", () => {
+// C4 runs this suite with PostgreSQL; static policy tests also run in the C1 lane.
+describe.skipIf(!process.env.C3_TEST_DATABASE_URL)("configuration transactions on PostgreSQL", () => {
   let db: Awaited<ReturnType<typeof testDatabase>>,
     auth: AuthService,
     reauth: ReauthService,
