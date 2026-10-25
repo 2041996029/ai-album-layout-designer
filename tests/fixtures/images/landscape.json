@@ -1,0 +1,12 @@
+{
+  "name": "landscape",
+  "width": 2000,
+  "height": 1000,
+  "colors": [
+    "red",
+    "green",
+    "blue",
+    "yellow"
+  ],
+  "channelTolerance": 0
+}

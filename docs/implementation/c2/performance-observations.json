@@ -1,0 +1,16 @@
+[
+  {
+    "photos": 50,
+    "spreads": 17,
+    "lockedImageLayers": 0,
+    "computeAndUiMs": 754,
+    "firstPreviewMs": 1096
+  },
+  {
+    "photos": 200,
+    "spreads": 50,
+    "lockedImageLayers": 1,
+    "computeAndUiMs": 1186,
+    "firstPreviewMs": 1898
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ES2023", "module": "ESNext", "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"], "jsx": "react-jsx",
+    "strict": true, "noEmit": true, "skipLibCheck": true,
+    "resolveJsonModule": true, "esModuleInterop": true,
+    "types": ["node", "vitest/globals"],
+    "paths": {"@album/*": ["./packages/*/src/index.ts"]}
+  },
+  "include": ["packages", "apps", "scripts", "tests", "*.config.ts"]
+}

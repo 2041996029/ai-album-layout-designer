@@ -448,6 +448,16 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 4294967295
+        },
+        "templatePageIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "minItems": 1,
+          "maxItems": 50
         }
       },
       "required": [

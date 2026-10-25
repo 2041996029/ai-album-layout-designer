@@ -221,6 +221,44 @@
             "generated"
           ],
           "default": "photo"
+        },
+        "alphaMask": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "assetId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          "required": [
+            "version",
+            "assetId"
+          ],
+          "additionalProperties": false
+        },
+        "templateSlot": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "slotId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          "required": [
+            "version",
+            "slotId"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

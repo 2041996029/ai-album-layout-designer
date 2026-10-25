@@ -1,0 +1,561 @@
+import { photoPool, autoBindings } from "../editor/library-photos";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { IndexedDbThemeLibrary } from "@album/storage";
+import { isUserPhoto } from "@album/assets";
+import type { ConvertedTheme, ImportedTheme } from "@album/template-import";
+import type { LibraryContext } from "../editor/TemplatePanel";
+import { importTheme } from "./import-controller";
+import { planSelectedThemeBook } from "./auto-book";
+import { ThemePreview } from "./ThemePreview";
+export const themeErrorText = (error: unknown) => {
+  const code = error instanceof Error ? error.message : String(error);
+  const messages: Record<string, string> = {
+    THEME_CAPACITY_MISMATCH:
+      "无法匹配照片与跨页，请检查选片数量和已有锁定内容。",
+    PAGE_ASPECT_MISMATCH: "模板与当前作品比例不同，不能直接等比适配。",
+    LAYER_LOCKED: "当前跨页包含锁定图层，请先解锁或选择其他跨页。",
+    STALE_LAYOUT: "作品已更新，请重新生成并应用。",
+    TEMPLATE_BINDING_REQUIRED: "请为所有照片槽选片。",
+    DUPLICATE_PHOTO_BINDING: "同一跨页不能重复选入同一张照片。",
+    UNSUPPORTED_TEMPLATE_PAGE: "此页包含暂不支持的效果，请查看兼容性报告。",
+    STORAGE_FULL: "浏览器空间不足，请清理不再使用的模板后重试。",
+  };
+  return messages[code] ?? code;
+};
+export function ThemeLibraryPanel(
+  ctx: LibraryContext & { initialTheme?: ConvertedTheme },
+) {
+  const [importing, setImporting] = useState(false);
+  const [library] = useState(() => new IndexedDbThemeLibrary()),
+    [themes, setThemes] = useState<ImportedTheme[]>([]),
+    [converted, setConverted] = useState<ConvertedTheme>(),
+    [pageId, setPageId] = useState(""),
+    [selectedPages, setSelectedPages] = useState<string[]>([]),
+    [bindings, setBindings] = useState<Record<string, string>>({}),
+    [selectedPhotos, setSelectedPhotos] = useState<string[]>([]),
+    [urls, setUrls] = useState<Record<string, string>>({}),
+    [busy, setBusy] = useState(false),
+    [progress, setProgress] = useState(""),
+    [error, setError] = useState(""),
+    [showConverted, setShowConverted] = useState(false),
+    [confirmBook, setConfirmBook] = useState(false);
+  const controller = useRef<AbortController | undefined>(undefined),
+    sequence = useRef(0);
+  const assets = ctx.resources.assets.filter(
+    (a) => isUserPhoto(a) && a.status === "ready" && a.license.usable,
+  );
+  const pool = photoPool(
+    assets,
+    [
+      ...ctx.doc.cover.front,
+      ...ctx.doc.cover.back,
+      ...ctx.doc.spreads.flatMap((s) => s.layers),
+    ],
+    ctx.selectedIds,
+    ctx.selectedPhotoIds,
+  );
+  const theme = converted?.theme,
+    page = theme?.pages.find((p) => p.id === pageId);
+  const refresh = () => library.list().then(setThemes);
+  useEffect(() => {
+    void refresh().catch((e) => setError(themeErrorText(e)));
+    return () => {
+      controller.current?.abort();
+    };
+  }, [library]);
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    if (converted)
+      for (const p of converted.theme.pages) {
+        const bytes = converted.files.get(p.previewPath);
+        if (bytes)
+          next[p.id] = URL.createObjectURL(
+            new Blob([new Uint8Array(bytes)], {
+              type: p.previewPath.endsWith(".svg")
+                ? "image/svg+xml"
+                : "image/png",
+            }),
+          );
+      }
+    setUrls(next);
+    return () => Object.values(next).forEach(URL.revokeObjectURL);
+  }, [converted]);
+  const choose = (value: ConvertedTheme) => {
+    setConverted(value);
+    setPageId(value.theme.pages[0]?.id ?? "");
+    setSelectedPages(
+      value.theme.pages
+        .filter((p) => !p.issues.some((i) => i.severity === "blocker"))
+        .map((p) => p.id),
+    );
+    setBindings(
+      autoBindings(
+        value.theme.pages[0]?.photoSlots.map((s) => s.slotId) ?? [],
+        pool,
+      ),
+    );
+    setSelectedPhotos(pool.map((a) => a.id));
+    setShowConverted(false);
+    setConfirmBook(false);
+  };
+  useEffect(() => {
+    if (ctx.initialTheme) choose(ctx.initialTheme);
+  }, [ctx.initialTheme]);
+  const load = async (id: string) => {
+    const token = ++sequence.current;
+    setBusy(true);
+    setError("");
+    try {
+      const value = await library.get(id);
+      if (sequence.current === token) {
+        choose(value);
+        if (ctx.autoLayoutTheme) {
+          if (await ctx.autoLayoutTheme(value))
+            setProgress("已按此主题完成整本排版，可一次撤销。");
+          return;
+        }
+        const target = [...value.theme.pages]
+          .filter(
+            (p) =>
+              !p.issues.some((i) => i.severity === "blocker") &&
+              p.photoSlots.length <= pool.length,
+          )
+          .sort(
+            (a, b) =>
+              Math.abs(a.photoSlots.length - pool.length) -
+              Math.abs(b.photoSlots.length - pool.length),
+          )[0];
+        if (target) {
+          setPageId(target.id);
+          const next = autoBindings(
+            target.photoSlots.map((s) => s.slotId),
+            pool,
+          );
+          setBindings(next);
+          await apply(false, target, value, next);
+        }
+      }
+    } catch (e) {
+      setError(themeErrorText(e));
+    } finally {
+      if (token === sequence.current) setBusy(false);
+    }
+  };
+  const onImport = async (file: File) => {
+    const token = ++sequence.current;
+    controller.current?.abort();
+    const abort = new AbortController();
+    controller.current = abort;
+    setBusy(true);
+    setImporting(true);
+    setError("");
+    try {
+      const value = await importTheme(file, library, abort.signal, setProgress);
+      if (token !== sequence.current || abort.signal.aborted) return;
+      await refresh();
+      choose(value);
+      setProgress(
+        `已导入「${value.theme.name}」，共 ${value.theme.pages.length} 个版式。`,
+      );
+    } catch (e) {
+      if (!abort.signal.aborted) setError(themeErrorText(e));
+      else setProgress("已取消导入，作品未改变。");
+    } finally {
+      if (token === sequence.current) {
+        setBusy(false);
+        setImporting(false);
+      }
+    }
+  };
+  const apply = async (
+    book: boolean,
+    target = page,
+    source = converted,
+    assigned = bindings,
+  ) => {
+    const page = target,
+      converted = source,
+      theme = source?.theme;
+    if (!converted || !page || !ctx.applyImportedTheme) return;
+    if (!book && page.photoSlots.some((s) => !assigned[s.slotId])) {
+      setError("照片不足，请导入更多照片，或选择图数较少的版式。");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const ids = book
+        ? planSelectedThemeBook(
+            theme!.pages,
+            selectedPages,
+            selectedPhotos.length,
+          )
+        : [page.id];
+      if (!ids.length) throw Error("请先选择要用于整本的跨页。");
+      if (
+        ids.some((id) =>
+          theme!.pages
+            .find((p) => p.id === id)!
+            .issues.some((i) => i.severity === "blocker"),
+        )
+      )
+        throw Error("UNSUPPORTED_TEMPLATE_PAGE");
+      const ok = await ctx.applyImportedTheme(
+        converted,
+        ids,
+        book ? selectedPhotos : assigned,
+        book,
+      );
+      if (ok) {
+        setProgress(
+          book
+            ? `已将所选版式应用到 ${ids.length} 个跨页，整本内页已替换，缺页已新增；${selectedPhotos.length} 张照片已排入，空余照片位留白，可一次撤销。`
+            : "已应用当前跨页，可以一次撤销。",
+        );
+        setConfirmBook(false);
+      }
+    } catch (e) {
+      setError(themeErrorText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const slots = useMemo(
+    () =>
+      selectedPages.reduce(
+        (sum, id) =>
+          sum + (theme?.pages.find((p) => p.id === id)?.photoSlots.length ?? 0),
+        0,
+      ),
+    [selectedPages, theme],
+  );
+  return (
+    <section className="theme-library" aria-label="我的主题模板">
+      <div className="panel-heading">
+        <h3>我的主题模板</h3>
+        <small>本地私有</small>
+      </div>
+      <p className="panel-hint">
+        导入魔镜设计 .mjtpl，保留整套版式、装饰与照片框。模板不会上传到服务器。
+      </p>
+      <label className="import-card">
+        ＋ 导入 .mjtpl
+        <input
+          aria-label="导入 MJTPL 模板"
+          type="file"
+          accept=".mjtpl"
+          disabled={busy}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) void onImport(file);
+          }}
+        />
+      </label>
+      {importing && (
+        <button onClick={() => controller.current?.abort()}>取消导入</button>
+      )}
+      {progress && <p aria-live="polite">{progress}</p>}
+      {error && <p role="alert">{error}</p>}
+      <div className="theme-list">
+        {themes.map((t) => (
+          <div className="theme-list-item" key={t.id}>
+            <button
+              aria-pressed={theme?.id === t.id}
+              onClick={() => void load(t.id)}
+              disabled={busy}
+            >
+              <b>{t.name}</b>
+              <small>
+                {t.pages.length} 个跨页 ·{" "}
+                {t.pages.reduce((n, p) => n + p.photoSlots.length, 0)} 个照片槽
+              </small>
+            </button>
+            <button
+              aria-label={`删除主题 ${t.name}`}
+              disabled={busy}
+              onClick={async () => {
+                if (
+                  !window.confirm(
+                    "仅删除本地模板库中的主题，已应用到作品的素材会保留。",
+                  )
+                )
+                  return;
+                try {
+                  await library.remove(t.id);
+                  if (theme?.id === t.id) setConverted(undefined);
+                  await refresh();
+                } catch (e) {
+                  setError(themeErrorText(e));
+                }
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+      {!themes.length && !theme && !busy && (
+        <p className="panel-hint">
+          还没有导入模板。导入后可按主题浏览并选择整套跨页。
+        </p>
+      )}
+      {theme && (
+        <>
+          <h4>{theme.name}</h4>
+          <button
+            disabled={busy || !selectedPages.length || !selectedPhotos.length}
+            onClick={() => void apply(true)}
+          >
+            用此模板智能排整本
+          </button>
+          <button
+            onClick={() =>
+              setSelectedPages(
+                theme.pages
+                  .filter(
+                    (p) => !p.issues.some((i) => i.severity === "blocker"),
+                  )
+                  .map((p) => p.id),
+              )
+            }
+          >
+            全选跨页
+          </button>
+          <button onClick={() => setSelectedPages([])}>取消全选跨页</button>
+          <p className="panel-hint">
+            已勾选 {selectedPages.length}{" "}
+            个跨页。整本排版会替换全部内页并自动新增缺页；照片不足时留白，照片较多时自动追加跨页，不重复照片。点击下方单个版式仅替换当前页。
+          </p>
+          <div className="theme-page-grid">
+            {theme.pages.map((p, index) => (
+              <article key={p.id}>
+                <button
+                  className={pageId === p.id ? "is-selected" : ""}
+                  disabled={busy}
+                  onClick={() => {
+                    setPageId(p.id);
+                    const next = autoBindings(
+                      p.photoSlots.map((s) => s.slotId),
+                      pool,
+                    );
+                    setBindings(next);
+                    setShowConverted(false);
+                    setError("");
+                    void apply(false, p, converted, next);
+                  }}
+                >
+                  <img src={urls[p.id]} alt={`${p.name}源预览`} />
+                  <span>
+                    {index + 1}. {p.name} · {p.photoSlots.length} 图
+                  </span>
+                </button>
+                <label>
+                  <input
+                    type="checkbox"
+                    aria-label={`加入整本 ${p.name}`}
+                    checked={selectedPages.includes(p.id)}
+                    onChange={(e) => {
+                      setSelectedPages(
+                        e.target.checked
+                          ? [...selectedPages, p.id]
+                          : selectedPages.filter((id) => id !== p.id),
+                      );
+                      setConfirmBook(false);
+                    }}
+                  />
+                  加入整本
+                  {p.issues.some((i) => i.severity === "blocker")
+                    ? " · 暂不能应用"
+                    : ""}
+                </label>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
+      {page && converted && (
+        <div className="theme-page-details">
+          <h4>
+            {page.name} / {page.photoSlots.length} 张照片
+          </h4>
+          {Math.abs(
+            (ctx.doc.pageSize.width * 2) / ctx.doc.pageSize.height -
+              page.width / page.height,
+          ) > 1e-6 && (
+            <div>
+              <p>
+                此主题比例与当前作品不同。可新建匹配尺寸作品，当前作品将保存并保留。
+              </p>
+              <button
+                disabled={busy}
+                onClick={async () => {
+                  if (
+                    !ctx.createTemplateProject ||
+                    !window.confirm(
+                      "新建匹配尺寸作品，当前作品会保存保留，照片素材会沿用。",
+                    )
+                  )
+                    return;
+                  setBusy(true);
+                  try {
+                    await ctx.createTemplateProject({
+                      width: page.width / 2,
+                      height: page.height,
+                    });
+                  } catch (e) {
+                    setError(themeErrorText(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                新建匹配尺寸作品
+              </button>
+            </div>
+          )}
+          {!theme?.id.startsWith("original_") && (
+            <button onClick={() => setShowConverted((v) => !v)}>
+              {showConverted ? "查看源预览" : "查看转换图层预览"}
+            </button>
+          )}
+          {showConverted ? (
+            <ThemePreview converted={converted} page={page} />
+          ) : (
+            <img
+              className="theme-large-preview"
+              src={urls[page.id]}
+              alt={`${page.name}源预览大图`}
+            />
+          )}
+          <details>
+            <summary>兼容性报告 · {page.issues.length} 项</summary>
+            <p>
+              “外观保留”的文字以原始图像显示，可在画布中选择并转为本地字体编辑。
+            </p>
+            {page.issues.map((i, index) => (
+              <p key={index}>
+                {i.severity === "blocker" ? "无法应用" : "提示"}：{i.message}
+              </p>
+            ))}
+          </details>
+          <p className="panel-hint">
+            点击版式自动填入照片并应用，支持一次撤销。
+          </p>
+          <details>
+            <summary>调整照片</summary>
+            {page.photoSlots.map((slot, index) => (
+              <label className="theme-binding" key={slot.slotId}>
+                照片 {index + 1}
+                <select
+                  aria-label={`导入模板照片 ${index + 1}`}
+                  value={bindings[slot.slotId] ?? ""}
+                  onChange={(e) =>
+                    setBindings({ ...bindings, [slot.slotId]: e.target.value })
+                  }
+                >
+                  <option value="">请选择用户照片</option>
+                  {assets.map((a) => (
+                    <option value={a.id} key={a.id}>
+                      {a.source.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </details>
+          <p className="panel-hint">
+            应用会替换当前跨页的图层；源样片不会作为你的选片入册。可以一次撤销。
+          </p>
+          <button
+            className="wide"
+            disabled={busy || page.issues.some((i) => i.severity === "blocker")}
+            onClick={() => void apply(false)}
+          >
+            替换当前跨页
+          </button>
+          <details className="theme-book">
+            <summary>使用此主题排整本</summary>
+            <p>
+              已选择 {selectedPages.length} 个跨页，共 {slots}{" "}
+              个照片槽。按勾选先后顺序成册。
+            </p>
+            <button
+              onClick={() =>
+                setSelectedPages(
+                  theme!.pages
+                    .filter(
+                      (p) => !p.issues.some((i) => i.severity === "blocker"),
+                    )
+                    .map((p) => p.id),
+                )
+              }
+            >
+              选择全部兼容跨页
+            </button>
+            <button onClick={() => setSelectedPages([])}>清空跨页</button>
+            <ol>
+              {selectedPages.map((id) => (
+                <li key={id}>{theme!.pages.find((p) => p.id === id)?.name}</li>
+              ))}
+            </ol>
+            <p>
+              选入照片 {selectedPhotos.length} / {slots}，按素材顺序排列。
+            </p>
+            <button onClick={() => setSelectedPhotos(assets.map((a) => a.id))}>
+              全选照片
+            </button>
+            <button onClick={() => setSelectedPhotos([])}>清空选片</button>
+            <div className="theme-photo-selection">
+              {assets.map((a) => (
+                <label key={a.id}>
+                  <input
+                    type="checkbox"
+                    checked={selectedPhotos.includes(a.id)}
+                    onChange={(e) =>
+                      setSelectedPhotos(
+                        e.target.checked
+                          ? assets
+                              .filter(
+                                (v) =>
+                                  selectedPhotos.includes(v.id) ||
+                                  v.id === a.id,
+                              )
+                              .map((v) => v.id)
+                          : selectedPhotos.filter((id) => id !== a.id),
+                      )
+                    }
+                  />
+                  {a.source.name}
+                </label>
+              ))}
+            </div>
+            <p className="panel-hint">
+              按勾选的跨页替换整本内页并新增缺页，照片不足时留白，不重复照片。照片超过容量时自动追加所选版式。锁定内容无法匹配时会提示，整次操作可以撤销。
+            </p>
+            {!confirmBook ? (
+              <button
+                disabled={
+                  busy || !selectedPages.length || !selectedPhotos.length
+                }
+                onClick={() => setConfirmBook(true)}
+              >
+                预备整本排版
+              </button>
+            ) : (
+              <>
+                <p>
+                  将按所选跨页替换整本内页，请先备份已有作品。确认后可一次撤销。
+                </p>
+                <button disabled={busy} onClick={() => void apply(true)}>
+                  确认应用整本主题
+                </button>
+                <button onClick={() => setConfirmBook(false)}>返回</button>
+              </>
+            )}
+          </details>
+        </div>
+      )}
+    </section>
+  );
+}

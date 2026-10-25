@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.superpowers/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

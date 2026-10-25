@@ -1,0 +1,13 @@
+{
+  "name": "@album/jobs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@album/server-core": "0.1.0",
+    "bullmq": "6.4.0",
+    "ioredis": "5.8.2",
+    "pg": "8.23.1"
+  }
+}

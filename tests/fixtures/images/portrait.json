@@ -1,0 +1,12 @@
+{
+  "name": "portrait",
+  "width": 1000,
+  "height": 2000,
+  "colors": [
+    "red",
+    "green",
+    "blue",
+    "yellow"
+  ],
+  "channelTolerance": 0
+}

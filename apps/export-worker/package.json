@@ -1,0 +1,15 @@
+{
+  "name": "@album/export-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build --config ../web/vite.config.ts && vite build --config vite.config.ts",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@album/jobs": "0.1.0",
+    "@album/export": "0.1.0",
+    "@album/server-core": "0.1.0"
+  }
+}

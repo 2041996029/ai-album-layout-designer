@@ -369,6 +369,13 @@ paths:
       security:
       - QrPollToken: []
       parameters:
+      - name: X-Browser-Nonce
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 32
+          maxLength: 256
       - name: qrSessionId
         in: path
         required: true
@@ -9899,6 +9906,14 @@ paths:
         CsrfToken: []
       - MiniBearer: []
       parameters:
+      - name: reason
+        in: query
+        required: true
+        description: Operator reason for disabling new claims; retained in the redacted audit. Do not log query values.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 500
       - name: batchId
         in: path
         required: true
@@ -10230,6 +10245,44 @@ paths:
               $ref: '#/components/schemas/AdminJobAction'
       x-idempotency-scope: workspace resolved from target or request; otherwise authenticated user or pre-auth browser
         challenge
+  /admin/orders/{orderId}/source-grants:
+    get:
+      operationId: getAdminOrderSourceGrants
+      tags:
+        - Operations
+      summary: 查询订单的来源授权供财务调整选择
+      description: Finance-only discovery scoped to the selected order. Contains
+        eligibility and financial identifiers only; no resource locators or
+        secrets.
+      x-module: C4
+      x-requirement-ids:
+        - PAY-01
+        - ADM-01
+      x-required-permission: platform.finance.read
+      security:
+        - WebCookie: []
+        - MiniBearer: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      responses:
+        "200":
+          description: Order source grants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderSourceGrantsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /admin/orders:
     get:
       operationId: queryAdminOrders
@@ -11312,6 +11365,146 @@ paths:
         description: Exact raw UTF-8 JSON bytes on wire. Capture original byte buffer and original signed headers
           BEFORE decode/parse; schema validates only after successful cryptographic verification. Max body1MiB.
           WeChat Pay encrypted fields decrypted only after outer signature validation.
+  /auth/reauthentication:
+    get:
+      operationId: getReauthAvailability
+      tags:
+        - Identity
+      summary: getReauthAvailability
+      x-module: C3
+      x-required-permission: authenticated.self
+      security:
+        - WebCookie: []
+        - MiniBearer: []
+      parameters: []
+      responses:
+        "200":
+          description: Human identity verification response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReauthAvailabilityResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /auth/reauthentication/challenges:
+    post:
+      operationId: createReauthChallenge
+      tags:
+        - Identity
+      summary: createReauthChallenge
+      x-module: C3
+      x-required-permission: authenticated.self
+      security:
+        - WebCookie: []
+          CsrfToken: []
+        - MiniBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Human identity verification response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanReauthChallengeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HumanReauthCreate"
+  /workspaces/{workspaceId}/refunds:
+    get:
+      operationId: listWorkspaceRefunds
+      tags:
+        - Commerce
+      summary: Discover authorized durable refund history
+      description: "查询工作区订单. Required permission: billing.read. Resource IDs are
+        resolved in the authenticated workspace; inaccessible cross-tenant IDs
+        return 404. Role checks do not replace license, capability, quota or
+        ownership checks."
+      x-module: C4
+      x-requirement-ids:
+        - PAY-01
+      x-required-permission: billing.read
+      security:
+        - WebCookie: []
+        - MiniBearer: []
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+            examples:
+              - prj_demo
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Durable refund records in this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryAdminRefundsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /auth/reauthenticate:
     post:
       operationId: reauthenticate
@@ -12090,6 +12283,50 @@ paths:
           $ref: '#/components/responses/Unavailable'
         '500':
           $ref: '#/components/responses/InternalError'
+  /admin/workspaces/{workspaceId}/adjustments:
+    post:
+      operationId: createFinancialAdjustment
+      tags:
+        - Commerce
+      summary: 审核工单对应的来源额度或会员调整
+      description: Live finance role and fresh admin_operations reauthentication
+        required. Immutable source-linked ledger and audit. No payment capture or
+        order is fabricated.
+      security:
+        - WebCookie: []
+          CsrfToken: []
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/ReauthenticationProof"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinancialAdjustmentCreate"
+      responses:
+        "201":
+          description: 已记录财务调整
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancialAdjustmentResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+      x-module: C4
 components:
   schemas:
     Id:
@@ -12616,6 +12853,85 @@ components:
       - verificationCode
       - client
       additionalProperties: false
+    ReauthAvailability:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+            - available
+            - unconfigured
+            - unavailable
+        reasonCode:
+          type: string
+          minLength: 1
+          maxLength: 128
+        method:
+          type: string
+          enum:
+            - sms
+      required:
+        - state
+      additionalProperties: false
+    HumanReauthCreate:
+      type: object
+      properties:
+        purpose: &a1
+          $ref: "#/components/schemas/IdentityProof/properties/purpose"
+      required:
+        - purpose
+      additionalProperties: false
+    HumanReauthChallenge:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        method:
+          type: string
+          const: sms
+        destinationHint:
+          type: string
+          minLength: 1
+          maxLength: 100
+        expiresAt:
+          type: string
+          format: date-time
+        purpose: *a1
+      required:
+        - id
+        - method
+        - destinationHint
+        - expiresAt
+        - purpose
+      additionalProperties: false
+    ReauthAvailabilityResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ReauthAvailability"
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+        - data
+        - requestId
+      additionalProperties: false
+    HumanReauthChallengeResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/HumanReauthChallenge"
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+        - data
+        - requestId
+      additionalProperties: false
     IdentityProof:
       type: object
       properties:
@@ -12850,6 +13166,21 @@ components:
         createdAt:
           type: string
           format: date-time
+        defaults:
+          type: object
+          properties:
+            pageWidthMm:
+              type: number
+              exclusiveMinimum: 0
+              maximum: 2000
+            pageHeightMm:
+              type: number
+              exclusiveMinimum: 0
+              maximum: 2000
+            notificationsEnabled:
+              type: boolean
+          required: [pageWidthMm, pageHeightMm, notificationsEnabled]
+          additionalProperties: false
       required:
       - id
       - name
@@ -13223,6 +13554,8 @@ components:
     Asset:
       type: object
       properties:
+        editorResource:
+          $ref: '#/components/schemas/EditorAssetRecord'
         id:
           type: string
           minLength: 1
@@ -13737,6 +14070,8 @@ components:
     ProjectDocument:
       type: object
       properties:
+        resources:
+          $ref: '#/components/schemas/EditorResourceManifest'
         project:
           $ref: '#/components/schemas/Project'
         document:
@@ -13960,9 +14295,17 @@ components:
       - $ref: '#/components/schemas/ReplaceDocument'
       discriminator:
         propertyName: type
+        mapping:
+          setText: '#/components/schemas/SetText'
+          setCrop: '#/components/schemas/SetCrop'
+          replaceAsset: '#/components/schemas/ReplaceAsset'
+          reorderSpreads: '#/components/schemas/ReorderSpreads'
+          replaceDocument: '#/components/schemas/ReplaceDocument'
     ProjectPatch:
       type: object
       properties:
+        resources:
+          $ref: '#/components/schemas/EditorResourceManifest'
         commandId:
           type: string
           minLength: 1
@@ -15201,6 +15544,10 @@ components:
           - $ref: '#/components/schemas/VirtualPaymentMini'
           discriminator:
             propertyName: kind
+            mapping:
+              qr: '#/components/schemas/PaymentQr'
+              mini_jsapi: '#/components/schemas/PaymentMini'
+              mini_virtual: '#/components/schemas/VirtualPaymentMini' 
       required:
       - attemptId
       - expiresAt
@@ -16143,8 +16490,15 @@ components:
       - verifiedChecks
       - expiresAt
       - createdAt
-      - jobId
       additionalProperties: false
+      allOf:
+      - if:
+          properties:
+            state:
+              enum: [queued, running]
+        then:
+          required: [jobId]
+
     ConfigChange:
       type: object
       properties:
@@ -16882,6 +17236,21 @@ components:
     ReconcileResult:
       type: object
       properties:
+        reviews:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            properties:
+              id: {type: string, minLength: 1, maxLength: 128}
+              orderId: {type: string, minLength: 1, maxLength: 128}
+              paidFen: {type: integer, minimum: 0, maximum: 9007199254740991}
+              refundedFen: {type: integer, minimum: 0, maximum: 9007199254740991}
+              localState: {type: string, minLength: 1, maxLength: 80}
+              localFulfillmentState: {type: string, minLength: 1, maxLength: 80}
+            required: [id, orderId, paidFen, refundedFen, localState, localFulfillmentState]
+            additionalProperties: false
+          description: Redacted durable financial differences for live finance review; no photo locators or credentials.
         id:
           type: string
           minLength: 1
@@ -17049,8 +17418,63 @@ components:
       - state
       - revision
       additionalProperties: false
-      description: Raw codes made available once through audited private output with short retention; stored hashes
-        only. Never returned in lists or audit.
+      description: Batch metadata only. Never contains raw codes. Legacy codeDownloadOutputId is optional and is not synthesized by creation.
+    RedemptionBatchCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+          examples:
+          - prj_demo
+        skuVersionId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          examples:
+          - prj_demo
+        count:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        expiresAt:
+          type: string
+          format: date-time
+        state:
+          type: string
+          enum:
+          - active
+          - disabled
+          - expired
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        oneTimeCodes:
+          type: array
+          minItems: 1
+          maxItems: 10000
+          items:
+            type: string
+            minLength: 22
+            maxLength: 128
+            pattern: '^[A-Za-z0-9_-]+$'
+        codeDownloadOutputId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          examples:
+          - prj_demo
+      required:
+      - id
+      - skuVersionId
+      - count
+      - expiresAt
+      - state
+      - revision
+      additionalProperties: false
+      description: Creation-only metadata. oneTimeCodes is present only on the first generating response; replay omits it. Raw codes are never persisted, logged, listed or returned again. The authorized admin must immediately download the transient response; lost responses require explicit disable and reissue.
     ContentPublication:
       type: object
       properties:
@@ -19692,7 +20116,7 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/RedemptionBatch'
+          $ref: '#/components/schemas/RedemptionBatchCreated'
         requestId:
           type: string
           minLength: 1
@@ -21069,6 +21493,438 @@ components:
       additionalProperties: false
       description: Bind a required template image slot to a ready immutable asset owned by the target workspace.
         Unique slotId; no external URL or platform placeholder may remain in instantiated required slot.
+    EditorResourceManifest:
+      type: object
+      properties:
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/EditorAssetRecord"
+          maxItems: 2500
+        fonts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+                maxLength: 128
+              version:
+                type: integer
+                minimum: 1
+                maximum: 9007199254740991
+              sha256:
+                type: string
+                pattern: ^[0-9a-f]{64}$
+              family:
+                type: string
+              source:
+                type: object
+                properties:
+                  kind:
+                    enum:
+                      - import
+                      - bundled
+                  name:
+                    type: string
+                  url:
+                    type: string
+                required:
+                  - kind
+                  - name
+                additionalProperties: false
+              license:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                  usable:
+                    type: boolean
+                  source:
+                    type: string
+                  text:
+                    type: string
+                required:
+                  - id
+                  - usable
+                additionalProperties: false
+              status:
+                enum:
+                  - ready
+                  - missing
+                  - unlicensed
+              faces:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      minLength: 1
+                      maxLength: 128
+                    sha256:
+                      type: string
+                      pattern: ^[0-9a-f]{64}$
+                    byteLength:
+                      type: integer
+                      minimum: 1
+                      maximum: 9007199254740991
+                    file:
+                      type: string
+                    weight:
+                      enum:
+                        - 400
+                        - 700
+                    style:
+                      const: normal
+                    codePoints:
+                      type: array
+                      maxItems: 1114112
+                      items:
+                        type: integer
+                        minimum: 0
+                        maximum: 1114111
+                  required:
+                    - id
+                    - sha256
+                    - byteLength
+                    - file
+                    - weight
+                    - style
+                    - codePoints
+                  additionalProperties: false
+                maxItems: 500
+            required:
+              - id
+              - version
+              - sha256
+              - family
+              - source
+              - license
+              - status
+              - faces
+            additionalProperties: false
+          maxItems: 20
+      required:
+        - assets
+        - fonts
+      additionalProperties: false
+
+    EditorAssetRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        width:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        height:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        mimeType:
+          enum:
+            - image/png
+            - image/jpeg
+        source:
+          type: object
+          properties:
+            kind:
+              enum:
+                - import
+                - bundled
+            name:
+              type: string
+            url:
+              type: string
+          required:
+            - kind
+            - name
+          additionalProperties: false
+        license:
+          type: object
+          properties:
+            id:
+              type: string
+              minLength: 1
+              maxLength: 128
+            usable:
+              type: boolean
+            source:
+              type: string
+            text:
+              type: string
+          required:
+            - id
+            - usable
+          additionalProperties: false
+        status:
+          enum:
+            - ready
+            - missing
+            - unlicensed
+        usage:
+          enum:
+            - photo
+            - decoration
+            - mask
+            - text-raster
+        variants:
+          type: object
+          properties:
+            original:
+              type: object
+              properties:
+                sha256:
+                  type: string
+                  pattern: ^[0-9a-f]{64}$
+                byteLength:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                mimeType:
+                  enum:
+                    - image/png
+                    - image/jpeg
+                width:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                height:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+              required:
+                - sha256
+                - byteLength
+                - mimeType
+                - width
+                - height
+              additionalProperties: false
+            normalized:
+              type: object
+              properties:
+                sha256:
+                  type: string
+                  pattern: ^[0-9a-f]{64}$
+                byteLength:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                mimeType:
+                  enum:
+                    - image/png
+                    - image/jpeg
+                width:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                height:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+              required:
+                - sha256
+                - byteLength
+                - mimeType
+                - width
+                - height
+              additionalProperties: false
+            preview:
+              type: object
+              properties:
+                sha256:
+                  type: string
+                  pattern: ^[0-9a-f]{64}$
+                byteLength:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                mimeType:
+                  enum:
+                    - image/png
+                    - image/jpeg
+                width:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+                height:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+              required:
+                - sha256
+                - byteLength
+                - mimeType
+                - width
+                - height
+              additionalProperties: false
+          required:
+            - original
+            - normalized
+            - preview
+          additionalProperties: false
+      required:
+        - id
+        - version
+        - sha256
+        - width
+        - height
+        - mimeType
+        - source
+        - license
+        - status
+        - variants
+      additionalProperties: false
+
+    FinancialAdjustmentCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          enum:
+            - credits
+            - membership
+          type: string
+        sourceGrantId: &a1
+          type: string
+          minLength: 1
+          maxLength: 128
+        creditDelta:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        durationDays:
+          type: integer
+          minimum: 1
+          maximum: 3660
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        ticketId: *a1
+      required:
+        - kind
+        - sourceGrantId
+        - reason
+        - ticketId
+
+    FinancialAdjustment:
+      type: object
+      additionalProperties: false
+      properties:
+        id: &a1
+          type: string
+          minLength: 1
+          maxLength: 128
+        workspaceId: *a1
+        sourceGrantId: *a1
+        grantId: *a1
+        kind:
+          type: string
+          enum:
+            - credits
+            - membership
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - workspaceId
+        - sourceGrantId
+        - kind
+        - createdAt
+
+    FinancialAdjustmentResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: '#/components/schemas/FinancialAdjustment'
+        requestId:
+          $ref: '#/components/schemas/Id'
+      required: [data, requestId]
+
+    OrderSourceGrant:
+      type: object
+      additionalProperties: false
+      properties:
+        id: &sourceGrantOpaque
+          type: string
+          minLength: 1
+          maxLength: 128
+        kind:
+          type: string
+          enum:
+            - credits
+            - membership
+        state:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        frozen:
+          type: boolean
+        eligible:
+          type: boolean
+        availableCredits:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        reservedCredits:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+      required:
+        - id
+        - kind
+        - state
+        - startsAt
+        - endsAt
+        - frozen
+        - eligible
+    OrderSourceGrants:
+      type: object
+      additionalProperties: false
+      properties:
+        orderId: *sourceGrantOpaque
+        workspaceId: *sourceGrantOpaque
+        items:
+          type: array
+          maxItems: 2
+          items:
+            $ref: "#/components/schemas/OrderSourceGrant"
+      required:
+        - orderId
+        - workspaceId
+        - items
+    OrderSourceGrantsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/OrderSourceGrants"
+        requestId: *sourceGrantOpaque
+      required:
+        - data
+        - requestId
+
   parameters:
     IdempotencyKey:
       name: Idempotency-Key
