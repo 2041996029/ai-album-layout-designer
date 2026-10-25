@@ -29,7 +29,10 @@ try {
       "utf8",
     ),
   );
-  console.info("C3 development migration completed");
+  for (const migration of ['002_order_snapshots','003_redemption_batch_policy','004_financial_adjustments']) {
+    await pool.query(await readFile(new URL(`../docs/release-v1.0/database/${migration}.up.sql`, import.meta.url), 'utf8'));
+  }
+  console.info("C3/C4 development migrations completed");
 } finally {
   await pool.end();
 }

@@ -1,0 +1,45 @@
+name: C4 configuration durable jobs and commerce
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: c4_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-ci-disposable
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      C3_TEST_DATABASE_URL: postgresql://postgres:local-ci-disposable@127.0.0.1:5432/c4_test
+      C4_TEST_REDIS_URL: redis://127.0.0.1:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm ci --prefix tools/api-codegen
+      - run: npm run api:types:check
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run build
+      - run: npm run build:admin
+      - run: npm run test:browser -- tests/browser/commerce.spec.ts tests/browser/commerce-live.spec.ts

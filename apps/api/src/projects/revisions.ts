@@ -444,6 +444,14 @@ export class RevisionService {
       savedAt: new Date(inserted.rows[0].created_at).toISOString(),
     };
   }
+  /** C4 applies only an authenticated, regenerated C2 candidate; normal mini document writes stay forbidden. */
+  async saveLayoutRevision(actor: Actor, wid: string, doc: DocumentModel, expected: number, resources: ResourceManifest, key: string) {
+    return this.db.transaction(async tx => {
+      await this.workspaces.authorize(actor, wid, "edit", tx);
+      return runIdempotent(tx, `${actor.userId}:${wid}:layout:${doc.projectId}`, key,
+        digest(canonicalJson({doc, expected, resources})), () => this.saveInTx(tx, actor, wid, doc, expected, resources, key));
+    });
+  }
   async saveCloudRevision(
     actor: Actor,
     wid: string,

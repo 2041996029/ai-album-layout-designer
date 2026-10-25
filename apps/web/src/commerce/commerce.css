@@ -1,0 +1,298 @@
+:root {
+  font-family: Inter, "Noto Sans SC", system-ui, sans-serif;
+  color: #253e3c;
+  background: #f4f5f1;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+.commerce-shell {
+  display: grid;
+  grid-template-columns: 236px 1fr;
+  min-height: 100vh;
+}
+.commerce-nav {
+  padding: 42px 28px;
+  background: #153d39;
+  color: #e2eee7;
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+.commerce-brand {
+  font-size: 27px;
+  letter-spacing: 5px;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+}
+.commerce-brand span {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 3px;
+  margin-top: 10px;
+  font-weight: 400;
+}
+.commerce-nav nav {
+  display: grid;
+  gap: 10px;
+}
+.commerce-nav nav a {
+  color: #b9ccc4;
+  text-decoration: none;
+  padding: 14px 16px;
+  border-radius: 8px;
+}
+.commerce-nav nav a[aria-current] {
+  background: #315751;
+  color: #fff;
+}
+.back-editor {
+  color: #bad0c6;
+  margin-top: auto;
+  font-size: 14px;
+}
+.commerce-page {
+  max-width: 1180px;
+  margin: auto;
+  padding: 62px 56px 90px;
+}
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #628980;
+}
+.commerce-page h1 {
+  font-size: 36px;
+  letter-spacing: -1px;
+  font-weight: 600;
+  margin: 14px 0;
+}
+.commerce-page h2 {
+  font-size: 21px;
+  font-weight: 600;
+}
+.commerce-lead {
+  color: #56706a;
+  font-size: 17px;
+}
+.muted,
+small {
+  color: #71827c;
+  font-size: 12px;
+}
+.commerce-page code {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.balance-card {
+  background: #dce9de;
+  border: 1px solid #ccddce;
+  border-radius: 14px;
+  padding: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 30px 0;
+}
+.balance-card > div:last-child {
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+.balance-card strong {
+  font-size: 36px;
+}
+.price-grid,
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 18px;
+}
+.price-card,
+.task-card {
+  border: 1px solid #dce2da;
+  background: #fff;
+  border-radius: 13px;
+  padding: 26px;
+  min-height: 240px;
+}
+.price-card small {
+  display: block;
+  margin-top: 12px;
+}
+.price {
+  font-size: 32px;
+  font-weight: 600;
+}
+.price small {
+  display: inline;
+  font-size: 12px;
+  font-weight: 400;
+}
+.pill {
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  background: #edf1e9;
+  color: #6e7f67;
+}
+.commerce-page p,
+.commerce-page li {
+  line-height: 1.7;
+}
+.commerce-note {
+  border: 1px solid #dce2da;
+  background: #edf1e9;
+  padding: 25px;
+  border-radius: 12px;
+  margin: 26px 0;
+}
+.commerce-note p {
+  font-size: 13px;
+  color: #63746c;
+}
+.commerce-page button {
+  border: 1px solid #cad6cf;
+  border-radius: 7px;
+  padding: 10px 16px;
+  background: #fff;
+  color: #25463d;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  margin: 4px;
+}
+.commerce-page button.primary {
+  background: #245b4d;
+  color: white;
+  border-color: #245b4d;
+}
+.commerce-page button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.commerce-page input,
+.commerce-page select {
+  font: inherit;
+  font-size: 14px;
+  padding: 10px;
+  border: 1px solid #c9d3cc;
+  border-radius: 5px;
+  background: #fff;
+  max-width: 100%;
+  display: block;
+  margin: 8px 0 16px;
+}
+.commerce-page label {
+  font-size: 13px;
+}
+.commerce-table {
+  margin: 24px 0;
+  background: #fff;
+  border: 1px solid #e0e5df;
+  border-radius: 12px;
+}
+.order-row {
+  display: flex;
+  gap: 22px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px;
+  border-bottom: 1px solid #e0e5df;
+  flex-wrap: wrap;
+}
+.order-row:last-child {
+  border: 0;
+}
+.order-row h3 {
+  font-size: 15px;
+}
+.empty-state {
+  padding: 45px 25px;
+  color: #75867b;
+  text-align: center;
+}
+.commerce-page [role="alert"] {
+  padding: 14px;
+  color: #8c4538;
+  background: #f7e5df;
+  border-radius: 6px;
+}
+.commerce-page [role="status"] {
+  padding: 14px;
+  background: #dce9de;
+}
+.task-card progress {
+  width: 100%;
+  height: 6px;
+  display: block;
+  margin-top: 22px;
+  accent-color: #437661;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+}
+.admin-commerce section {
+  margin: 30px 0;
+}
+.admin-commerce {
+  max-width: 1100px;
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #ba914c;
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .commerce-shell {
+    display: block;
+  }
+  .commerce-nav {
+    padding: 18px;
+    gap: 20px;
+  }
+  .commerce-nav nav {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .back-editor {
+    display: none;
+  }
+  .commerce-page {
+    padding: 30px 20px;
+  }
+  .commerce-page h1 {
+    font-size: 29px;
+  }
+}
+.verification-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #173c3866;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.verification-dialog {
+  width: min(460px, 100%);
+  box-shadow: 0 16px 70px #153d3940;
+}
+.verification-dialog input {
+  width: 100%;
+  font-size: 22px;
+  letter-spacing: 5px;
+}
+.verification-dialog h2 {
+  margin-top: 0;
+}

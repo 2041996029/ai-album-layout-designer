@@ -18,7 +18,7 @@ export async function createApplication(runtime: ApiRuntime) {
       bodyLimit: 32 * 1024 * 1024,
       routerOptions: { maxParamLength: 4096 },
     }),
-    { logger: false },
+    { logger: false, bodyParser: false },
   );
   app.useGlobalFilters({
     catch(error: any, host: any) {

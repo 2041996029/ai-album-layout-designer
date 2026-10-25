@@ -2380,6 +2380,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{orderId}/source-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询订单的来源授权供财务调整选择
+         * @description Finance-only discovery scoped to the selected order. Contains eligibility and financial identifiers only; no resource locators or secrets.
+         */
+        get: operations["getAdminOrderSourceGrants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders": {
         parameters: {
             query?: never;
@@ -2580,6 +2600,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/reauthentication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getReauthAvailability */
+        get: operations["getReauthAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/reauthentication/challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** createReauthChallenge */
+        post: operations["createReauthChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discover authorized durable refund history
+         * @description 查询工作区订单. Required permission: billing.read. Resource IDs are resolved in the authenticated workspace; inaccessible cross-tenant IDs return 404. Role checks do not replace license, capability, quota or ownership checks.
+         */
+        get: operations["listWorkspaceRefunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/reauthenticate": {
         parameters: {
             query?: never;
@@ -2764,6 +2838,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/workspaces/{workspaceId}/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 审核工单对应的来源额度或会员调整
+         * @description Live finance role and fresh admin_operations reauthentication required. Immutable source-linked ledger and audit. No payment capture or order is fabricated.
+         */
+        post: operations["createFinancialAdjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2920,6 +3014,33 @@ export interface components {
             challengeId: string;
             verificationCode: string;
             client: components["schemas"]["ClientInfo"];
+        };
+        ReauthAvailability: {
+            /** @enum {string} */
+            state: "available" | "unconfigured" | "unavailable";
+            reasonCode?: string;
+            /** @enum {string} */
+            method?: "sms";
+        };
+        HumanReauthCreate: {
+            purpose: components["schemas"]["IdentityProof"]["purpose"];
+        };
+        HumanReauthChallenge: {
+            id: string;
+            /** @constant */
+            method: "sms";
+            destinationHint: string;
+            /** Format: date-time */
+            expiresAt: string;
+            purpose: components["schemas"]["IdentityProof"]["purpose"];
+        };
+        ReauthAvailabilityResponse: {
+            data: components["schemas"]["ReauthAvailability"];
+            requestId: string;
+        };
+        HumanReauthChallengeResponse: {
+            data: components["schemas"]["HumanReauthChallenge"];
+            requestId: string;
         };
         IdentityProof: {
             /** @enum {string} */
@@ -3636,7 +3757,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "PaymentQr";
+            kind: "qr";
             qrPayload: string;
         };
         PaymentMini: {
@@ -3644,7 +3765,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "PaymentMini";
+            kind: "mini_jsapi";
             appId: string;
             timeStamp: string;
             nonceStr: string;
@@ -3658,7 +3779,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "VirtualPaymentMini";
+            kind: "mini_virtual";
             offerId: string;
             buyQuantity: number;
             /** @enum {string} */
@@ -3933,8 +4054,8 @@ export interface components {
             expiresAt: string;
             /** Format: date-time */
             createdAt: string;
-            jobId: components["schemas"]["Id"];
-        };
+            jobId?: components["schemas"]["Id"];
+        } & unknown;
         ConfigChange: {
             path: string;
             effect: string;
@@ -4132,6 +4253,15 @@ export interface components {
             reason: string;
         };
         ReconcileResult: {
+            /** @description Redacted durable financial differences for live finance review; no photo locators or credentials. */
+            reviews?: {
+                id: string;
+                orderId: string;
+                paidFen: number;
+                refundedFen: number;
+                localState: string;
+                localFulfillmentState: string;
+            }[];
             /** @example prj_demo */
             id: string;
             scope: string;
@@ -4168,7 +4298,7 @@ export interface components {
             expiresAt: string;
             reason: string;
         };
-        /** @description Raw codes made available once through audited private output with short retention; stored hashes only. Never returned in lists or audit. */
+        /** @description Batch metadata only. Never contains raw codes. Legacy codeDownloadOutputId is optional and is not synthesized by creation. */
         RedemptionBatch: {
             /** @example prj_demo */
             id: string;
@@ -4180,6 +4310,22 @@ export interface components {
             /** @enum {string} */
             state: "active" | "disabled" | "expired";
             revision: number;
+            /** @example prj_demo */
+            codeDownloadOutputId?: string;
+        };
+        /** @description Creation-only metadata. oneTimeCodes is present only on the first generating response; replay omits it. Raw codes are never persisted, logged, listed or returned again. The authorized admin must immediately download the transient response; lost responses require explicit disable and reissue. */
+        RedemptionBatchCreated: {
+            /** @example prj_demo */
+            id: string;
+            /** @example prj_demo */
+            skuVersionId: string;
+            count: number;
+            /** Format: date-time */
+            expiresAt: string;
+            /** @enum {string} */
+            state: "active" | "disabled" | "expired";
+            revision: number;
+            oneTimeCodes?: string[];
             /** @example prj_demo */
             codeDownloadOutputId?: string;
         };
@@ -5001,7 +5147,7 @@ export interface components {
             requestId: string;
         };
         CreateRedemptionBatchResponse: {
-            data: components["schemas"]["RedemptionBatch"];
+            data: components["schemas"]["RedemptionBatchCreated"];
             /** @example prj_demo */
             requestId: string;
         };
@@ -5483,6 +5629,52 @@ export interface components {
                     height: number;
                 };
             };
+        };
+        FinancialAdjustmentCreate: {
+            /** @enum {string} */
+            kind: "credits" | "membership";
+            sourceGrantId: string;
+            creditDelta?: number;
+            durationDays?: number;
+            reason: string;
+            ticketId: string;
+        };
+        FinancialAdjustment: {
+            id: string;
+            workspaceId: string;
+            sourceGrantId: string;
+            grantId?: string;
+            /** @enum {string} */
+            kind: "credits" | "membership";
+            /** Format: date-time */
+            createdAt: string;
+        };
+        FinancialAdjustmentResponse: {
+            data: components["schemas"]["FinancialAdjustment"];
+            requestId: components["schemas"]["Id"];
+        };
+        OrderSourceGrant: {
+            id: string;
+            /** @enum {string} */
+            kind: "credits" | "membership";
+            state: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            frozen: boolean;
+            eligible: boolean;
+            availableCredits?: number;
+            reservedCredits?: number;
+        };
+        OrderSourceGrants: {
+            orderId: string;
+            workspaceId: string;
+            items: components["schemas"]["OrderSourceGrant"][];
+        };
+        OrderSourceGrantsResponse: {
+            data: components["schemas"]["OrderSourceGrants"];
+            requestId: string;
         };
         crop: {
             x: number;
@@ -12329,7 +12521,10 @@ export interface operations {
     };
     disableRedemptionBatch: {
         parameters: {
-            query?: never;
+            query: {
+                /** @description Operator reason for disabling new claims; retained in the redacted audit. Do not log query values. */
+                reason: string;
+            };
             header: {
                 /**
                  * @description Required replay key 16–128 printable ASCII. Workspace scope unique for 7 days across write endpoints; same canonical request/method/path returns original response, different payload returns 409 IDEMPOTENCY_MISMATCH. User scope before workspace selection. Callback dedup uses authenticated provider event ID instead.
@@ -12514,6 +12709,31 @@ export interface operations {
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["Unavailable"];
+        };
+    };
+    getAdminOrderSourceGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Order source grants */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderSourceGrantsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     queryAdminOrders: {
@@ -12996,6 +13216,111 @@ export interface operations {
             422: components["responses"]["Unprocessable"];
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["RateLimited"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getReauthAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Human identity verification response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReauthAvailabilityResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createReauthChallenge: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Required replay key 16–128 printable ASCII. Workspace scope unique for 7 days across write endpoints; same canonical request/method/path returns original response, different payload returns 409 IDEMPOTENCY_MISMATCH. User scope before workspace selection. Callback dedup uses authenticated provider event ID instead.
+                 * @example demo_key_0000000000000001
+                 */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HumanReauthCreate"];
+            };
+        };
+        responses: {
+            /** @description Human identity verification response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumanReauthChallengeResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listWorkspaceRefunds: {
+        parameters: {
+            query?: {
+                /** @description Opaque signed cursor binding tenant, sort and filters; invalid/expired cursor returns 400. Never accepts SQL offsets or resource ownership through cursor. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Durable refund records in this workspace */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryAdminRefundsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["PaymentRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            410: components["responses"]["Gone"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
             503: components["responses"]["Unavailable"];
         };
     };
@@ -13528,6 +13853,47 @@ export interface operations {
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createFinancialAdjustment: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Required replay key 16–128 printable ASCII. Workspace scope unique for 7 days across write endpoints; same canonical request/method/path returns original response, different payload returns 409 IDEMPOTENCY_MISMATCH. User scope before workspace selection. Callback dedup uses authenticated provider event ID instead.
+                 * @example demo_key_0000000000000001
+                 */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /**
+                 * @description Fresh purpose-bound server-issued proof; required for privileged secret/financial/ownership/deletion actions; never logged.
+                 * @example demo_key_0000000000000001
+                 */
+                "X-Reauthentication-Proof": components["parameters"]["ReauthenticationProof"];
+            };
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinancialAdjustmentCreate"];
+            };
+        };
+        responses: {
+            /** @description 已记录财务调整 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialAdjustmentResponse"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
             503: components["responses"]["Unavailable"];
         };
     };

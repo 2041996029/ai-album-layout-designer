@@ -266,6 +266,16 @@ export function CloudPanel({
                       恢复草稿和本地项目包仍保留。请先导出项目包，再从云端核对最新版本。
                     </p>
                   )}
+                  <a
+                    href={`./commerce.html?workspace=${encodeURIComponent(workspace)}`}
+                  >
+                    会员、订单与任务中心 →
+                  </a>
+                  <a
+                    href={`./commerce.html?workspace=${encodeURIComponent(workspace)}#export`}
+                  >
+                    导出已保存的云相册 →
+                  </a>
                   <WorkspaceTools
                     workspaceId={workspace}
                     onCreate={async (width, height) => {

@@ -1,3 +1,8 @@
+import { BrowserPreflight } from "../../export-worker/src/preflight";
+import { bindCommerceRuntime, type CommerceOptions } from "./commerce/runtime";
+import { startCommerceHost } from "./commerce/host";
+import { RedisRedemptionRateLimiter } from "./commerce/redemption";
+import Redis from "ioredis";
 import { createDatabase, fail } from "@album/server-core";
 import { AuthService } from "./auth/identity";
 import { BindingService } from "./auth/bindings";
@@ -15,7 +20,10 @@ import { AccountDeletionService } from "./auth/account-deletion";
 import { PrivacyExportService } from "./auth/privacy-export";
 import type { ApiRuntime } from "./http/runtime";
 /** Deployment-owned configuration only; no request can select an environment or storage provider. */
-export async function createRuntime(env: NodeJS.ProcessEnv = process.env) {
+export async function createRuntime(
+  env: NodeJS.ProcessEnv = process.env,
+  commerceOptions: CommerceOptions = {},
+) {
   const environment = env.C3_ENV ?? "dev";
   if (!["dev", "staging", "prod"].includes(environment))
     fail("INVALID_ENVIRONMENT", 503);
@@ -42,9 +50,19 @@ export async function createRuntime(env: NodeJS.ProcessEnv = process.env) {
   };
   runtime.sharing = new SharingService(runtime.db, workspaces);
   runtime.notifications = new NotificationsService(runtime.db, workspaces);
-  const reauth = new ReauthService(runtime.db, auth, {});
+  const reauth = new ReauthService(
+    runtime.db,
+    auth,
+    commerceOptions.reauthentication?.identities ?? {},
+    commerceOptions.reauthentication?.human,
+  );
   runtime.proofAdapter = reauth;
-  runtime.bindings = new BindingService(runtime.db, auth, reauth, {});
+  runtime.bindings = new BindingService(
+    runtime.db,
+    auth,
+    reauth,
+    commerceOptions.reauthentication?.identities ?? {},
+  );
   runtime.deletion = new AccountDeletionService(
     runtime.db,
     auth,
@@ -69,6 +87,28 @@ export async function createRuntime(env: NodeJS.ProcessEnv = process.env) {
       environment,
       baseUrl: env.C3_PUBLIC_API_ORIGIN ?? "http://127.0.0.1:3001",
     });
+    if (
+      env.C4_EXPORT_TOKEN_SECRET &&
+      env.C4_RENDERER_VERSION &&
+      env.C4_RENDERER_IMAGE_DIGEST &&
+      !commerceOptions.exports
+    )
+      commerceOptions = {
+        ...commerceOptions,
+        exports: {
+          objects,
+          storage: config,
+          preflight: new BrowserPreflight({
+            objects,
+            chromiumPath: env.CHROMIUM_PATH,
+          }),
+          renderer: {
+            version: env.C4_RENDERER_VERSION,
+            imageDigest: env.C4_RENDERER_IMAGE_DIGEST,
+          },
+          tokenSecret: env.C4_EXPORT_TOKEN_SECRET,
+        },
+      };
     runtime.localObjects = objects;
     runtime.uploads = new UploadService(
       runtime.db,
@@ -99,5 +139,28 @@ export async function createRuntime(env: NodeJS.ProcessEnv = process.env) {
       await provisionBundledFonts(runtime.db, objects, config, wid);
     };
   }
-  return { runtime, close: () => database.close() };
+  const redis = env.C4_REDIS_URL
+    ? new Redis(env.C4_REDIS_URL, { maxRetriesPerRequest: 1 })
+    : undefined;
+  if (redis && env.C4_REDEMPTION_PEPPER)
+    commerceOptions = {
+      ...commerceOptions,
+      redemption: {
+        pepper: env.C4_REDEMPTION_PEPPER,
+        rateLimiter: new RedisRedemptionRateLimiter(
+          redis,
+          env.C4_REDEMPTION_PEPPER,
+        ),
+      },
+    };
+  await bindCommerceRuntime(runtime, reauth, commerceOptions);
+  const host = startCommerceHost(runtime, env.C4_REDIS_URL);
+  return {
+    runtime,
+    close: async () => {
+      await host.close();
+      await redis?.quit();
+      await database.close();
+    },
+  };
 }
