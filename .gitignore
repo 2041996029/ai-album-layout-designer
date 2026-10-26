@@ -7,3 +7,8 @@ playwright-report/
 .env
 .env.*
 !.env.example
+artifacts/
+.secrets/
+backups/
+.backups/
+album-backup*.sql

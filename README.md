@@ -5,22 +5,18 @@
 
 支持方向：多页相册、33 种滤镜、文字／形状／模板、AI 智能排版、水墨彩绘、账号会员与 AI 点数、在线权益、导出队列。
 
-当前已进入开发：C1 网页编辑、浏览器保存恢复与真实图片/PDF导出已有可运行实现；云端账号、支付、会员/AI点数、AI供应商和小程序等模块尚待后续迭代。
+当前已实现 C1–C4 的网页编辑、模板、整册规则排版、本地与云端基础、持久任务、会员点数/订单/退款财务内核及运营后台。真实身份、支付、存储和 AI 供应商仍需部署适配器；AI 模型生成属于后续 C5。
 
-## 运行与查看
+## 运行、完整源码与服务器测试
 
-[直接打开在线测试站](https://2041996029.github.io/ai-album-layout-designer/)（GitHub Pages，当前 C1 版本）。
+- [在线编辑器](https://2041996029.github.io/ai-album-layout-designer/) / [运营后台界面](https://2041996029.github.io/ai-album-layout-designer/admin/)：Pages 只有静态页面，不能代替 API。
+- 本地前端：Node24，`npm ci` → `npm run dev`；后台：`npm run admin:dev`。
+- [完整项目服务器搭建与本地 Codex 交接](deploy/server-test/README.md)：目标 `/www/wwwroot/HuaNian_SheJi`，含实际 Dockerfile、Compose、Nginx、首次空库初始化与密钥生成。
+- 打包完整已跟踪源码：`node scripts/package-server-test.mjs`，生成 `artifacts/HuaNian_SheJi-source.zip` 与 SHA256。先提交/暂存新源码；未跟踪文件不会进入包。
+- [C4 交付范围和实现取舍](docs/c4-delivery-notes.md)。
+- [C1 实现](docs/implementation/c1/README.md) / [C2 规则排版](docs/implementation/c2/README.md) / [C3 云端基础](docs/implementation/c3/README.md)。
 
-需要 Node 24：`npm ci` → `npm run dev` → 打开终端显示的地址。
-
-- [C1 运行说明与范围](docs/implementation/c1/README.md)
-- [C1 视觉与交互打磨：改前/改后截图](docs/implementation/c1/polish/README.md)
-- [GitHub Pages 测试部署说明](docs/implementation/c1/GITHUB-PAGES.md)（实际开通状态以部署工作流为准）
-- [真实 PNG / JPEG / PDF 导出样片](docs/export-samples/program-c1/README.md)
-- [程序 PNG 样片](docs/export-samples/program-c1/png/0001-spread-01.png)
-- [网页源代码](apps/web/src)、[共享内核](packages)、[确定性渲染 CLI](apps/render-cli/src)
-
-仅当前浏览器保存，请使用“备份项目包”保全草稿。当前实现不依赖外部服务密钥。
+原有历史“研发交付包”是设计文档，不是本次可执行项目。实际源码与测试部署入口以上面链接为准。浏览器草稿请定期备份项目包；服务器秘密不要提交到仓库。
 
 ## 全部模块研发交付包 v1.0
 
