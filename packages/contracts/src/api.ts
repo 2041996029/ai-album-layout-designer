@@ -1,5 +1,76 @@
 // Generated from release-v1.0/contracts/openapi.yaml. Do not edit.
 export interface paths {
+    "/auth/email/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** loginEmailWeb */
+        post: operations["loginEmailWeb"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/email/challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** createEmailChallenge */
+        post: operations["createEmailChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/wechat/mini/link-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 同时验证邮箱与微信并主动绑定，不合并已有账号
+         * @description 微信小程序登录.
+         */
+        post: operations["linkWechatEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/wechat/mini/email-challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 主动绑定现有邮箱账号：发送邮箱验证码 */
+        post: operations["createEmailWechatChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/capabilities": {
         parameters: {
             query?: never;
@@ -2862,6 +2933,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        EmailChallengeResponse: {
+            data: components["schemas"]["EmailChallenge"];
+            requestId: string;
+        };
+        EmailLogin: {
+            challengeId: string;
+            verificationCode: string;
+        };
+        EmailChallenge: {
+            id: string;
+            /** Format: date-time */
+            expiresAt: string;
+            retryAfterSeconds: number;
+            destinationHint: string;
+        };
+        EmailChallengeRequest: {
+            email: string;
+            /** @enum {string} */
+            purpose: "login" | "bind";
+        };
         /** @example prj_demo */
         Id: string;
         Revision: number;
@@ -3020,15 +3111,15 @@ export interface components {
             state: "available" | "unconfigured" | "unavailable";
             reasonCode?: string;
             /** @enum {string} */
-            method?: "sms";
+            method?: "sms" | "email";
         };
         HumanReauthCreate: {
             purpose: components["schemas"]["IdentityProof"]["purpose"];
         };
         HumanReauthChallenge: {
             id: string;
-            /** @constant */
-            method: "sms";
+            /** @enum {string} */
+            method: "sms" | "email";
             destinationHint: string;
             /** Format: date-time */
             expiresAt: string;
@@ -3044,7 +3135,7 @@ export interface components {
         };
         IdentityProof: {
             /** @enum {string} */
-            provider: "wechat_mini" | "wechat_web" | "phone";
+            provider: "wechat_mini" | "wechat_web" | "phone" | "email";
             /** @example prj_demo */
             challengeId: string;
             proof: string;
@@ -3055,7 +3146,7 @@ export interface components {
             /** @example prj_demo */
             id: string;
             /** @enum {string} */
-            provider: "wechat_mini" | "wechat_web" | "phone";
+            provider: "wechat_mini" | "wechat_web" | "phone" | "email";
             displayHint: string;
             /** Format: date-time */
             createdAt: string;
@@ -3707,7 +3798,7 @@ export interface components {
             durationDays: number;
             creditGrant: number;
             features: string[];
-            channels: ("wechat_pay" | "wechat_virtual")[];
+            channels: ("wechat_pay" | "wechat_virtual" | "alipay")[];
             platforms: ("web" | "mini")[];
             /** @enum {string} */
             state: "published" | "retired";
@@ -3718,7 +3809,7 @@ export interface components {
             /** @example prj_demo */
             skuVersionId: string;
             /** @enum {string} */
-            channel: "wechat_pay" | "wechat_virtual";
+            channel: "wechat_pay" | "wechat_virtual" | "alipay";
             /** @enum {string} */
             clientPlatform: "web" | "mini";
         };
@@ -3740,7 +3831,7 @@ export interface components {
              */
             fulfillmentState: "unfulfilled" | "fulfilled" | "reversed" | "manual_review";
             /** @enum {string} */
-            channel: "wechat_pay" | "wechat_virtual";
+            channel: "wechat_pay" | "wechat_virtual" | "alipay";
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -3799,7 +3890,7 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
             /** @enum {string} */
-            channel: "wechat_pay" | "wechat_virtual";
+            channel: "wechat_pay" | "wechat_virtual" | "alipay";
             launch: components["schemas"]["PaymentQr"] | components["schemas"]["PaymentMini"] | components["schemas"]["VirtualPaymentMini"];
         };
         /** @description Owner billing permission required; actual eligibility determined by consumed credits, source grants and channel policy. No negative credit balance or duplicate grant reversal. */
@@ -6073,11 +6164,11 @@ export interface components {
             };
             registrationEnabled: boolean;
         };
-        payment: {
+        additionalPayment: {
             /** @constant */
             kind: "payment";
             /** @enum {unknown} */
-            channel: "wechat_pay" | "wechat_virtual";
+            channel: "wechat_pay" | "wechat_virtual" | "alipay";
             appId: string;
             merchantId: string;
             credential: {
@@ -6092,6 +6183,27 @@ export interface components {
                 version: number;
             };
             enabled: boolean;
+        };
+        payment: {
+            /** @constant */
+            kind: "payment";
+            /** @enum {unknown} */
+            channel: "wechat_pay" | "wechat_virtual" | "alipay";
+            appId: string;
+            merchantId: string;
+            credential: {
+                secretRef: string;
+                secretVersion: string;
+            };
+            verificationKeyRef: string;
+            callbackUrl: string;
+            refundEnabled: boolean;
+            platformCapabilityRef: {
+                id: string;
+                version: number;
+            };
+            enabled: boolean;
+            additionalChannels?: components["schemas"]["additionalPayment"][];
         };
         sku: {
             /** @constant */
@@ -6707,6 +6819,131 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    loginEmailWeb: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailLogin"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginSmsWebResponse"];
+                };
+            };
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    createEmailChallenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailChallengeResponse"];
+                };
+            };
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    linkWechatEmail: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Required replay key 16–128 printable ASCII. Workspace scope unique for 7 days across write endpoints; same canonical request/method/path returns original response, different payload returns 409 IDEMPOTENCY_MISMATCH. User scope before workspace selection. Callback dedup uses authenticated provider event ID instead.
+                 * @example demo_key_0000000000000001
+                 */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    challengeId: string;
+                    verificationCode: string;
+                    wechatCode: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 微信小程序登录 */
+            200: {
+                headers: {
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginWechatMiniResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["PaymentRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            410: components["responses"]["Gone"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createEmailWechatChallenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailChallengeResponse"];
+                };
+            };
+            422: components["responses"]["Unprocessable"];
+        };
+    };
     getCapabilities: {
         parameters: {
             query: {
@@ -13009,7 +13246,7 @@ export interface operations {
                 "X-Callback-Signature"?: string;
             };
             path: {
-                channel: "wechat_pay" | "wechat_virtual";
+                channel: string;
             };
             cookie?: never;
         };
@@ -13067,7 +13304,7 @@ export interface operations {
                 "X-Callback-Signature"?: string;
             };
             path: {
-                channel: "wechat_pay" | "wechat_virtual";
+                channel: string;
             };
             cookie?: never;
         };

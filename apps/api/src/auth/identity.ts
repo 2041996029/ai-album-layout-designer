@@ -24,11 +24,13 @@ export class AuthService {
       .digest("hex");
   }
   private provider(v: VerifiedIdentity, client: "web" | "mini") {
-    return v.provider === "sms"
-      ? "phone"
-      : client === "mini"
-        ? "wechat_mini"
-        : "wechat_web";
+    return v.provider === "email"
+      ? "email"
+      : v.provider === "sms"
+        ? "phone"
+        : client === "mini"
+          ? "wechat_mini"
+          : "wechat_web";
   }
   private access(
     sessionId: string,
@@ -516,11 +518,16 @@ export class AuthService {
         `identity:${provider}:${v.appId}:${subject}`,
       ]);
       const { rows } = await tx.query(
-        "SELECT user_id FROM auth_identities WHERE provider=$1 AND app_id=$2 AND subject_digest=$3",
+        "SELECT user_id,revoked_at FROM auth_identities WHERE provider=$1 AND app_id=$2 AND subject_digest=$3",
         [provider, v.appId, subject],
       );
       if (rows[0] && rows[0].user_id !== actor.userId)
         fail("BINDING_CONFLICT", 409);
+      if (rows[0]?.revoked_at)
+        await tx.query(
+          "UPDATE auth_identities SET revoked_at=NULL,verified_at=now() WHERE provider=$1 AND app_id=$2 AND subject_digest=$3 AND user_id=$4",
+          [provider, v.appId, subject, actor.userId],
+        );
       if (!rows.length)
         await tx.query(
           `INSERT INTO auth_identities(id,user_id,provider,app_id,subject_digest,verified_at) VALUES($1,$2,$3,$4,$5,now())`,

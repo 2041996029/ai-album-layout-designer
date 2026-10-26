@@ -22,7 +22,7 @@ export type ReauthPurpose =
   | "admin_publish"
   | "admin_operations";
 export type IdentityProof = {
-  provider: "wechat_mini" | "wechat_web" | "phone";
+  provider: "wechat_mini" | "wechat_web" | "phone" | "email";
   challengeId: string;
   proof: string;
   purpose: ReauthPurpose;
@@ -41,6 +41,7 @@ const purposes = [
 /** Trusted SMS deployment port: dispatch to the actor's linked destination and authenticate
  * that challenge's human code. It returns identity evidence, never a server operation token. */
 export interface HumanReauthAdapter {
+  readonly method?: "sms" | "email";
   start(input: {
     actor: Actor;
     purpose: ReauthPurpose;
@@ -107,12 +108,12 @@ export class ReauthService {
         };
       const linked = (
         await tx.query(
-          "SELECT 1 FROM auth_identities WHERE user_id=$1 AND provider='phone' AND revoked_at IS NULL AND verified_at IS NOT NULL",
-          [actor.userId],
+          "SELECT 1 FROM auth_identities WHERE user_id=$1 AND provider=$2 AND revoked_at IS NULL AND verified_at IS NOT NULL",
+          [actor.userId, this.human.method === "email" ? "email" : "phone"],
         )
       ).rowCount;
       return linked
-        ? { state: "available" as const, method: "sms" as const }
+        ? { state: "available" as const, method: this.human.method ?? "sms" }
         : {
             state: "unavailable" as const,
             reasonCode: "REAUTH_IDENTITY_UNAVAILABLE",
@@ -154,12 +155,13 @@ export class ReauthService {
             typeof delivery.destinationHint !== "string" ||
             !delivery.destinationHint.length ||
             delivery.destinationHint.length > 100 ||
-            delivery.destinationHint.replace(/\D/g, "").length > 6
+            (this.human!.method !== "email" &&
+              delivery.destinationHint.replace(/\D/g, "").length > 6)
           )
             fail("REAUTH_ADAPTER_INVALID", 503);
           return {
             id: challengeId,
-            method: "sms" as const,
+            method: this.human!.method ?? "sms",
             destinationHint: delivery.destinationHint,
             expiresAt,
             purpose,
@@ -200,7 +202,10 @@ export class ReauthService {
       input.challengeId.length > 128
     )
       fail("REAUTH_INVALID", 422);
-    const human = input.provider === "phone" ? this.human : undefined;
+    const human =
+      input.provider === (this.human?.method === "email" ? "email" : "phone")
+        ? this.human
+        : undefined;
     const adapter = this.adapters[input.provider];
     if (!human && !adapter) fail("REAUTH_UNCONFIGURED", 503);
     if (human) {
@@ -214,13 +219,15 @@ export class ReauthService {
           challengeId: input.challengeId,
           code: input.proof,
         })
-      : await adapter!.exchange(input.proof, null);
+      : await adapter!.exchange(input.proof, null, { actor, purpose });
     if (
       !identity.subject ||
       !identity.appId ||
-      (input.provider === "phone"
-        ? identity.provider !== "sms"
-        : identity.provider !== "wechat")
+      (input.provider === "email"
+        ? identity.provider !== "email"
+        : input.provider === "phone"
+          ? identity.provider !== "sms"
+          : identity.provider !== "wechat")
     )
       fail("REAUTH_IDENTITY_INVALID", 401);
     return this.db.transaction(async (tx) => {

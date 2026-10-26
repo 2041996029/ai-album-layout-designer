@@ -12,7 +12,7 @@
 
 ## 服务器前置条件
 
-- Linux，Docker Engine 与 Docker Compose v2；初始化脚本需要 Node.js 24（仅初始化，不要求在宿主机安装 npm 依赖）。
+- Linux，Docker Engine 与 Docker Compose v2.24 或更新版本；初始化脚本需要 Node.js 24（仅初始化，不要求在宿主机安装 npm 依赖）。
 - 建议至少 4 核 / 8 GiB 内存 / 15 GiB 空闲磁盘；实际容量按照片和任务负载测量。
 - 允许访问 Docker Hub、npm registry；镜像和依赖下载失败时保留完整错误，不关闭 TLS 验证。
 - 宝塔仅负责域名、HTTPS、反向代理。不要同时让宝塔与本测试栈占用同一个监听端口。
@@ -69,7 +69,7 @@ docker compose --env-file deploy/server-test/.env -f deploy/server-test/compose.
 
 不要去掉 `config --quiet` 的 `--quiet` 后把结果公开；部署配置和日志仍应按敏感数据处理。
 
-PostgreSQL **仅在全新空数据卷**执行初始合同、C3 运行表和 002/003/004 SQL。重启与重新构建不会重新执行初始化，也不会升级已有数据库。已有数据的后续版本须先备份，再按交付的增量迁移执行，不能用 `down -v` 或删卷冒充升级。
+PostgreSQL **仅在全新空数据卷**执行初始合同、C3 运行表和 002/003/004/005 SQL。重启与重新构建不会重新执行初始化，也不会升级已有数据库。已有数据的后续版本须先备份，再按交付的增量迁移执行，不能用 `down -v` 或删卷冒充升级。
 
 ## 4. 宝塔域名与 HTTPS
 
@@ -112,3 +112,7 @@ docker compose --env-file deploy/server-test/.env -f deploy/server-test/compose.
 测试结束前由你确认保留或清理资源；本说明不自动删除卷、站点或照片。需要改成生产架构时，独立配置身份、最小数据库权限、HTTPS、安全 Cookie、真实对象存储、密钥服务、渲染 worker、限额和备份恢复。
 
 本测试镜像的应用源码由运行用户持有，以兼容来源文件权限；生产容器还需将应用代码改为只读／root 所有，并单独授予对象存储写权限。
+
+## 邮箱、微信和支付开发更新
+
+真实协议及部署字段见 [IDENTITY-PAYMENTS.md](./IDENTITY-PAYMENTS.md)。旧数据库升级需单独执行 005；普通商户号不会自动开启小程序虚拟支付。

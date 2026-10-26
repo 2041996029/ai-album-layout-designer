@@ -1,3 +1,8 @@
+import { deploymentPayments } from "./payments/deployment";
+import { EmailIdentityService } from "./auth/email";
+import { smtpSender } from "./auth/smtp";
+import { emailHumanAdapter } from "./auth/email-human";
+import { WechatMiniAdapter } from "./auth/wechat";
 import { BrowserPreflight } from "../../export-worker/src/preflight";
 import { bindCommerceRuntime, type CommerceOptions } from "./commerce/runtime";
 import { startCommerceHost } from "./commerce/host";
@@ -24,6 +29,23 @@ export async function createRuntime(
   env: NodeJS.ProcessEnv = process.env,
   commerceOptions: CommerceOptions = {},
 ) {
+  const deployedPayments = await deploymentPayments(env);
+  commerceOptions = {
+    ...deployedPayments,
+    ...commerceOptions,
+    paymentBindings: [
+      ...(deployedPayments.paymentBindings ?? []),
+      ...(commerceOptions.paymentBindings ?? []),
+    ],
+    config: {
+      ...deployedPayments.config,
+      ...commerceOptions.config,
+      readiness: {
+        ...deployedPayments.config?.readiness,
+        ...commerceOptions.config?.readiness,
+      },
+    },
+  };
   const environment = env.C3_ENV ?? "dev";
   if (!["dev", "staging", "prod"].includes(environment))
     fail("INVALID_ENVIRONMENT", 503);
@@ -48,6 +70,50 @@ export async function createRuntime(
     environment: environment as "dev" | "staging" | "prod",
     allowedOrigin: origin.origin,
   };
+  if (env.EMAIL_SMTP_HOST) {
+    if (!env.EMAIL_ENCRYPTION_SECRET) fail("EMAIL_SECRET_REQUIRED", 503);
+    runtime.email = new EmailIdentityService(runtime.db, auth, {
+      secret: env.EMAIL_ENCRYPTION_SECRET,
+      sender: smtpSender({
+        host: env.EMAIL_SMTP_HOST,
+        port: Number(env.EMAIL_SMTP_PORT ?? 465),
+        secure: env.EMAIL_SMTP_SECURE !== "false",
+        user: env.EMAIL_SMTP_USER ?? "",
+        password: env.EMAIL_SMTP_PASSWORD ?? "",
+        from: env.EMAIL_FROM ?? "",
+      }),
+    });
+    commerceOptions = {
+      ...commerceOptions,
+      reauthentication: {
+        ...commerceOptions.reauthentication,
+        identities: {
+          ...commerceOptions.reauthentication?.identities,
+          email: runtime.email.adapter("bind"),
+        },
+        human:
+          commerceOptions.reauthentication?.human ??
+          emailHumanAdapter(runtime.email),
+      },
+    };
+  }
+  if (env.WECHAT_MINI_APP_ID) {
+    runtime.wechatMini = new WechatMiniAdapter({
+      appId: env.WECHAT_MINI_APP_ID,
+      appSecret: env.WECHAT_MINI_APP_SECRET ?? "",
+      openPlatformId: env.WECHAT_OPEN_PLATFORM_ID,
+    });
+    commerceOptions = {
+      ...commerceOptions,
+      reauthentication: {
+        ...commerceOptions.reauthentication,
+        identities: {
+          ...commerceOptions.reauthentication?.identities,
+          wechat_mini: runtime.wechatMini,
+        },
+      },
+    };
+  }
   runtime.sharing = new SharingService(runtime.db, workspaces);
   runtime.notifications = new NotificationsService(runtime.db, workspaces);
   const reauth = new ReauthService(

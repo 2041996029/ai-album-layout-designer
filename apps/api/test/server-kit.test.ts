@@ -61,6 +61,9 @@ describe("server upload kit", () => {
         ".env": "SECRET=do-not-package",
         "deploy/server-test/.secrets/auth_signing": "private-signing-value",
         "attachments/credential.md": "private-upload",
+        "deploy/server-test/.integrations/payment-bindings.json":
+          "PRIVATE_MERCHANT_KEYS",
+        "deploy/server-test/.integrations.env": "PRIVATE_SMTP_PASSWORD",
       })) {
         await mkdir(join(dir, name, ".."), { recursive: true });
         await writeFile(join(dir, name), value);
@@ -103,7 +106,9 @@ describe("server upload kit", () => {
           (k) =>
             k.endsWith("/.env") ||
             k.includes("/.secrets/") ||
-            k.includes("/attachments/"),
+            k.includes("/attachments/") ||
+            k.includes("/.integrations/") ||
+            k.endsWith("/.integrations.env"),
         ),
       ).toBe(false);
       expect(

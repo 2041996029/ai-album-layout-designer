@@ -1,0 +1,11 @@
+<view class="account">
+ <text class="title">欢迎来到拾光</text>
+ <text>已有 Web 邮箱账号？先验证邮箱并绑定微信，让相册、订单和权益归到同一账号。</text>
+ <label><switch checked="{{currentAccount}}" bindchange="changeMode"/>已用当前微信创建过相册：为微信账号添加新邮箱</label>
+ <input type="text" value="{{email}}" bindinput="changeEmail" placeholder="Web 登录邮箱" disabled="{{busy}}"/>
+ <button bindtap="send" disabled="{{busy}}">发送邮箱验证码</button>
+ <block wx:if="{{sent}}"><input type="number" maxlength="6" value="{{code}}" bindinput="changeCode" placeholder="六位邮箱验证码"/><button bindtap="bind" disabled="{{busy}}">验证邮箱并绑定当前微信</button></block>
+ <text class="message">{{message}}</text>
+ <navigator url="/pages/album/index" open-type="redirect">进入相册 · 微信登录</navigator>
+ <text class="note">首次使用可直接进入相册。已有两个账号时不会自动合并或转移资产。</text>
+</view>

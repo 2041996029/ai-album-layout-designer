@@ -24,6 +24,7 @@ export interface ApiRuntime {
   environment: "dev" | "staging" | "prod";
   allowedOrigin: string;
   wechatMini?: IdentityAdapter;
+  email?: import("../auth/email").EmailIdentityService;
   qrPayload?: (id: string, token: string) => Promise<string>;
   bindings?: BindingService;
   uploads?: UploadService;

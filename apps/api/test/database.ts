@@ -46,7 +46,24 @@ export async function testDatabase() {
         "utf8",
       ),
     );
-    await db.pool.query(await readFile(new URL("../../../docs/release-v1.0/database/004_financial_adjustments.up.sql", import.meta.url), "utf8"));
+    await db.pool.query(
+      await readFile(
+        new URL(
+          "../../../docs/release-v1.0/database/004_financial_adjustments.up.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await db.pool.query(
+      await readFile(
+        new URL(
+          "../../../docs/release-v1.0/database/005_identity_payments.up.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
   } catch (e) {
     await db.close();
     await admin.query(`DROP DATABASE "${name}"`);

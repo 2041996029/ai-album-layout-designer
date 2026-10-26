@@ -12,3 +12,6 @@ artifacts/
 backups/
 .backups/
 album-backup*.sql
+
+**/.integrations.env
+**/.integrations

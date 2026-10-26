@@ -41,7 +41,7 @@ export function validatePaymentEvent(raw: unknown): PaymentEvent {
     )
       fail("PAYMENT_INVALID_EVENT", 422);
   if (
-    !["wechat_pay", "wechat_virtual"].includes(String(e.channel)) ||
+    !["wechat_pay", "wechat_virtual", "alipay"].includes(String(e.channel)) ||
     !["paid", "closed", "refunded"].includes(String(e.state)) ||
     e.currency !== "CNY" ||
     !Number.isSafeInteger(e.amountFen) ||

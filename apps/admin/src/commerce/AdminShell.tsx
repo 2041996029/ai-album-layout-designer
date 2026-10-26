@@ -194,6 +194,7 @@ const labels: Record<string, string> = {
   rejected: "已拒绝",
   approved: "已批准",
   wechat_pay: "微信支付",
+  alipay: "支付宝",
   mini_virtual: "小程序虚拟支付",
 };
 export function adminLabel(value: string) {

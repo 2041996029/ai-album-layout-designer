@@ -62,12 +62,12 @@ export function useHumanVerification() {
       <p>正在检查身份验证…</p>
     ) : state === "available" ? (
       <p className="muted">
-        财务操作前将向已绑定手机发送验证码，每次操作需重新验证。
+        敏感操作前将向已绑定的验证方式发送验证码，每次操作需重新验证。
       </p>
     ) : (
       <p className="commerce-note">
         {state === "unavailable"
-          ? "此账号尚未绑定可验证手机号，请联系管理员。"
+          ? "此账号尚未绑定可用验证方式，请先绑定邮箱或联系管理员。"
           : "身份验证尚未开通，请联系管理员。"}
       </p>
     );
@@ -100,7 +100,7 @@ export function useHumanVerification() {
                 {
                   purpose: pending.current.purpose,
                   proof: {
-                    provider: "phone",
+                    provider: challenge.method === "email" ? "email" : "phone",
                     challengeId: challenge.id,
                     proof: code,
                     purpose: pending.current.purpose,

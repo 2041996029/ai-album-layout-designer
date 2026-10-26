@@ -1,5 +1,5 @@
 {
-  "pages": ["pages/album/index", "pages/tasks/index"],
+  "pages": ["pages/account/index", "pages/album/index", "pages/tasks/index"],
   "window": {
     "navigationBarTitleText": "我的相册",
     "navigationBarBackgroundColor": "#f7f3eb",

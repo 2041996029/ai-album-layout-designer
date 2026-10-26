@@ -17,7 +17,12 @@ export type BindingDelete = {
 const shape = (row: any) => ({
   id: row.id,
   provider: row.provider,
-  displayHint: row.provider === "phone" ? "Verified phone" : "Verified WeChat",
+  displayHint:
+    row.provider === "email"
+      ? "已验证邮箱"
+      : row.provider === "phone"
+        ? "Verified phone"
+        : "Verified WeChat",
   createdAt: new Date(row.created_at).toISOString(),
 });
 export class BindingService {
@@ -33,7 +38,7 @@ export class BindingService {
     return this.db.transaction(async (tx) => {
       await this.auth.assertActor(tx, actor);
       const { rows } = await tx.query(
-        "SELECT * FROM auth_identities WHERE user_id=$1 AND revoked_at IS NULL AND provider IN ('wechat_mini','wechat_web','phone') ORDER BY created_at,id",
+        "SELECT * FROM auth_identities WHERE user_id=$1 AND revoked_at IS NULL AND provider IN ('wechat_mini','wechat_web','phone','email') ORDER BY created_at,id",
         [actor.userId],
       );
       return rows.map(shape);
@@ -58,13 +63,18 @@ export class BindingService {
           const adapter = this.adapters[input.proof.provider];
           if (!adapter) fail("BINDING_UNCONFIGURED", 503);
           await this.reauth.verifyFresh(actor, input.reauthProof, "bind", tx);
-          const identity = await adapter.exchange(input.proof.proof, null);
+          const identity = await adapter.exchange(input.proof.proof, null, {
+            actor,
+            purpose: "bind",
+          });
           if (
             !identity.subject ||
             !identity.appId ||
-            (input.proof.provider === "phone"
-              ? identity.provider !== "sms"
-              : identity.provider !== "wechat")
+            (input.proof.provider === "email"
+              ? identity.provider !== "email"
+              : input.proof.provider === "phone"
+                ? identity.provider !== "sms"
+                : identity.provider !== "wechat")
           )
             fail("BINDING_PROOF_INVALID", 401);
           const provider = input.proof.provider,
@@ -160,7 +170,7 @@ export class BindingService {
             ["bindings:" + actor.userId],
           );
           const { rows } = await tx.query(
-            "SELECT * FROM auth_identities WHERE user_id=$1 AND revoked_at IS NULL AND provider IN ('wechat_mini','wechat_web','phone') ORDER BY id FOR UPDATE",
+            "SELECT * FROM auth_identities WHERE user_id=$1 AND revoked_at IS NULL AND provider IN ('wechat_mini','wechat_web','phone','email') ORDER BY id FOR UPDATE",
             [actor.userId],
           );
           const binding = rows.find((r) => r.id === bindingId);

@@ -23,6 +23,167 @@ tags:
 - name: Configuration
 - name: Operations
 paths:
+  /auth/email/login:
+    post:
+      operationId: loginEmailWeb
+      tags:
+        - Identity
+      summary: loginEmailWeb
+      x-module: C3
+      x-required-permission: public
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailLogin"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginSmsWebResponse"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+  /auth/email/challenges:
+    post:
+      operationId: createEmailChallenge
+      tags:
+        - Identity
+      summary: createEmailChallenge
+      x-module: C3
+      x-required-permission: public
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailChallengeRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailChallengeResponse"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+  /auth/wechat/mini/link-email:
+    post:
+      operationId: linkWechatEmail
+      tags:
+        - Identity
+      summary: 同时验证邮箱与微信并主动绑定，不合并已有账号
+      description: 微信小程序登录.
+      x-module: C3
+      x-requirement-ids:
+        - AUTH-01
+        - CFG-AUTH
+        - SEC-01
+      x-required-permission: public
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: 微信小程序登录
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+                minLength: 1
+                maxLength: 128
+                examples:
+                  - prj_demo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginWechatMiniResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                challengeId:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                verificationCode:
+                  type: string
+                  pattern: ^[0-9]{6}$
+                wechatCode:
+                  type: string
+                  minLength: 1
+                  maxLength: 1024
+              required:
+                - challengeId
+                - verificationCode
+                - wechatCode
+              additionalProperties: false
+      x-idempotency-scope: workspace resolved from target or request; otherwise authenticated user or pre-auth browser challenge
+  /auth/wechat/mini/email-challenges:
+    post:
+      operationId: createEmailWechatChallenge
+      tags:
+        - Identity
+      summary: 主动绑定现有邮箱账号：发送邮箱验证码
+      x-module: C3
+      x-required-permission: public
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  minLength: 3
+                  maxLength: 254
+              required:
+                - email
+              additionalProperties: false
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailChallengeResponse"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
   /capabilities:
     get:
       operationId: getCapabilities
@@ -10737,146 +10898,153 @@ paths:
     post:
       operationId: receivePaymentCallback
       tags:
-      - Operations
+        - Operations
       summary: 独立验签接收payment事件
-      description: 'THIS IS NOT A PUBLIC TRUSTED WRITE: independently authenticate exact raw body bytes and original
+      description: "THIS IS NOT A PUBLIC TRUSTED WRITE: independently authenticate exact raw body bytes and original
         signature/timestamp/nonce/key-id headers with configured adapter before parse, decrypt, event lookup or
-        any state change. Reject unknown adapters, stale timestamps, replay, wrong merchant/app/account, bad amount/currency
-        or resource binding. PostgreSQL unique(channel/account/eventId) deduplicates event and atomically commits
-        ledger/outbox. Login cookie/bearer, source IP, parsed body hash or client payment-success cannot authorize
-        it. Query upstream for ambiguous states; never paid re-submit. See API-GUIDE callback protocol.'
+        any state change. Reject unknown adapters, stale timestamps, replay, wrong merchant/app/account, bad
+        amount/currency or resource binding. PostgreSQL unique(channel/account/eventId) deduplicates event and
+        atomically commits ledger/outbox. Login cookie/bearer, source IP, parsed body hash or client
+        payment-success cannot authorize it. Query upstream for ambiguous states; never paid re-submit. See
+        API-GUIDE callback protocol."
       x-module: C4
       x-requirement-ids:
-      - PAY-01
-      - SEC-01
+        - PAY-01
+        - SEC-01
       x-required-permission: public
       security: []
       parameters:
-      - name: channel
-        in: path
-        required: true
-        schema:
-          type: string
-          enum:
-          - wechat_pay
-          - wechat_virtual
-      - name: Wechatpay-Timestamp
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: Wechatpay-Nonce
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: Wechatpay-Serial
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: Wechatpay-Signature
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: X-Callback-Timestamp
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: X-Callback-Nonce
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: X-Callback-Key-Id
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: X-Callback-Signature
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
+        - name: channel
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-zA-Z0-9_-]{1,128}$
+        - name: Wechatpay-Timestamp
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: Wechatpay-Nonce
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: Wechatpay-Serial
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: Wechatpay-Signature
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: X-Callback-Timestamp
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: X-Callback-Nonce
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: X-Callback-Key-Id
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: X-Callback-Signature
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
       responses:
-        '200':
-          description: After durable verified event transaction, emit the configured adapter exact acknowledgment;
-            not the normal API envelope. WeChat Pay uses JSON code SUCCESS/message 成功. Provider acknowledgments
+        "200":
+          description: After durable verified event transaction, emit the configured adapter exact acknowledgment; not
+            the normal API envelope. WeChat Pay uses JSON code SUCCESS/message 成功. Provider acknowledgments
             fixed by verified adapter, never arbitrary echoed body.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CallbackAck'
+                $ref: "#/components/schemas/CallbackAck"
             text/plain:
               schema:
                 type: string
                 minLength: 1
                 maxLength: 32
               example: success
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '410':
-          $ref: '#/components/responses/Gone'
-        '413':
-          $ref: '#/components/responses/PayloadTooLarge'
-        '422':
-          $ref: '#/components/responses/Unprocessable'
-        '428':
-          $ref: '#/components/responses/PreconditionRequired'
-        '429':
-          $ref: '#/components/responses/RateLimited'
-        '503':
-          $ref: '#/components/responses/Unavailable'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/Unavailable"
       x-independent-callback-verification:
         required: true
         payload: exact raw bytes before JSON parsing or middleware transformation
         maxBytes: 1048576
-        headers: adapter-defined immutable allowlist; WeChat uses Wechatpay-Timestamp/Nonce/Serial/Signature; provider-specific
-          equivalents registered server-side
+        headers: adapter-defined immutable allowlist; WeChat uses Wechatpay-Timestamp/Nonce/Serial/Signature;
+          provider-specific equivalents registered server-side
         replayWindowSeconds: 300
         credentials: frozen validated adapter credential versions; dual verification during controlled rotation
         ack: channel-specific exact wire acknowledgment after durable transaction
@@ -10886,8 +11054,8 @@ paths:
           application/json:
             schema:
               oneOf:
-              - $ref: '#/components/schemas/WechatEncryptedCallback'
-              - $ref: '#/components/schemas/RegisteredCallbackEnvelope'
+                - $ref: "#/components/schemas/WechatEncryptedCallback"
+                - $ref: "#/components/schemas/RegisteredCallbackEnvelope"
         description: Exact raw UTF-8 JSON bytes on wire. Capture original byte buffer and original signed headers
           BEFORE decode/parse; schema validates only after successful cryptographic verification. Max body1MiB.
           WeChat Pay encrypted fields decrypted only after outer signature validation.
@@ -10895,146 +11063,153 @@ paths:
     post:
       operationId: receiveRefundCallback
       tags:
-      - Operations
+        - Operations
       summary: 独立验签接收refund事件
-      description: 'THIS IS NOT A PUBLIC TRUSTED WRITE: independently authenticate exact raw body bytes and original
+      description: "THIS IS NOT A PUBLIC TRUSTED WRITE: independently authenticate exact raw body bytes and original
         signature/timestamp/nonce/key-id headers with configured adapter before parse, decrypt, event lookup or
-        any state change. Reject unknown adapters, stale timestamps, replay, wrong merchant/app/account, bad amount/currency
-        or resource binding. PostgreSQL unique(channel/account/eventId) deduplicates event and atomically commits
-        ledger/outbox. Login cookie/bearer, source IP, parsed body hash or client payment-success cannot authorize
-        it. Query upstream for ambiguous states; never paid re-submit. See API-GUIDE callback protocol.'
+        any state change. Reject unknown adapters, stale timestamps, replay, wrong merchant/app/account, bad
+        amount/currency or resource binding. PostgreSQL unique(channel/account/eventId) deduplicates event and
+        atomically commits ledger/outbox. Login cookie/bearer, source IP, parsed body hash or client
+        payment-success cannot authorize it. Query upstream for ambiguous states; never paid re-submit. See
+        API-GUIDE callback protocol."
       x-module: C4
       x-requirement-ids:
-      - PAY-01
-      - SEC-01
+        - PAY-01
+        - SEC-01
       x-required-permission: public
       security: []
       parameters:
-      - name: channel
-        in: path
-        required: true
-        schema:
-          type: string
-          enum:
-          - wechat_pay
-          - wechat_virtual
-      - name: Wechatpay-Timestamp
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: Wechatpay-Nonce
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: Wechatpay-Serial
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: Wechatpay-Signature
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: X-Callback-Timestamp
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: X-Callback-Nonce
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: X-Callback-Key-Id
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
-      - name: X-Callback-Signature
-        in: header
-        required: false
-        schema:
-          type: string
-          minLength: 1
-          maxLength: 4096
-        description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
-          Reject if any adapter-required header absent; header parameters cannot express cross-header OR conditions.
+        - name: channel
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-zA-Z0-9_-]{1,128}$
+        - name: Wechatpay-Timestamp
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: Wechatpay-Nonce
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: Wechatpay-Serial
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: Wechatpay-Signature
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: X-Callback-Timestamp
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: X-Callback-Nonce
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: X-Callback-Key-Id
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
+        - name: X-Callback-Signature
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Adapter-mandatory original header; required header set depends on registered adapter/channel.
+            Reject if any adapter-required header absent; header parameters cannot express cross-header OR
+            conditions.
       responses:
-        '200':
-          description: After durable verified event transaction, emit the configured adapter exact acknowledgment;
-            not the normal API envelope. WeChat Pay uses JSON code SUCCESS/message 成功. Provider acknowledgments
+        "200":
+          description: After durable verified event transaction, emit the configured adapter exact acknowledgment; not
+            the normal API envelope. WeChat Pay uses JSON code SUCCESS/message 成功. Provider acknowledgments
             fixed by verified adapter, never arbitrary echoed body.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CallbackAck'
+                $ref: "#/components/schemas/CallbackAck"
             text/plain:
               schema:
                 type: string
                 minLength: 1
                 maxLength: 32
               example: success
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '410':
-          $ref: '#/components/responses/Gone'
-        '413':
-          $ref: '#/components/responses/PayloadTooLarge'
-        '422':
-          $ref: '#/components/responses/Unprocessable'
-        '428':
-          $ref: '#/components/responses/PreconditionRequired'
-        '429':
-          $ref: '#/components/responses/RateLimited'
-        '503':
-          $ref: '#/components/responses/Unavailable'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/Unavailable"
       x-independent-callback-verification:
         required: true
         payload: exact raw bytes before JSON parsing or middleware transformation
         maxBytes: 1048576
-        headers: adapter-defined immutable allowlist; WeChat uses Wechatpay-Timestamp/Nonce/Serial/Signature; provider-specific
-          equivalents registered server-side
+        headers: adapter-defined immutable allowlist; WeChat uses Wechatpay-Timestamp/Nonce/Serial/Signature;
+          provider-specific equivalents registered server-side
         replayWindowSeconds: 300
         credentials: frozen validated adapter credential versions; dual verification during controlled rotation
         ack: channel-specific exact wire acknowledgment after durable transaction
@@ -11044,8 +11219,8 @@ paths:
           application/json:
             schema:
               oneOf:
-              - $ref: '#/components/schemas/WechatEncryptedCallback'
-              - $ref: '#/components/schemas/RegisteredCallbackEnvelope'
+                - $ref: "#/components/schemas/WechatEncryptedCallback"
+                - $ref: "#/components/schemas/RegisteredCallbackEnvelope"
         description: Exact raw UTF-8 JSON bytes on wire. Capture original byte buffer and original signed headers
           BEFORE decode/parse; schema validates only after successful cryptographic verification. Max body1MiB.
           WeChat Pay encrypted fields decrypted only after outer signature validation.
@@ -12329,6 +12504,73 @@ paths:
       x-module: C4
 components:
   schemas:
+    EmailChallengeResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/EmailChallenge"
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+        - data
+        - requestId
+      additionalProperties: false
+    EmailLogin:
+      type: object
+      properties:
+        challengeId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        verificationCode:
+          type: string
+          pattern: ^[0-9]{6}$
+      required:
+        - challengeId
+        - verificationCode
+      additionalProperties: false
+    EmailChallenge:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        expiresAt:
+          type: string
+          format: date-time
+        retryAfterSeconds:
+          type: integer
+          minimum: 1
+          maximum: 300
+        destinationHint:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+        - id
+        - expiresAt
+        - retryAfterSeconds
+        - destinationHint
+      additionalProperties: false
+    EmailChallengeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 3
+          maxLength: 254
+        purpose:
+          type: string
+          enum:
+            - login
+            - bind
+      required:
+        - email
+        - purpose
+      additionalProperties: false
     Id:
       type: string
       minLength: 1
@@ -12870,6 +13112,7 @@ components:
           type: string
           enum:
             - sms
+            - email
       required:
         - state
       additionalProperties: false
@@ -12890,7 +13133,9 @@ components:
           maxLength: 128
         method:
           type: string
-          const: sms
+          enum:
+            - sms
+            - email
         destinationHint:
           type: string
           minLength: 1
@@ -12898,7 +13143,8 @@ components:
         expiresAt:
           type: string
           format: date-time
-        purpose: *a1
+        purpose:
+          $ref: "#/components/schemas/IdentityProof/properties/purpose"
       required:
         - id
         - method
@@ -12938,15 +13184,16 @@ components:
         provider:
           type: string
           enum:
-          - wechat_mini
-          - wechat_web
-          - phone
+            - wechat_mini
+            - wechat_web
+            - phone
+            - email
         challengeId:
           type: string
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         proof:
           type: string
           minLength: 1
@@ -12954,20 +13201,20 @@ components:
         purpose:
           type: string
           enum:
-          - bind
-          - unbind
-          - delete_account
-          - privacy_export
-          - ownership_transfer
-          - billing_refund
-          - admin_secret
-          - admin_publish
-          - admin_operations
+            - bind
+            - unbind
+            - delete_account
+            - privacy_export
+            - ownership_transfer
+            - billing_refund
+            - admin_secret
+            - admin_publish
+            - admin_operations
       required:
-      - provider
-      - challengeId
-      - proof
-      - purpose
+        - provider
+        - challengeId
+        - proof
+        - purpose
       additionalProperties: false
     Binding:
       type: object
@@ -12977,13 +13224,14 @@ components:
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         provider:
           type: string
           enum:
-          - wechat_mini
-          - wechat_web
-          - phone
+            - wechat_mini
+            - wechat_web
+            - phone
+            - email
         displayHint:
           type: string
           minLength: 1
@@ -12992,10 +13240,10 @@ components:
           type: string
           format: date-time
       required:
-      - id
-      - provider
-      - displayHint
-      - createdAt
+        - id
+        - provider
+        - displayHint
+        - createdAt
       additionalProperties: false
     BindingCreate:
       type: object
@@ -15233,13 +15481,13 @@ components:
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         versionId:
           type: string
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         name:
           type: string
           minLength: 1
@@ -15271,8 +15519,9 @@ components:
           items:
             type: string
             enum:
-            - wechat_pay
-            - wechat_virtual
+              - wechat_pay
+              - wechat_virtual
+              - alipay
           minItems: 1
           maxItems: 2
         platforms:
@@ -15280,27 +15529,27 @@ components:
           items:
             type: string
             enum:
-            - web
-            - mini
+              - web
+              - mini
           minItems: 1
           maxItems: 2
         state:
           type: string
           enum:
-          - published
-          - retired
+            - published
+            - retired
       required:
-      - id
-      - versionId
-      - name
-      - priceFen
-      - currency
-      - durationDays
-      - creditGrant
-      - features
-      - channels
-      - platforms
-      - state
+        - id
+        - versionId
+        - name
+        - priceFen
+        - currency
+        - durationDays
+        - creditGrant
+        - features
+        - channels
+        - platforms
+        - state
       additionalProperties: false
     OrderCreate:
       type: object
@@ -15310,28 +15559,29 @@ components:
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         skuVersionId:
           type: string
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         channel:
           type: string
           enum:
-          - wechat_pay
-          - wechat_virtual
+            - wechat_pay
+            - wechat_virtual
+            - alipay
         clientPlatform:
           type: string
           enum:
-          - web
-          - mini
+            - web
+            - mini
       required:
-      - workspaceId
-      - skuVersionId
-      - channel
-      - clientPlatform
+        - workspaceId
+        - skuVersionId
+        - channel
+        - clientPlatform
       additionalProperties: false
     Order:
       type: object
@@ -15341,19 +15591,19 @@ components:
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         workspaceId:
           type: string
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         skuVersionId:
           type: string
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         amountFen:
           type: integer
           minimum: 0
@@ -15363,26 +15613,28 @@ components:
         state:
           type: string
           enum:
-          - pending
-          - paid
-          - closed
-          - refund_pending
-          - partially_refunded
-          - refunded
+            - pending
+            - paid
+            - closed
+            - refund_pending
+            - partially_refunded
+            - refunded
         fulfillmentState:
           type: string
           enum:
-          - unfulfilled
-          - fulfilled
-          - reversed
-          - manual_review
+            - unfulfilled
+            - fulfilled
+            - reversed
+            - manual_review
           description: paid+unfulfilled means awaiting fulfillment; fulfilled is one grant transaction, reversed
-            preserves refund reversal, manual_review requires audited finance recovery. Order payment state is independent.
+            preserves refund reversal, manual_review requires audited finance recovery. Order payment state is
+            independent.
         channel:
           type: string
           enum:
-          - wechat_pay
-          - wechat_virtual
+            - wechat_pay
+            - wechat_virtual
+            - alipay
         createdAt:
           type: string
           format: date-time
@@ -15394,16 +15646,16 @@ components:
           minimum: 1
           maximum: 9007199254740991
       required:
-      - id
-      - workspaceId
-      - skuVersionId
-      - amountFen
-      - currency
-      - state
-      - fulfillmentState
-      - channel
-      - createdAt
-      - revision
+        - id
+        - workspaceId
+        - skuVersionId
+        - amountFen
+        - currency
+        - state
+        - fulfillmentState
+        - channel
+        - createdAt
+        - revision
       additionalProperties: false
     PaymentAttemptCreate:
       type: object
@@ -15528,35 +15780,36 @@ components:
           minLength: 1
           maxLength: 128
           examples:
-          - prj_demo
+            - prj_demo
         expiresAt:
           type: string
           format: date-time
         channel:
           type: string
           enum:
-          - wechat_pay
-          - wechat_virtual
+            - wechat_pay
+            - wechat_virtual
+            - alipay
         launch:
           oneOf:
-          - $ref: '#/components/schemas/PaymentQr'
-          - $ref: '#/components/schemas/PaymentMini'
-          - $ref: '#/components/schemas/VirtualPaymentMini'
+            - $ref: "#/components/schemas/PaymentQr"
+            - $ref: "#/components/schemas/PaymentMini"
+            - $ref: "#/components/schemas/VirtualPaymentMini"
           discriminator:
             propertyName: kind
             mapping:
-              qr: '#/components/schemas/PaymentQr'
-              mini_jsapi: '#/components/schemas/PaymentMini'
-              mini_virtual: '#/components/schemas/VirtualPaymentMini' 
+              qr: "#/components/schemas/PaymentQr"
+              mini_jsapi: "#/components/schemas/PaymentMini"
+              mini_virtual: "#/components/schemas/VirtualPaymentMini"
       required:
-      - attemptId
-      - expiresAt
-      - channel
-      - launch
+        - attemptId
+        - expiresAt
+        - channel
+        - launch
       additionalProperties: false
       description: Server adapter supplies only documented launch parameters for permitted channel/platform; client
-        launch success never marks order paid. Virtual adapter availability and required SDK fields verified before
-        release; unsupported combinations return CHANNEL_UNAVAILABLE.
+        launch success never marks order paid. Virtual adapter availability and required SDK fields verified
+        before release; unsupported combinations return CHANNEL_UNAVAILABLE.
     RefundCreate:
       type: object
       properties:

@@ -151,7 +151,7 @@ test("published purchase opens a server payment QR and stays pending until confi
       },
     }),
   );
-  await page.getByRole("button", { name: "购买", exact: true }).click();
+  await page.getByRole("button", { name: "微信支付", exact: true }).click();
   await expect(page.getByRole("heading", { name: "订单与兑换" })).toBeVisible();
   await page.getByRole("button", { name: "前往支付" }).click();
   await expect(page.getByRole("img", { name: "微信支付二维码" })).toBeVisible();
@@ -466,4 +466,48 @@ test("cloud export stays unavailable without a published configured capability",
   await expect(
     page.getByRole("button", { name: "检查云端导出", exact: true }),
   ).toBeDisabled();
+});
+test("membership chooses Alipay explicitly and preserves server-authoritative pending status", async ({
+  page,
+}) => {
+  const order = {
+    id: "ali-order",
+    workspaceId: wid,
+    skuVersionId: "sku-ali",
+    amountFen: 123,
+    currency: "CNY",
+    state: "pending",
+    fulfillmentState: "unfulfilled",
+    channel: "alipay",
+    revision: 1,
+    createdAt: new Date().toISOString(),
+  };
+  await setup(
+    page,
+    [
+      {
+        id: "sku",
+        versionId: "sku-ali",
+        name: "相册会员",
+        priceFen: 123,
+        currency: "CNY",
+        durationDays: 30,
+        creditGrant: 10,
+        features: [],
+        channels: ["wechat_pay", "alipay"],
+        platforms: ["web"],
+        state: "published",
+      },
+    ],
+    [order],
+  );
+  let body: any;
+  await page.route("**/v1/orders", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    body = route.request().postDataJSON();
+    return route.fulfill({ json: { data: order, requestId: "test" } });
+  });
+  await page.getByRole("button", { name: "支付宝支付", exact: true }).click();
+  expect(body.channel).toBe("alipay");
+  await expect(page.getByText("待确认", { exact: true })).toBeVisible();
 });

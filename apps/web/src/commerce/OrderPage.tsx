@@ -36,7 +36,8 @@ export function OrderPage({
     [refunds, setRefunds] = useState<DTO<"Refund">[]>([]),
     [nextRefunds, setNextRefunds] = useState<string | null>(null),
     [reason, setReason] = useState(""),
-    [qr, setQr] = useState("");
+    [qr, setQr] = useState(""),
+    [qrChannel, setQrChannel] = useState("微信");
   const refresh = useCallback(async () => {
     try {
       const [o, r, f] = await Promise.all([
@@ -126,6 +127,9 @@ export function OrderPage({
                       if (launch.launch.kind !== "qr")
                         throw new Error("该渠道不支持网页扫码支付");
                       setQr(await QRCode.toDataURL(launch.launch.qrPayload));
+                      setQrChannel(
+                        launch.channel === "alipay" ? "支付宝" : "微信",
+                      );
                     })
                   }
                 >
@@ -183,7 +187,12 @@ export function OrderPage({
       {qr && (
         <aside className="commerce-note">
           <h2>微信扫码支付</h2>
-          <img src={qr} width={220} height={220} alt="微信支付二维码" />
+          <img
+            src={qr}
+            width={220}
+            height={220}
+            alt={`${qrChannel}支付二维码`}
+          />
           <p>扫码后请查询服务端确认结果，权益发放以服务端记录为准。</p>
         </aside>
       )}

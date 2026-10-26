@@ -1,3 +1,4 @@
+import { availablePaymentChannels } from "./payment-availability";
 import { sqlPage, mapPage, arrayPage } from "./pagination";
 import { fail, id, runIdempotent } from "@album/server-core";
 import type { components } from "@album/contracts";
@@ -199,16 +200,37 @@ export function commerceHandlers(
         "purchase",
       );
     },
-    async getCapabilities() {
+    async getCapabilities(r) {
       let release = null;
       try {
         release = await s.config.loadRelease();
       } catch {}
       const caps = await s.config.capabilities();
+      if (
+        caps.purchase.state === "available" &&
+        !(await availablePaymentChannels(s, release, r.query.platform)).length
+      )
+        caps.purchase = {
+          state: "unconfigured",
+          reason: "configuration_required",
+          action: "configure",
+        };
       return {
         configReleaseId: release?.releaseId ?? null,
         serverTime: new Date().toISOString(),
         capabilities: [
+          {
+            key: "emailLogin",
+            status: runtime.email ? "available" : "unconfigured",
+            action: runtime.email ? "none" : "contact_admin",
+            platforms: ["web"],
+          },
+          {
+            key: "wechatMiniLogin",
+            status: runtime.wechatMini ? "available" : "unconfigured",
+            action: runtime.wechatMini ? "none" : "contact_admin",
+            platforms: ["mini"],
+          },
           ...Object.entries(caps).map(([key, c]) => ({
             key,
             status: c.state,
@@ -389,6 +411,11 @@ export function commerceHandlers(
       ).rows[0];
       if (!row) return arrayPage(r, "skus", [], "public");
       const p = v.payload;
+      const admittedChannels = await availablePaymentChannels(
+        s,
+        active,
+        r.query.platform,
+      );
       const result = arrayPage(
         r,
         "skus",
@@ -410,17 +437,8 @@ export function commerceHandlers(
                 ([k, v]) => `${k}: ${Array.isArray(v) ? v.join("/") : v}`,
               ),
             ],
-            channels: [
-              active.versions.payment?.payload.kind === "payment"
-                ? active.versions.payment.payload.channel
-                : "wechat_pay",
-            ],
-            platforms: [
-              active.versions.payment?.payload.kind === "payment" &&
-              active.versions.payment.payload.channel === "wechat_virtual"
-                ? "mini"
-                : "web",
-            ],
+            channels: admittedChannels,
+            platforms: [r.query.platform],
             state: "published",
             createdAt: date(row.created_at),
           },

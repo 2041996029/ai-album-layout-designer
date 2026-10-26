@@ -8,7 +8,7 @@ import type {
 import type { WorkspaceService } from "../workspaces/service";
 
 export type PaymentEvent = {
-  channel: "wechat_pay" | "wechat_virtual";
+  channel: "wechat_pay" | "wechat_virtual" | "alipay";
   eventId: string;
   transactionId: string;
   orderId: string;
@@ -67,6 +67,7 @@ export interface PaymentAdapter {
     orderId: string,
     refundId: string,
     amountFen: number,
+    request?: PaymentRequest,
   ): Promise<{
     providerRefundId: string;
     state: "submitted" | "succeeded" | "unknown";
