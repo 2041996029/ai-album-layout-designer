@@ -21,3 +21,8 @@ backups
 .backups
 **/.backups
 **/album-backup*.sql
+.codex
+.claude
+.agents
+.mcp.json
+**/.mcp.json
