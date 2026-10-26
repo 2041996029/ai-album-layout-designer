@@ -82,6 +82,66 @@ export class MiniApi {
     })();
     return this.authenticating;
   }
+  async emailLinkChallenge(email: string): Promise<Schema<"EmailChallenge">> {
+    return this.decode({
+      method: "POST",
+      path: "/auth/wechat/mini/email-challenges",
+      headers: { "Idempotency-Key": this.key() },
+      body: { email },
+    });
+  }
+  async currentEmailChallenge(
+    email: string,
+  ): Promise<Schema<"EmailChallenge">> {
+    return this.request("POST", "/auth/email/challenges", {
+      email,
+      purpose: "bind",
+    });
+  }
+  async bindCurrentEmail(
+    challengeId: string,
+    verificationCode: string,
+  ): Promise<void> {
+    const purpose = "bind";
+    const fresh = await this.request<Schema<"ReauthenticationResult">>(
+      "POST",
+      "/auth/reauthenticate",
+      {
+        purpose,
+        proof: {
+          provider: "wechat_mini",
+          challengeId: this.key(),
+          proof: await this.options.loginCode(),
+          purpose,
+        },
+      },
+    );
+    await this.request("POST", "/auth/bindings", {
+      reauthProof: fresh.reauthProof,
+      proof: {
+        provider: "email",
+        challengeId,
+        proof: JSON.stringify({ challengeId, code: verificationCode }),
+        purpose,
+      },
+    });
+  }
+  async linkEmail(
+    challengeId: string,
+    verificationCode: string,
+  ): Promise<void> {
+    const session = await this.decode<Schema<"MiniSession">>({
+      method: "POST",
+      path: "/auth/wechat/mini/link-email",
+      headers: { "Idempotency-Key": this.key() },
+      body: {
+        challengeId,
+        verificationCode,
+        wechatCode: await this.options.loginCode(),
+      },
+    });
+    this.session = session;
+  }
   async request<T>(
     method: string,
     path: string,

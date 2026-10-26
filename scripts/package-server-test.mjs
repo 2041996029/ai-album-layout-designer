@@ -25,6 +25,7 @@ const files = execFileSync("git", ["-C", root, "ls-files", "-z"], {
             "node_modules",
             "dist",
             ".secrets",
+            ".integrations",
             "backups",
             ".backups",
             "attachments",
@@ -41,6 +42,7 @@ const files = execFileSync("git", ["-C", root, "ls-files", "-z"], {
       name !== ".env.example"
     )
       return false;
+    if (/(^|\/)\.integrations\.env$/.test(name)) return false;
     if (/(?:\.pem|\.key|\.p12|\.pfx|\.log)$/.test(name)) return false;
     if (
       name.startsWith("docs/") &&

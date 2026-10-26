@@ -36,14 +36,14 @@ export function MembershipPage({
       live = false;
     };
   }, [workspaceId]);
-  async function buy(sku: DTO<"Sku">) {
+  async function buy(sku: DTO<"Sku">, channel: "wechat_pay" | "alipay") {
     setBusy(sku.versionId);
     setError("");
     try {
       const order = await api<DTO<"Order">>("/orders", "POST", {
         workspaceId,
         skuVersionId: sku.versionId,
-        channel: "wechat_pay",
+        channel,
         clientPlatform: "web",
       });
       location.hash = `orders/${id(order.id)}`;
@@ -102,22 +102,26 @@ export function MembershipPage({
                     <li key={f}>{f}</li>
                   ))}
                 </ul>
-                <button
-                  className="primary"
-                  disabled={
-                    !ready ||
-                    !s.platforms.includes("web") ||
-                    !s.channels.includes("wechat_pay") ||
-                    !!busy
-                  }
-                  onClick={() => void buy(s)}
-                >
-                  {busy === s.versionId
-                    ? "创建订单…"
-                    : ready
-                      ? "购买"
-                      : "支付尚未开通"}
-                </button>
+                {(["wechat_pay", "alipay"] as const)
+                  .filter((channel) => s.channels.includes(channel))
+                  .map((channel) => (
+                    <button
+                      key={channel}
+                      className="primary"
+                      disabled={
+                        !ready || !s.platforms.includes("web") || !!busy
+                      }
+                      onClick={() => void buy(s, channel)}
+                    >
+                      {busy === s.versionId
+                        ? "创建订单…"
+                        : ready
+                          ? channel === "alipay"
+                            ? "支付宝支付"
+                            : "微信支付"
+                          : "支付尚未开通"}
+                    </button>
+                  ))}
                 <small>版本 {s.versionId}</small>
               </article>
             ))

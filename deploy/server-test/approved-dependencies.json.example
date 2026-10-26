@@ -1,0 +1,5 @@
+[
+  {"target":"paymentCapability","id":"YOUR_WECHAT_PRODUCT_APPROVAL","version":1,"environment":"dev","approved":true},
+  {"target":"paymentCapability","id":"YOUR_ALIPAY_PRODUCT_APPROVAL","version":1,"environment":"dev","approved":true},
+  {"target":"refundPolicy","id":"YOUR_REVIEWED_REFUND_POLICY","version":1,"environment":"dev","approved":true}
+]

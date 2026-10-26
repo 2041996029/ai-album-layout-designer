@@ -26,7 +26,7 @@ export class ReconciliationService {
     if (
       lines.some(
         (l) =>
-          !["wechat_pay", "wechat_virtual"].includes(l.channel) ||
+          !["wechat_pay", "wechat_virtual", "alipay"].includes(l.channel) ||
           !l.orderId ||
           !l.transactionId ||
           ![l.paidFen, l.refundedFen].every(

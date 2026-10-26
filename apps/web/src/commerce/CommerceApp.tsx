@@ -1,3 +1,4 @@
+import { AccountBindings } from "../auth/AccountBindings";
 import { useEffect, useState } from "react";
 import { api, setSession, type DTO } from "../cloud/api";
 import { MembershipPage } from "./MembershipPage";
@@ -32,6 +33,7 @@ export function CommerceApp() {
             ["orders", "订单与兑换"],
             ["export", "云端导出"],
             ["tasks", "任务中心"],
+            ["account", "账号与绑定"],
           ].map(([r, label]) => (
             <a
               key={r}
@@ -48,7 +50,9 @@ export function CommerceApp() {
       </aside>
       <main>
         {error && <p role="alert">请登录后使用工作区服务：{error}</p>}
-        {workspaceId ? (
+        {route === "account" ? (
+          <AccountBindings />
+        ) : workspaceId ? (
           route.startsWith("orders") ? (
             <OrderPage workspaceId={workspaceId} />
           ) : route === "export" ? (

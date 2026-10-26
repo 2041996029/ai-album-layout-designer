@@ -30,6 +30,10 @@ if (
     "Origin must be an http(s) origin without a path, query or credentials",
   );
 await mkdir(directory, { recursive: true });
+await mkdir(resolve(directory, ".integrations"), {
+  recursive: true,
+  mode: 0o755,
+});
 await mkdir(resolve(directory, ".secrets"), { recursive: true, mode: 0o700 });
 for (const name of [
   "postgres_password",

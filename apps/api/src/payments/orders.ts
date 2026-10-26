@@ -58,14 +58,18 @@ export class PublishedOrderCatalog implements OrderCatalog {
     )
       fail("PAYMENT_UNCONFIGURED", 503);
     const sku = skuVersion.payload,
-      payment = paymentVersion.payload;
+      rootPayment = paymentVersion.payload,
+      payment = [rootPayment, ...(rootPayment.additionalChannels ?? [])].find(
+        (p) => p.channel === channel,
+      );
+    if (!payment) fail("PAYMENT_UNCONFIGURED", 503);
     validateConfigPayload("sku", sku);
     validateConfigPayload("payment", payment);
     if (
       !sku.enabled ||
       !payment.enabled ||
       payment.channel !== channel ||
-      (channel === "wechat_pay" && client !== "web") ||
+      (["wechat_pay", "alipay"].includes(channel) && client !== "web") ||
       (channel === "wechat_virtual" && client !== "mini")
     )
       fail("PAYMENT_UNCONFIGURED", 503);
@@ -98,7 +102,10 @@ export class PublishedOrderCatalog implements OrderCatalog {
       fail("PAYMENT_UNCONFIGURED", 503);
     return {
       releaseId: release.releaseId,
-      bindingId: paymentVersion.id,
+      bindingId:
+        channel === rootPayment.channel
+          ? paymentVersion.id
+          : `${paymentVersion.id}:${channel}`,
       skuVersionId,
       sku,
       payment,

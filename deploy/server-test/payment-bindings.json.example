@@ -1,0 +1,33 @@
+[
+  {
+    "bindingId": "PUBLISHED_PAYMENT_VERSION_ID",
+    "channel": "wechat_pay",
+    "callbackChannel": "wechat_pay",
+    "appId": "WECHAT_PAY_APP_ID",
+    "merchantId": "WECHAT_MERCHANT_ID",
+    "credentialRef": "PUBLISHED_CREDENTIAL_REF",
+    "credentialVersion": "PUBLISHED_CREDENTIAL_VERSION",
+    "verificationKeyRef": "PUBLISHED_VERIFY_KEY_REF",
+    "privateKey": "-----BEGIN PRIVATE KEY-----\nSERVER_ONLY_MERCHANT_PRIVATE_KEY\n-----END PRIVATE KEY-----",
+    "certificateSerial": "MERCHANT_CERTIFICATE_SERIAL",
+    "platformSerial": "WECHAT_PLATFORM_CERTIFICATE_SERIAL_OR_PUBLIC_KEY_ID",
+    "platformPublicKey": "-----BEGIN PUBLIC KEY-----\nSERVER_ONLY_WECHAT_PLATFORM_PUBLIC_KEY\n-----END PUBLIC KEY-----",
+    "apiV3Key": "SERVER_ONLY_32_BYTE_API_V3_KEY",
+    "notifyUrl": "https://YOUR_DOMAIN/v1/payment-callbacks/wechat_pay",
+    "refundNotifyUrl": "https://YOUR_DOMAIN/v1/refund-callbacks/wechat_pay"
+  },
+  {
+    "bindingId": "PUBLISHED_PAYMENT_VERSION_ID:alipay",
+    "channel": "alipay",
+    "callbackChannel": "alipay",
+    "appId": "ALIPAY_APP_ID",
+    "merchantId": "ALIPAY_SELLER_ID",
+    "credentialRef": "PUBLISHED_ALIPAY_CREDENTIAL_REF",
+    "credentialVersion": "PUBLISHED_ALIPAY_CREDENTIAL_VERSION",
+    "verificationKeyRef": "PUBLISHED_ALIPAY_VERIFY_KEY_REF",
+    "privateKey": "-----BEGIN PRIVATE KEY-----\nSERVER_ONLY_ALIPAY_APP_PRIVATE_KEY\n-----END PRIVATE KEY-----",
+    "platformPublicKey": "-----BEGIN PUBLIC KEY-----\nSERVER_ONLY_ALIPAY_PUBLIC_KEY\n-----END PUBLIC KEY-----",
+    "notifyUrl": "https://YOUR_DOMAIN/v1/payment-callbacks/alipay",
+    "sandbox": false
+  }
+]

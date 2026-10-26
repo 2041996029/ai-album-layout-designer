@@ -24,11 +24,13 @@ export class AuthService {
       .digest("hex");
   }
   private provider(v: VerifiedIdentity, client: "web" | "mini") {
-    return v.provider === "sms"
-      ? "phone"
-      : client === "mini"
-        ? "wechat_mini"
-        : "wechat_web";
+    return v.provider === "email"
+      ? "email"
+      : v.provider === "sms"
+        ? "phone"
+        : client === "mini"
+          ? "wechat_mini"
+          : "wechat_web";
   }
   private access(
     sessionId: string,
@@ -516,9 +518,10 @@ export class AuthService {
         `identity:${provider}:${v.appId}:${subject}`,
       ]);
       const { rows } = await tx.query(
-        "SELECT user_id FROM auth_identities WHERE provider=$1 AND app_id=$2 AND subject_digest=$3",
+        "SELECT user_id,revoked_at FROM auth_identities WHERE provider=$1 AND app_id=$2 AND subject_digest=$3",
         [provider, v.appId, subject],
       );
+      if (rows[0]?.revoked_at) fail("IDENTITY_REVOKED", 409);
       if (rows[0] && rows[0].user_id !== actor.userId)
         fail("BINDING_CONFLICT", 409);
       if (!rows.length)

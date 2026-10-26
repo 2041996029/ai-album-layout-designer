@@ -1,3 +1,4 @@
+import { EmailLogin } from "./EmailLogin";
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
 import { api, id, setSession, type DTO } from "../cloud/api";
@@ -98,6 +99,13 @@ export function LoginPanel({
   return (
     <section aria-label="登录">
       <h2>连接云工作区</h2>
+      {capabilities.capabilities.some(
+        (c) => c.key === "emailLogin" && c.status === "available",
+      ) ? (
+        <EmailLogin onLogin={onLogin} />
+      ) : (
+        <p>邮箱登录暂未开通，本地创作可继续使用。</p>
+      )}
       {enabled ? (
         <button onClick={() => void begin()}>
           {qr ? "刷新微信登录" : "微信登录"}
@@ -124,9 +132,7 @@ export function LoginPanel({
           )}
         </>
       )}
-      {!capabilities.capabilities.some(
-        (c) => /sms/i.test(c.key) && c.status === "available",
-      ) && <p>短信登录未开通</p>}
+
       {error && <p role="alert">{error}</p>}
     </section>
   );

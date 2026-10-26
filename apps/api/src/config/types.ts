@@ -354,6 +354,12 @@ export function validateConfigPayload(
     case "aiRoute":
       if (p.enabled && p.capability === "textSuggestion") invalid();
       break;
+    case "payment": {
+      const channels = [p, ...(p.additionalChannels ?? [])];
+      if (new Set(channels.map((v) => v.channel)).size !== channels.length)
+        invalid();
+      break;
+    }
     case "site":
     case "account":
     case "sku":
@@ -364,7 +370,6 @@ export function validateConfigPayload(
     case "monitor":
     case "workspace":
     case "aiPricing":
-    case "payment":
     case "albumDefaults":
       break;
   }
@@ -374,7 +379,17 @@ export function fieldValues(payload: ConfigPayload, field: string): unknown[] {
   const value = (payload as unknown as Record<string, unknown>)[
     array ? field.slice(0, -2) : field
   ];
-  return value === undefined ? [] : array ? (value as unknown[]) : [value];
+  return [
+    ...(value === undefined ? [] : array ? (value as unknown[]) : [value]),
+    ...(payload.kind === "payment"
+      ? (payload.additionalChannels ?? []).flatMap((p) => {
+          const v = (p as unknown as Record<string, unknown>)[
+            array ? field.slice(0, -2) : field
+          ];
+          return v === undefined ? [] : array ? (v as unknown[]) : [v];
+        })
+      : []),
+  ];
 }
 /** Canonical hashing survives JSONB key reordering and rejects non-JSON values. */
 export function canonical(value: unknown): string {

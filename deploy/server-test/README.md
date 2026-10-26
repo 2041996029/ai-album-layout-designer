@@ -112,3 +112,7 @@ docker compose --env-file deploy/server-test/.env -f deploy/server-test/compose.
 测试结束前由你确认保留或清理资源；本说明不自动删除卷、站点或照片。需要改成生产架构时，独立配置身份、最小数据库权限、HTTPS、安全 Cookie、真实对象存储、密钥服务、渲染 worker、限额和备份恢复。
 
 本测试镜像的应用源码由运行用户持有，以兼容来源文件权限；生产容器还需将应用代码改为只读／root 所有，并单独授予对象存储写权限。
+
+## 邮箱、微信和支付开发更新
+
+真实协议及部署字段见 [IDENTITY-PAYMENTS.md](./IDENTITY-PAYMENTS.md)。旧数据库升级需单独执行 005；普通商户号不会自动开启小程序虚拟支付。

@@ -1,0 +1,1 @@
+page{background:#f7f3eb;color:#274d43}.account{padding:64rpx 40rpx;display:flex;flex-direction:column;gap:32rpx}.title{font-size:44rpx;font-weight:600}input{padding:24rpx;background:#fff;border-radius:12rpx}button{background:#285b4b;color:#fff;width:100%}.message{color:#805a32}.note{font-size:24rpx;color:#687970}

@@ -19,10 +19,7 @@
           "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
         }
       },
-      "required": [
-        "secretRef",
-        "secretVersion"
-      ],
+      "required": ["secretRef", "secretVersion"],
       "additionalProperties": false
     },
     "versionRef": {
@@ -40,10 +37,7 @@
           "maximum": 9007199254740991
         }
       },
-      "required": [
-        "id",
-        "version"
-      ],
+      "required": ["id", "version"],
       "additionalProperties": false
     },
     "storage": {
@@ -53,11 +47,7 @@
           "const": "storage"
         },
         "provider": {
-          "enum": [
-            "oss",
-            "cos",
-            "s3"
-          ]
+          "enum": ["oss", "cos", "s3"]
         },
         "adapterVersion": {
           "type": "string",
@@ -97,10 +87,7 @@
               "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
             }
           },
-          "required": [
-            "secretRef",
-            "secretVersion"
-          ],
+          "required": ["secretRef", "secretVersion"],
           "additionalProperties": false
         },
         "basePrefix": {
@@ -148,10 +135,7 @@
           "maximum": 3600
         },
         "encryptionMode": {
-          "enum": [
-            "providerManaged",
-            "kms"
-          ]
+          "enum": ["providerManaged", "kms"]
         },
         "kmsKeyRef": {
           "type": "string",
@@ -160,10 +144,7 @@
           "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
         },
         "cdnMode": {
-          "enum": [
-            "disabled",
-            "signed"
-          ]
+          "enum": ["disabled", "signed"]
         },
         "downloadDomain": {
           "type": "string",
@@ -186,10 +167,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "quotaPolicyRef": {
@@ -207,10 +185,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         }
       },
@@ -280,10 +255,7 @@
               "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
             }
           },
-          "required": [
-            "secretRef",
-            "secretVersion"
-          ],
+          "required": ["secretRef", "secretVersion"],
           "additionalProperties": false
         },
         "accountBillingId": {
@@ -340,10 +312,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "enabled": {
@@ -403,10 +372,7 @@
               "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
             }
           },
-          "required": [
-            "secretRef",
-            "secretVersion"
-          ],
+          "required": ["secretRef", "secretVersion"],
           "additionalProperties": false
         },
         "miniCredential": {
@@ -425,10 +391,7 @@
               "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
             }
           },
-          "required": [
-            "secretRef",
-            "secretVersion"
-          ],
+          "required": ["secretRef", "secretVersion"],
           "additionalProperties": false
         },
         "callbackOrigins": {
@@ -470,10 +433,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "registrationEnabled": {
@@ -501,10 +461,7 @@
           "const": "payment"
         },
         "channel": {
-          "enum": [
-            "wechat_pay",
-            "wechat_virtual"
-          ]
+          "enum": ["wechat_pay", "wechat_virtual", "alipay"]
         },
         "appId": {
           "type": "string",
@@ -534,10 +491,7 @@
               "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
             }
           },
-          "required": [
-            "secretRef",
-            "secretVersion"
-          ],
+          "required": ["secretRef", "secretVersion"],
           "additionalProperties": false
         },
         "verificationKeyRef": {
@@ -570,14 +524,18 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "enabled": {
           "type": "boolean"
+        },
+        "additionalChannels": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/additionalPayment"
+          }
         }
       },
       "required": [
@@ -607,10 +565,7 @@
           "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
         },
         "skuKind": {
-          "enum": [
-            "membership",
-            "credits"
-          ]
+          "enum": ["membership", "credits"]
         },
         "name": {
           "type": "string",
@@ -661,11 +616,7 @@
             "exportDpis": {
               "type": "array",
               "items": {
-                "enum": [
-                  72,
-                  150,
-                  300
-                ]
+                "enum": [72, 150, 300]
               },
               "minItems": 1,
               "maxItems": 3,
@@ -725,10 +676,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "enabled": {
@@ -772,10 +720,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "fontCatalogVersion": {
@@ -793,10 +738,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "templateCatalogVersion": {
@@ -814,10 +756,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "undoLimit": {
@@ -892,16 +831,10 @@
           "maximum": 100
         },
         "selectionPolicy": {
-          "enum": [
-            "all",
-            "allowSelection"
-          ]
+          "enum": ["all", "allowSelection"]
         },
         "duplicatePolicy": {
-          "enum": [
-            "forbid",
-            "allowExplicit"
-          ]
+          "enum": ["forbid", "allowExplicit"]
         },
         "weights": {
           "type": "object",
@@ -932,13 +865,7 @@
               "maximum": 1
             }
           },
-          "required": [
-            "subject",
-            "timeline",
-            "whitespace",
-            "variety",
-            "color"
-          ],
+          "required": ["subject", "timeline", "whitespace", "variety", "color"],
           "additionalProperties": false
         }
       },
@@ -963,11 +890,7 @@
         "allowedFormats": {
           "type": "array",
           "items": {
-            "enum": [
-              "png",
-              "jpeg",
-              "pdf"
-            ]
+            "enum": ["png", "jpeg", "pdf"]
           },
           "minItems": 1,
           "maxItems": 3,
@@ -976,11 +899,7 @@
         "allowedDpis": {
           "type": "array",
           "items": {
-            "enum": [
-              72,
-              150,
-              300
-            ]
+            "enum": [72, 150, 300]
           },
           "minItems": 1,
           "maxItems": 3,
@@ -1046,12 +965,7 @@
           "const": "queue"
         },
         "workerKind": {
-          "enum": [
-            "export",
-            "generation",
-            "layout",
-            "storageMigration"
-          ]
+          "enum": ["export", "generation", "layout", "storageMigration"]
         },
         "maxGlobalConcurrency": {
           "type": "integer",
@@ -1134,10 +1048,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "labelPolicyRef": {
@@ -1155,10 +1066,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "licensePolicyVersion": {
@@ -1176,20 +1084,13 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "allowedOrigins": {
           "type": "array",
           "items": {
-            "enum": [
-              "uploaded",
-              "generated",
-              "platform"
-            ]
+            "enum": ["uploaded", "generated", "platform"]
           },
           "minItems": 1,
           "maxItems": 3,
@@ -1236,10 +1137,7 @@
           "maximum": 3600
         },
         "revokeMode": {
-          "enum": [
-            "shortLivedUrl",
-            "gateway"
-          ]
+          "enum": ["shortLivedUrl", "gateway"]
         },
         "allowOriginalDownload": {
           "type": "boolean"
@@ -1265,11 +1163,7 @@
         "channels": {
           "type": "array",
           "items": {
-            "enum": [
-              "inApp",
-              "wechatSubscription",
-              "sms"
-            ]
+            "enum": ["inApp", "wechatSubscription", "sms"]
           },
           "minItems": 1,
           "maxItems": 3,
@@ -1291,10 +1185,7 @@
               "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
             }
           },
-          "required": [
-            "secretRef",
-            "secretVersion"
-          ],
+          "required": ["secretRef", "secretVersion"],
           "additionalProperties": false
         },
         "templateRefs": {
@@ -1314,10 +1205,7 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": [
-              "id",
-              "version"
-            ],
+            "required": ["id", "version"],
             "additionalProperties": false
           },
           "minItems": 0,
@@ -1493,11 +1381,7 @@
             "exportDpis": {
               "type": "array",
               "items": {
-                "enum": [
-                  72,
-                  150,
-                  300
-                ]
+                "enum": [72, 150, 300]
               },
               "minItems": 1,
               "maxItems": 3,
@@ -1545,12 +1429,7 @@
         "roles": {
           "type": "array",
           "items": {
-            "enum": [
-              "owner",
-              "admin",
-              "designer",
-              "viewer"
-            ]
+            "enum": ["owner", "admin", "designer", "viewer"]
           },
           "minItems": 1,
           "maxItems": 4,
@@ -1615,10 +1494,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "termsVersion": {
@@ -1636,10 +1512,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         }
       },
@@ -1706,10 +1579,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "termsVersion": {
@@ -1727,10 +1597,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         }
       },
@@ -1757,10 +1624,7 @@
         "allowedMimeTypes": {
           "type": "array",
           "items": {
-            "enum": [
-              "image/jpeg",
-              "image/png"
-            ]
+            "enum": ["image/jpeg", "image/png"]
           },
           "minItems": 1,
           "maxItems": 2,
@@ -1824,10 +1688,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         }
       },
@@ -1874,10 +1735,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "fallbackModelRefs": {
@@ -1897,10 +1755,7 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": [
-              "id",
-              "version"
-            ],
+            "required": ["id", "version"],
             "additionalProperties": false
           },
           "minItems": 0,
@@ -1950,10 +1805,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "presetRef": {
@@ -1971,10 +1823,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         },
         "creditsPerImage": {
@@ -2064,10 +1913,7 @@
               "maximum": 9007199254740991
             }
           },
-          "required": [
-            "id",
-            "version"
-          ],
+          "required": ["id", "version"],
           "additionalProperties": false
         }
       },
@@ -2148,6 +1994,97 @@
           "$ref": "#/$defs/albumDefaults"
         }
       ]
+    },
+    "additionalPayment": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "payment"
+        },
+        "channel": {
+          "enum": ["wechat_pay", "wechat_virtual", "alipay"]
+        },
+        "appId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "merchantId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "credential": {
+          "type": "object",
+          "properties": {
+            "secretRef": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "secretVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          "required": ["secretRef", "secretVersion"],
+          "additionalProperties": false
+        },
+        "verificationKeyRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "callbackUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^https://"
+        },
+        "refundEnabled": {
+          "type": "boolean"
+        },
+        "platformCapabilityRef": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": ["id", "version"],
+          "additionalProperties": false
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "channel",
+        "appId",
+        "merchantId",
+        "credential",
+        "verificationKeyRef",
+        "callbackUrl",
+        "refundEnabled",
+        "platformCapabilityRef",
+        "enabled"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/root",

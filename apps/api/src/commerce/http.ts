@@ -209,6 +209,18 @@ export function commerceHandlers(
         configReleaseId: release?.releaseId ?? null,
         serverTime: new Date().toISOString(),
         capabilities: [
+          {
+            key: "emailLogin",
+            status: runtime.email ? "available" : "unconfigured",
+            action: runtime.email ? "none" : "contact_admin",
+            platforms: ["web"],
+          },
+          {
+            key: "wechatMiniLogin",
+            status: runtime.wechatMini ? "available" : "unconfigured",
+            action: runtime.wechatMini ? "none" : "contact_admin",
+            platforms: ["mini"],
+          },
           ...Object.entries(caps).map(([key, c]) => ({
             key,
             status: c.state,
@@ -410,17 +422,23 @@ export function commerceHandlers(
                 ([k, v]) => `${k}: ${Array.isArray(v) ? v.join("/") : v}`,
               ),
             ],
-            channels: [
+            channels:
               active.versions.payment?.payload.kind === "payment"
-                ? active.versions.payment.payload.channel
-                : "wechat_pay",
-            ],
-            platforms: [
-              active.versions.payment?.payload.kind === "payment" &&
-              active.versions.payment.payload.channel === "wechat_virtual"
-                ? "mini"
-                : "web",
-            ],
+                ? [
+                    active.versions.payment.payload,
+                    ...(active.versions.payment.payload.additionalChannels ??
+                      []),
+                  ]
+                    .filter(
+                      (p) =>
+                        p.enabled &&
+                        (r.query.platform === "mini"
+                          ? p.channel === "wechat_virtual"
+                          : p.channel !== "wechat_virtual"),
+                    )
+                    .map((p) => p.channel)
+                : [],
+            platforms: [r.query.platform],
             state: "published",
             createdAt: date(row.created_at),
           },
