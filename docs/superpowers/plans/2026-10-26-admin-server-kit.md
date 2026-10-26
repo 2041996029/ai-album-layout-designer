@@ -1,6 +1,6 @@
 # Admin redesign and server test kit Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Deliver a usable redesigned admin and complete source/server-test package.
 **Architecture:** Retain C4 API authority, split admin navigation/presentation, add a same-origin Docker test topology and source packaging tooling.
@@ -23,17 +23,17 @@
 
 ### Task 1: Redesign admin
 Files: apps/admin/src/commerce/CommerceConsole.tsx, AdminShell.tsx, admin.css; tests/browser/admin-design.spec.ts; existing commerce browser tests.
-- [ ] Write browser regressions for module navigation, filter+pagination, unavailable metrics/mobile; run RED.
-- [ ] Implement shell, tables, localized status, contextual review fields, loading/error/empty states.
-- [ ] Adapt actual finance UI flow to navigation; run affected browser tests/typecheck, capture screenshots; commit.
+- [x] Write browser regressions for module navigation, filter+pagination, unavailable metrics/mobile; run RED.
+- [x] Implement shell, tables, localized status, contextual review fields, loading/error/empty states.
+- [x] Adapt actual finance UI flow to navigation; run affected browser tests/typecheck, capture screenshots; commit.
 
 ### Task 2: Make server test deployment concrete
 Files: deploy/server-test/{Dockerfile,compose.yaml,nginx.conf,init-env.mjs,.env.example,README.md}; scripts/package-server-test.mjs; README.md; apps/api/test/server-kit.test.ts.
-- [ ] Add RED test for idempotent secret initialization and package exclusions.
-- [ ] Implement build/topology/source ZIP generation and local Codex handoff.
-- [ ] Validate compose and build/run a fresh test stack, check API/static pages and persisted secret reinitialization; commit.
+- [x] Add RED test for idempotent secret initialization and package exclusions.
+- [x] Implement build/topology/source ZIP generation and local Codex handoff.
+- [x] Validate compose and build/run a fresh test stack, check API/static pages and persisted secret reinitialization; commit.
 
 ### Task 3: Review and deliver
-- [ ] Run full units with temporary PG/Redis then production builds and affected browser tests sequentially.
-- [ ] Fresh read-only branch review; fix important findings with covering regression.
-- [ ] Build uploadable archive and checksum; publish branch/draft PR and attach it; provide exact artifact/handoff paths and limitations.
+- [x] Run full units with temporary PG/Redis then production builds and affected browser tests sequentially.
+- [x] Fresh read-only branch review; fix important findings with covering regression.
+- [ ] Build final uploadable archive/checksum and deliver branch/draft PR, artifact links and handoff (delivery recorded by the controller after publishing).
