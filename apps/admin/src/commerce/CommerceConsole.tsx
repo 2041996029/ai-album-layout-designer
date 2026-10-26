@@ -1,9 +1,36 @@
+import {
+  adminLabel as adminLabelForRefund,
+  AdminShell,
+  AdminIcon,
+  AdminEmpty,
+  AdminBadge,
+  adminMoney,
+  adminDate,
+  adminViews,
+  type AdminView,
+} from "./AdminShell";
+import "./admin.css";
 import { useHumanVerification } from "../../../web/src/commerce/useHumanVerification";
 import { PagedMore } from "../../../web/src/commerce/PagedMore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, id, type DTO, type Page } from "../../../web/src/cloud/api";
 export function CommerceConsole(): React.JSX.Element {
   const human = useHumanVerification();
+  const [view, setView] = useState<AdminView>(() => {
+    const hash = location.hash.slice(1);
+    return adminViews.some((v) => v.id === hash)
+      ? (hash as AdminView)
+      : "overview";
+  });
+  const [loading, setLoading] = useState(false),
+    [loaded, setLoaded] = useState(false),
+    [query, setQuery] = useState(""),
+    [orderState, setOrderState] = useState("");
+  const requestVersion = useRef(0);
+  const navigate = (next: AdminView) => {
+    setView(next);
+    history.replaceState(null, "", "#" + next);
+  };
   const [orders, setOrders] = useState<DTO<"Order">[]>([]),
     [refunds, setRefunds] = useState<DTO<"Refund">[]>([]),
     [audits, setAudits] = useState<DTO<"AuditEvent">[]>([]),
@@ -23,6 +50,8 @@ export function CommerceConsole(): React.JSX.Element {
     [sku, setSku] = useState(""),
     [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   async function refresh() {
+    const version = ++requestVersion.current;
+    setLoading(true);
     try {
       const [o, b, s, r, a] = await Promise.all([
         api<Page<DTO<"Order">>>("/admin/orders"),
@@ -31,6 +60,8 @@ export function CommerceConsole(): React.JSX.Element {
         api<Page<DTO<"Refund">>>("/admin/refunds"),
         api<Page<DTO<"AuditEvent">>>("/admin/audit-events"),
       ]);
+      if (version !== requestVersion.current) return;
+      setLoaded(true);
       setNext({
         orders: o.nextCursor,
         batches: b.nextCursor,
@@ -44,7 +75,9 @@ export function CommerceConsole(): React.JSX.Element {
       setBatches(b.items);
       setSkus(s.items);
     } catch (e) {
-      setError(String(e));
+      if (version === requestVersion.current) setError(String(e));
+    } finally {
+      if (version === requestVersion.current) setLoading(false);
     }
   }
   useEffect(() => {
@@ -67,19 +100,254 @@ export function CommerceConsole(): React.JSX.Element {
     }
   }
   return (
-    <main className="commerce-page admin-commerce">
-      <div className="eyebrow">ALBUM / FINANCE OPERATIONS</div>
-      <h1>商业运营</h1>
-      <p className="commerce-lead">订单、兑换与财务复核。</p>
-      <p className="muted">
-        金额单位为人民币分 · 财务修改需当前角色、二次验证及工单依据
-      </p>
-      {error && <p role="alert">{error}</p>}
-      {status && <p role="status">{status}</p>}
-      {human.notice}
+    <AdminShell
+      view={view}
+      onView={navigate}
+      loading={loading}
+      onRefresh={() => void refresh()}
+    >
+      {error && (
+        <div className="admin-connection" role="alert">
+          <div className="admin-connection-icon">!</div>
+          <div>
+            <strong>
+              {error.includes("FORBIDDEN")
+                ? "当前账号没有商业运营权限"
+                : error.includes("UNAUTHORIZED")
+                  ? "请先登录管理账号"
+                  : "服务尚未连接"}
+            </strong>
+            <p>
+              {error.includes("FORBIDDEN")
+                ? "请使用具有财务权限的账号访问。"
+                : error.includes("UNAUTHORIZED")
+                  ? "请返回编辑器完成登录，管理权限由服务器核验。"
+                  : "连接服务器后即可读取真实记录。已有本地编辑功能仍可使用。"}
+            </p>
+            <code>{error.replace(/^Error: /, "")}</code>
+          </div>
+        </div>
+      )}
+      {status && (
+        <p className="admin-success" role="status">
+          <AdminIcon name="check" />
+          {status}
+        </p>
+      )}
       {human.dialog}
-      <section className="commerce-note">
-        <h2>审核依据</h2>
+      {view === "overview" && (
+        <>
+          <div className="admin-section-caption">
+            <div>
+              <h2>运营概况</h2>
+              <p>当前已加载记录的摘要，非全站累计统计。</p>
+            </div>
+            <span className="admin-live-label">
+              <i className={loaded && !error ? "connected" : ""} />
+              {loading
+                ? "读取中"
+                : loaded && !error
+                  ? "已连接数据源"
+                  : "等待连接"}
+            </span>
+          </div>
+          <div className="admin-metrics">
+            {[
+              {
+                label: "已加载订单",
+                value: orders.length,
+                icon: "orders",
+                hint: "查看订单与履约状态",
+                target: "orders",
+              },
+              {
+                label: "待复核退款",
+                value: refunds.filter((r) => r.state === "manual_review")
+                  .length,
+                icon: "refunds",
+                hint: "来自已加载退款记录",
+                target: "refunds",
+              },
+              {
+                label: "已加载兑换批次",
+                value: batches.length,
+                icon: "redemption",
+                hint: "管理兑换码与有效状态",
+                target: "redemption",
+              },
+              {
+                label: "已发布商品",
+                value: skus.length,
+                icon: "adjustments",
+                hint: "实际已发布的商品版本",
+                target: "redemption",
+              },
+            ].map((m) => (
+              <button
+                className="admin-metric"
+                key={m.label}
+                onClick={() => navigate(m.target as AdminView)}
+              >
+                <span className="admin-metric-top">
+                  {m.label}
+                  <AdminIcon name={m.icon} />
+                </span>
+                <output aria-label={m.label}>{loaded ? m.value : "—"}</output>
+                <span className="admin-metric-hint">
+                  {m.hint}
+                  <AdminIcon name="arrow" />
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="admin-overview-grid">
+            <section className="admin-panel">
+              <div className="admin-panel-heading">
+                <div>
+                  <h2>工作待办</h2>
+                  <p>按事项进入对应模块，核对后再操作。</p>
+                </div>
+                <span className="admin-small-label">WORKFLOW</span>
+              </div>
+              {[
+                {
+                  title: "处理退款复核",
+                  detail: "核对退款原因、订单与渠道状态",
+                  target: "refunds",
+                  icon: "refunds",
+                },
+                {
+                  title: "调整会员与点数",
+                  detail: "先选订单，再选择可调整的权益来源",
+                  target: "orders",
+                  icon: "adjustments",
+                },
+                {
+                  title: "核对渠道差异",
+                  detail: "按业务日期检查渠道与本地记录",
+                  target: "reconciliation",
+                  icon: "reconciliation",
+                },
+              ].map((t) => (
+                <button
+                  className="admin-shortcut"
+                  key={t.title}
+                  onClick={() => navigate(t.target as AdminView)}
+                >
+                  <span className="admin-shortcut-icon">
+                    <AdminIcon name={t.icon} />
+                  </span>
+                  <span>
+                    <strong>{t.title}</strong>
+                    <small>{t.detail}</small>
+                  </span>
+                  <AdminIcon name="arrow" />
+                </button>
+              ))}
+            </section>
+            <section className="admin-panel admin-activity">
+              <div className="admin-panel-heading">
+                <div>
+                  <h2>操作须知</h2>
+                  <p>每一步都有据可查。</p>
+                </div>
+                <AdminIcon name="check" />
+              </div>
+              <ol>
+                <li>
+                  <span>01</span>
+                  <div>
+                    <strong>从真实来源开始</strong>
+                    <p>权益调整关联已履约订单，不手填内部授权编号。</p>
+                  </div>
+                </li>
+                <li>
+                  <span>02</span>
+                  <div>
+                    <strong>先核对，再确认</strong>
+                    <p>记录原因与工单，敏感操作需独立身份验证。</p>
+                  </div>
+                </li>
+                <li>
+                  <span>03</span>
+                  <div>
+                    <strong>保留财务事实</strong>
+                    <p>退款与对账不自动补发权益，渠道未知时等待确认。</p>
+                  </div>
+                </li>
+              </ol>
+            </section>
+          </div>
+          <section className="admin-panel">
+            <div className="admin-panel-heading">
+              <div>
+                <h2>最近加载的订单</h2>
+                <p>完整记录请进入订单管理继续加载。</p>
+              </div>
+              <button onClick={() => navigate("orders")}>
+                查看订单 <AdminIcon name="arrow" />
+              </button>
+            </div>
+            {orders.length ? (
+              <div className="admin-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>订单</th>
+                      <th>金额</th>
+                      <th>支付状态</th>
+                      <th>创建时间</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.slice(0, 5).map((o) => (
+                      <tr key={o.id}>
+                        <td>
+                          <code title={o.id}>{o.id}</code>
+                        </td>
+                        <td className="admin-amount">
+                          {adminMoney(o.amountFen)}
+                        </td>
+                        <td>
+                          <AdminBadge value={o.state} />
+                        </td>
+                        <td>{adminDate(o.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <AdminEmpty
+                title={loaded ? "暂无订单记录" : "等待连接数据源"}
+                detail={
+                  loaded
+                    ? "第一笔订单产生后，会显示在这里。"
+                    : "连接服务器并登录后，显示真实订单。"
+                }
+              />
+            )}
+          </section>
+        </>
+      )}
+      <section
+        hidden={
+          !(
+            [
+              "refunds",
+              "redemption",
+              "adjustments",
+              "reconciliation",
+            ] as string[]
+          ).includes(view)
+        }
+        className="admin-panel admin-review-context"
+      >
+        <div>
+          <h2>审核依据</h2>
+          <p>填写本次操作的原因与工单编号。</p>
+          {human.notice}
+        </div>
         <div className="form-grid">
           <label>
             原因
@@ -99,7 +367,7 @@ export function CommerceConsole(): React.JSX.Element {
           </label>
         </div>
       </section>
-      <section>
+      <section hidden={view !== "redemption"} className="admin-panel">
         <h2>已发布 SKU 版本</h2>
         {skus.length ? (
           skus.map((s) => (
@@ -112,49 +380,138 @@ export function CommerceConsole(): React.JSX.Element {
           <p>暂无已发布商品</p>
         )}
       </section>
-      <section>
-        <h2>订单查询</h2>
-        <PagedMore<DTO<"Order">>
-          path="/admin/orders"
-          cursor={next.orders}
-          label="加载更多订单查询"
-          onPage={(p) => {
-            setOrders((v) => [...v, ...p.items]);
-            setNext((v) => ({ ...v, orders: p.nextCursor }));
-          }}
-        />
-        <button onClick={() => void refresh()}>刷新</button>
-        {orders.map((o) => (
-          <article className="order-row" key={o.id}>
-            <code>{o.id}</code>
-            <span>
-              {o.state} / {o.fulfillmentState}
-            </span>
-            <strong>{o.amountFen} 分</strong>
-            <small>{o.workspaceId}</small>
-            {o.fulfillmentState === "fulfilled" && (
-              <button
-                onClick={async () => {
-                  try {
-                    const grants = await api<DTO<"OrderSourceGrants">>(
-                      `/admin/orders/${id(o.id)}/source-grants`,
-                    );
-                    setSourceOptions(grants);
-                    setWorkspace(grants.workspaceId);
-                    setSource("");
-                    setStatus(`已加载订单 ${o.id} 的来源授权`);
-                  } catch (e) {
-                    setError(String(e));
-                  }
-                }}
-              >
-                选择此订单的调整来源
-              </button>
-            )}
-          </article>
-        ))}
+      <section hidden={view !== "orders"} className="admin-panel">
+        <div className="admin-panel-heading">
+          <div>
+            <h2>订单查询</h2>
+            <p>支付与履约状态分别展示，渠道确认结果以服务器为准。</p>
+          </div>
+          <span className="admin-count">已加载 {orders.length} 条</span>
+        </div>
+        <div className="admin-filter-bar">
+          <label className="admin-search">
+            <AdminIcon name="search" />
+            <span className="admin-sr-only">搜索已加载订单</span>
+            <input
+              aria-label="搜索已加载订单"
+              placeholder="搜索订单号或工作区…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+          <label className="admin-status-filter">
+            支付状态
+            <select
+              value={orderState}
+              onChange={(e) => setOrderState(e.target.value)}
+            >
+              <option value="">全部状态</option>
+              <option value="paid">已支付</option>
+              <option value="pending">待支付</option>
+              <option value="closed">已关闭</option>
+              <option value="refunded">已退款</option>
+            </select>
+          </label>
+          <span>仅筛选已加载记录</span>
+        </div>
+        <div className="admin-table-wrap">
+          <table aria-label="订单列表">
+            <thead>
+              <tr>
+                <th>订单 / 工作区</th>
+                <th>订单金额</th>
+                <th>支付状态</th>
+                <th>履约状态</th>
+                <th>创建时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders
+                .filter(
+                  (o) =>
+                    (!orderState || o.state === orderState) &&
+                    (!query ||
+                      `${o.id} ${o.workspaceId}`
+                        .toLowerCase()
+                        .includes(query.toLowerCase())),
+                )
+                .map((o) => (
+                  <tr key={o.id}>
+                    <td>
+                      <code title={o.id}>{o.id}</code>
+                      <small title={o.workspaceId}>{o.workspaceId}</small>
+                    </td>
+                    <td className="admin-amount">{adminMoney(o.amountFen)}</td>
+                    <td>
+                      <AdminBadge value={o.state} />
+                    </td>
+                    <td>
+                      <AdminBadge value={o.fulfillmentState} />
+                    </td>
+                    <td>{adminDate(o.createdAt)}</td>
+                    <td>
+                      {o.fulfillmentState === "fulfilled" ? (
+                        <button
+                          className="admin-text-button"
+                          onClick={async () => {
+                            try {
+                              const grants = await api<
+                                DTO<"OrderSourceGrants">
+                              >(`/admin/orders/${id(o.id)}/source-grants`);
+                              setSourceOptions(grants);
+                              setWorkspace(grants.workspaceId);
+                              setSource("");
+                              setStatus(`已加载订单 ${o.id} 的来源授权`);
+                              navigate("adjustments");
+                            } catch (e) {
+                              setError(String(e));
+                            }
+                          }}
+                        >
+                          选择此订单的调整来源
+                        </button>
+                      ) : (
+                        <span className="muted">待订单履约</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+        {!orders.length && <AdminEmpty title="暂无订单记录" />}
+        {orders.length > 0 &&
+          !orders.some(
+            (o) =>
+              (!orderState || o.state === orderState) &&
+              (!query ||
+                `${o.id} ${o.workspaceId}`
+                  .toLowerCase()
+                  .includes(query.toLowerCase())),
+          ) && (
+            <AdminEmpty
+              title="没有匹配的订单"
+              detail="调整搜索条件，或继续加载更多记录。"
+            />
+          )}
+        <div className="admin-pagination">
+          <span>
+            已加载 {orders.length} 条
+            {next.orders ? " · 仍有更多记录" : " · 已到列表末尾"}
+          </span>
+          <PagedMore<DTO<"Order">>
+            path="/admin/orders"
+            cursor={next.orders}
+            label="加载更多订单查询"
+            onPage={(p) => {
+              setOrders((v) => [...v, ...p.items]);
+              setNext((v) => ({ ...v, orders: p.nextCursor }));
+            }}
+          />
+        </div>
       </section>
-      <section className="commerce-note">
+      <section hidden={view !== "refunds"} className="admin-panel">
         <h2>退款复核</h2>
         <PagedMore<DTO<"Refund">>
           path="/admin/refunds"
@@ -165,13 +522,19 @@ export function CommerceConsole(): React.JSX.Element {
             setNext((v) => ({ ...v, refunds: p.nextCursor }));
           }}
         />
-        {!refunds.length && <p>暂无退款记录</p>}
+        {!refunds.length && (
+          <AdminEmpty
+            title="暂无退款记录"
+            detail="已申请的退款会显示在此处，需复核的记录可在此处理。"
+          />
+        )}
         {refunds.map((r) => (
           <article className="order-row" key={r.id}>
             <div>
               <code>{r.id}</code>
               <p>
-                订单 {r.orderId} · {r.amountFen} 分 · {r.state}
+                订单 {r.orderId} · {adminMoney(r.amountFen)} ·{" "}
+                {adminLabelForRefund(r.state)}
               </p>
               <small>{r.reasonCode}</small>
             </div>
@@ -209,7 +572,7 @@ export function CommerceConsole(): React.JSX.Element {
           </article>
         ))}
       </section>
-      <section className="commerce-note">
+      <section hidden={view !== "redemption"} className="admin-panel">
         <h2>兑换批次</h2>
         <PagedMore<DTO<"RedemptionBatch">>
           path="/admin/redemption-batches"
@@ -269,7 +632,7 @@ export function CommerceConsole(): React.JSX.Element {
         </button>
         {batches.map((b) => (
           <p key={b.id}>
-            <code>{b.id}</code> · {b.state}{" "}
+            <code>{b.id}</code> · <AdminBadge value={b.state} />{" "}
             <button
               disabled={
                 !reason ||
@@ -293,7 +656,13 @@ export function CommerceConsole(): React.JSX.Element {
           </p>
         ))}
       </section>
-      <section className="commerce-note">
+      <section hidden={view !== "adjustments"} className="admin-panel">
+        {!sourceOptions && (
+          <div className="admin-inline-help">
+            请先从已履约订单选择权益来源。
+            <button onClick={() => navigate("orders")}>前往订单管理</button>
+          </div>
+        )}
         <h2>额度 / 会员调整</h2>
         <div className="form-grid">
           <label>
@@ -384,7 +753,7 @@ export function CommerceConsole(): React.JSX.Element {
           提交财务调整
         </button>
       </section>
-      <section className="commerce-note">
+      <section hidden={view !== "reconciliation"} className="admin-panel">
         <h2>渠道差异复核</h2>
         <PagedMore<DTO<"AuditEvent">>
           path="/admin/audit-events"
@@ -470,6 +839,6 @@ export function CommerceConsole(): React.JSX.Element {
           </div>
         )}
       </section>
-    </main>
+    </AdminShell>
   );
 }

@@ -1,0 +1,83 @@
+name: huanian-sheji-test
+services:
+  postgres:
+    image: huanian-sheji-test-postgres
+    build:
+      context: ../..
+      dockerfile: deploy/server-test/Dockerfile
+      target: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: album_dev
+      POSTGRES_USER: album
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U album -d album_dev && psql -U album -d album_dev -Atc "SELECT 1 FROM ai_album.financial_adjustments LIMIT 0"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes']
+    restart: unless-stopped
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    image: huanian-sheji-test-api
+    build:
+      context: ../..
+      dockerfile: deploy/server-test/Dockerfile
+      target: api
+    restart: unless-stopped
+    init: true
+    environment:
+      C3_ENV: dev
+      C3_BIND_ADDRESS: 0.0.0.0
+      C3_PORT: '3001'
+      C3_ALLOWED_ORIGIN: ${ALBUM_ORIGIN:?Run init-env.mjs and supply --env-file}
+      C3_PUBLIC_API_ORIGIN: ${ALBUM_ORIGIN}
+      C3_LOCAL_STORAGE_ROOT: /var/lib/album/objects
+      C3_DEV_STORAGE_LIMIT_BYTES: '10737418240'
+      C4_REDIS_URL: redis://redis:6379
+    secrets: [postgres_password, auth_signing, object_signing, redemption_pepper]
+    volumes: [objects:/var/lib/album/objects]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, node, -e, 'fetch("http://127.0.0.1:3001/v1/capabilities?platform=web").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+  web:
+    image: huanian-sheji-test-web
+    build:
+      context: ../..
+      dockerfile: deploy/server-test/Dockerfile
+      target: web
+    restart: unless-stopped
+    ports: ['${ALBUM_BIND:-127.0.0.1}:${ALBUM_PORT:-8080}:80']
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD-SHELL, 'wget -Y off -q -O /dev/null http://127.0.0.1/ && wget -Y off -q -O /dev/null http://127.0.0.1/admin/']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+volumes:
+  pgdata:
+  redisdata:
+  objects:
+secrets:
+  postgres_password: {file: ./.secrets/postgres_password}
+  auth_signing: {file: ./.secrets/auth_signing}
+  object_signing: {file: ./.secrets/object_signing}
+  redemption_pepper: {file: ./.secrets/redemption_pepper}

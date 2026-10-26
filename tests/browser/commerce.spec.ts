@@ -237,6 +237,7 @@ test("finance reviews refunds with reason, ticket and fresh proof and sees durab
     await route.fulfill({ json: { data, requestId: "test" } });
   });
   await page.goto("/tests/browser/harness/commerce.html?admin=1");
+  await page.getByRole("button", { name: "退款复核", exact: true }).click();
   await expect(page.getByRole("heading", { name: "退款复核" })).toBeVisible();
   await page.getByLabel("原因", { exact: true }).fill("工单复核");
   await page.getByLabel("工单号").fill("ticket-42");
@@ -253,6 +254,7 @@ test("finance reviews refunds with reason, ticket and fresh proof and sees durab
   await page.getByRole("button", { name: "验证并继续" }).click();
   await expect.poll(() => used.size).toBe(2);
   expect(challengeCount).toBe(2);
+  await page.getByRole("button", { name: "渠道对账", exact: true }).click();
   await page.getByRole("button", { name: "查看对账差异" }).click();
   await expect(
     page.getByText("difference-record", { exact: true }),

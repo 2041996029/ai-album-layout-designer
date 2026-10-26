@@ -29,7 +29,8 @@
     "api:migrate:dev": "tsx scripts/migrate-c3.ts",
     "test:c3": "vitest run apps/api packages/server-core apps/mini/src packages/storage/src/cloud-revision-store.test.ts",
     "build:admin": "vite build --config apps/admin/vite.config.ts",
-    "admin:dev": "vite --config apps/admin/vite.config.ts"
+    "admin:dev": "vite --config apps/admin/vite.config.ts",
+    "package:server-test": "node scripts/package-server-test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

@@ -134,6 +134,7 @@ test("finance selects a visible paid order and discovered grant before a real so
     ]);
 
     await page.goto(`${fixture.transport.origin}/commerce.html?admin=1`);
+    await page.getByRole("button", { name: "订单管理", exact: true }).click();
     await expect(
       page.getByText(fixture.orderId, { exact: true }),
     ).toBeVisible();
