@@ -42,4 +42,4 @@ jobs:
       - run: npm run test:unit
       - run: npm run build
       - run: npm run build:admin
-      - run: npm run test:browser -- tests/browser/commerce.spec.ts tests/browser/commerce-live.spec.ts
+      - run: npm run test:browser -- tests/browser/commerce.spec.ts tests/browser/commerce-live.spec.ts tests/browser/identity.spec.ts tests/browser/admin-design.spec.ts
