@@ -238,7 +238,14 @@ it.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           },
         });
       const q = await api.currentEmailChallenge("new-binding@example.com");
-      await api.bindCurrentEmail(q.id, code);
+      const correctCode = code;
+      await expect(
+        api.bindCurrentEmail(
+          q.id,
+          correctCode === "000000" ? "111111" : "000000",
+        ),
+      ).rejects.toThrow("EMAIL_CODE_INVALID");
+      await api.bindCurrentEmail(q.id, correctCode);
       const identities = (
         await db.pool.query(
           "SELECT user_id,provider FROM ai_album.auth_identities ORDER BY provider",

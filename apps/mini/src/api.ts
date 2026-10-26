@@ -27,6 +27,10 @@ export interface MiniApiOptions {
   key: () => string;
   loginCode: () => Promise<string>;
 }
+const expiredSession = (error: unknown): error is ApiError =>
+  error instanceof ApiError &&
+  error.status === 401 &&
+  error.code === "UNAUTHORIZED";
 export class MiniApi {
   private session: { accessToken: string; refreshToken: string } | null = null;
   private authenticating: Promise<void> | null = null;
@@ -162,13 +166,12 @@ export class MiniApi {
     try {
       return await call();
     } catch (error) {
-      if (!(error instanceof ApiError) || error.status !== 401) throw error;
+      if (!expiredSession(error)) throw error;
       if (this.session?.accessToken === token) await this.authenticate(true);
       try {
         return await call();
       } catch (retryError) {
-        if (retryError instanceof ApiError && retryError.status === 401)
-          this.session = null;
+        if (expiredSession(retryError)) this.session = null;
         throw retryError;
       }
     }

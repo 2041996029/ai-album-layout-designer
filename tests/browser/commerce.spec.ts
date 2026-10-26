@@ -503,6 +503,7 @@ test("membership chooses Alipay explicitly and preserves server-authoritative pe
   );
   let body: any;
   await page.route("**/v1/orders", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
     body = route.request().postDataJSON();
     return route.fulfill({ json: { data: order, requestId: "test" } });
   });
