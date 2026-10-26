@@ -521,9 +521,13 @@ export class AuthService {
         "SELECT user_id,revoked_at FROM auth_identities WHERE provider=$1 AND app_id=$2 AND subject_digest=$3",
         [provider, v.appId, subject],
       );
-      if (rows[0]?.revoked_at) fail("IDENTITY_REVOKED", 409);
       if (rows[0] && rows[0].user_id !== actor.userId)
         fail("BINDING_CONFLICT", 409);
+      if (rows[0]?.revoked_at)
+        await tx.query(
+          "UPDATE auth_identities SET revoked_at=NULL,verified_at=now() WHERE provider=$1 AND app_id=$2 AND subject_digest=$3 AND user_id=$4",
+          [provider, v.appId, subject, actor.userId],
+        );
       if (!rows.length)
         await tx.query(
           `INSERT INTO auth_identities(id,user_id,provider,app_id,subject_digest,verified_at) VALUES($1,$2,$3,$4,$5,now())`,

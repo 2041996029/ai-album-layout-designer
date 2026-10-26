@@ -246,3 +246,43 @@ it("Alipay rejects a duplicate form field and an unsigned API response", async (
   };
   await expect(a.query("o1", r)).rejects.toThrow("PAYMENT_PROVIDER_INVALID");
 });
+it("historical WeChat binding accepts explicitly rotated platform keys and still rejects unknown serials", async () => {
+  const rotated = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const rotatedPublic = rotated.publicKey
+    .export({ type: "spki", format: "pem" })
+    .toString();
+  const body = JSON.stringify({
+      appid: "app",
+      mchid: "merchant",
+      out_trade_no: "old-order",
+      transaction_id: "old-tx",
+      trade_state: "SUCCESS",
+      amount: { total: 123, currency: "CNY" },
+    }),
+    timestamp = String(+now() / 1000),
+    nonce = "rotation-response";
+  const signature = sign(
+    "RSA-SHA256",
+    Buffer.from(`${timestamp}\n${nonce}\n${body}\n`),
+    rotated.privateKey,
+  ).toString("base64");
+  const a = new WechatPayAdapter({
+    ...options,
+    platformKeys: { "new-platform-serial": rotatedPublic },
+    fetch: async () =>
+      new Response(body, {
+        headers: {
+          "wechatpay-timestamp": timestamp,
+          "wechatpay-nonce": nonce,
+          "wechatpay-signature": signature,
+          "wechatpay-serial": "new-platform-serial",
+        },
+      }),
+  } as any);
+  expect(
+    await a.query("old-order", {
+      orderId: "old-order",
+      snapshot: { payment: { appId: "app", merchantId: "merchant" } },
+    } as any),
+  ).toMatchObject({ orderId: "old-order", state: "paid" });
+});

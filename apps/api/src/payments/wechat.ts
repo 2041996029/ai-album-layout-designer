@@ -22,6 +22,7 @@ export type WechatPayOptions = {
   certificateSerial: string;
   platformSerial: string;
   platformPublicKey: string;
+  platformKeys?: Record<string, string>;
   apiV3Key: string;
   notifyUrl: string;
   refundNotifyUrl: string;
@@ -50,6 +51,11 @@ export class WechatPayAdapter implements RefundAdapter {
     return this.options.now?.() ?? new Date();
   }
   private verify(raw: Uint8Array, headers: Record<string, string>) {
+    const trustedKeys = {
+      ...this.options.platformKeys,
+      [this.options.platformSerial]: this.options.platformPublicKey,
+    };
+    const verificationKey = trustedKeys[headers["wechatpay-serial"]];
     const timestamp = headers["wechatpay-timestamp"],
       nonce = headers["wechatpay-nonce"],
       signature = headers["wechatpay-signature"];
@@ -60,7 +66,7 @@ export class WechatPayAdapter implements RefundAdapter {
       !nonce ||
       nonce.length > 256 ||
       !signature ||
-      headers["wechatpay-serial"] !== this.options.platformSerial
+      !verificationKey
     )
       fail("PAYMENT_BAD_SIGNATURE", 401);
     let valid = false;
@@ -70,7 +76,7 @@ export class WechatPayAdapter implements RefundAdapter {
         Buffer.from(
           `${timestamp}\n${nonce}\n${Buffer.from(raw).toString("utf8")}\n`,
         ),
-        this.options.platformPublicKey,
+        verificationKey,
         Buffer.from(signature, "base64"),
       );
     } catch {}

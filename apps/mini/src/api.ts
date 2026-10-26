@@ -103,8 +103,7 @@ export class MiniApi {
     verificationCode: string,
   ): Promise<void> {
     const purpose = "bind";
-    const fresh = await this.request<Schema<"ReauthenticationResult">>(
-      "POST",
+    const fresh = await this.post<Schema<"ReauthenticationResult">>(
       "/auth/reauthenticate",
       {
         purpose,
@@ -116,7 +115,7 @@ export class MiniApi {
         },
       },
     );
-    await this.request("POST", "/auth/bindings", {
+    await this.post("/auth/bindings", {
       reauthProof: fresh.reauthProof,
       proof: {
         provider: "email",

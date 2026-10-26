@@ -51,6 +51,24 @@ export async function deploymentPayments(
   const bindings: NonNullable<CommerceOptions["paymentBindings"]> = [];
   const ids = new Set<string>(),
     callbacks = new Set<string>();
+  const platformKeys = new Map<string, Record<string, string>>();
+  for (const entry of entries) {
+    if (entry?.channel !== "wechat_pay") continue;
+    const keys = platformKeys.get(entry.merchantId) ?? {};
+    for (const [serial, key] of Object.entries({
+      ...entry.platformKeys,
+      [entry.platformSerial]: entry.platformPublicKey,
+    })) {
+      if (
+        typeof key !== "string" ||
+        !key ||
+        (keys[serial] && keys[serial] !== key)
+      )
+        fail("PAYMENT_CONFIGURATION_INVALID", 503);
+      keys[serial] = key;
+    }
+    platformKeys.set(entry.merchantId, keys);
+  }
   for (const entry of entries) {
     if (
       typeof entry.bindingId !== "string" ||
@@ -70,7 +88,10 @@ export async function deploymentPayments(
     const adapter =
       entry.channel === "alipay"
         ? new AlipayAdapter(entry)
-        : new WechatPayAdapter(entry);
+        : new WechatPayAdapter({
+            ...entry,
+            platformKeys: platformKeys.get(entry.merchantId),
+          });
     bindings.push({
       id: entry.bindingId,
       adapter,

@@ -1,3 +1,4 @@
+import { availablePaymentChannels } from "./payment-availability";
 import { sqlPage, mapPage, arrayPage } from "./pagination";
 import { fail, id, runIdempotent } from "@album/server-core";
 import type { components } from "@album/contracts";
@@ -199,12 +200,21 @@ export function commerceHandlers(
         "purchase",
       );
     },
-    async getCapabilities() {
+    async getCapabilities(r) {
       let release = null;
       try {
         release = await s.config.loadRelease();
       } catch {}
       const caps = await s.config.capabilities();
+      if (
+        caps.purchase.state === "available" &&
+        !(await availablePaymentChannels(s, release, r.query.platform)).length
+      )
+        caps.purchase = {
+          state: "unconfigured",
+          reason: "configuration_required",
+          action: "configure",
+        };
       return {
         configReleaseId: release?.releaseId ?? null,
         serverTime: new Date().toISOString(),
@@ -401,6 +411,11 @@ export function commerceHandlers(
       ).rows[0];
       if (!row) return arrayPage(r, "skus", [], "public");
       const p = v.payload;
+      const admittedChannels = await availablePaymentChannels(
+        s,
+        active,
+        r.query.platform,
+      );
       const result = arrayPage(
         r,
         "skus",
@@ -422,22 +437,7 @@ export function commerceHandlers(
                 ([k, v]) => `${k}: ${Array.isArray(v) ? v.join("/") : v}`,
               ),
             ],
-            channels:
-              active.versions.payment?.payload.kind === "payment"
-                ? [
-                    active.versions.payment.payload,
-                    ...(active.versions.payment.payload.additionalChannels ??
-                      []),
-                  ]
-                    .filter(
-                      (p) =>
-                        p.enabled &&
-                        (r.query.platform === "mini"
-                          ? p.channel === "wechat_virtual"
-                          : p.channel !== "wechat_virtual"),
-                    )
-                    .map((p) => p.channel)
-                : [],
+            channels: admittedChannels,
             platforms: [r.query.platform],
             state: "published",
             createdAt: date(row.created_at),

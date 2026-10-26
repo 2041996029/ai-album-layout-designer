@@ -174,3 +174,85 @@ it.skipIf(!process.env.C3_TEST_DATABASE_URL)(
   },
   60000,
 );
+it.skipIf(!process.env.C3_TEST_DATABASE_URL)(
+  "existing mini account binds a new email through actual contract routes with fresh identity and idempotency",
+  async () => {
+    const { MiniApi } = await import("../../../mini/src/api");
+    const { ReauthService } = await import("../auth/reauthentication");
+    const { BindingService } = await import("../auth/bindings");
+    const db = await testDatabase();
+    let code = "",
+      sequence = 0;
+    const auth = new AuthService(db.database, {
+        secret: "mini-binding-http-at-least-thirty-two-characters",
+        environment: "dev",
+      }),
+      email = new EmailIdentityService(db.database, auth, {
+        secret: "mini-binding-encryption-at-least-thirty-two",
+        sender: {
+          send: async (m) => {
+            code = m.code;
+          },
+        },
+      });
+    const wechat = {
+      exchange: async () => ({
+        provider: "wechat" as const,
+        appId: "mini-app",
+        subject: "existing-wx",
+        unionId: null,
+        openPlatformId: null,
+      }),
+    };
+    const reauth = new ReauthService(db.database, auth, {
+      wechat_mini: wechat,
+    });
+    const app = await createApplication({
+      db: db.database,
+      auth,
+      email,
+      wechatMini: wechat,
+      proofAdapter: reauth,
+      bindings: new BindingService(db.database, auth, reauth, {
+        email: email.adapter("bind"),
+      }),
+      workspaces: new WorkspaceService(db.database, auth),
+      environment: "dev",
+      allowedOrigin: "https://album.test",
+    });
+    try {
+      const f = app.getHttpAdapter().getInstance(),
+        api = new MiniApi({
+          baseUrl: "https://album.test/v1",
+          workspaceId: "w",
+          key: () => `native-binding-test-key-${++sequence}`,
+          loginCode: async () => `wx-${++sequence}`,
+          transport: async (r) => {
+            const response = await f.inject({
+              method: r.method,
+              url: "/v1" + r.path,
+              headers: r.headers,
+              ...(r.body ? { payload: r.body } : {}),
+            });
+            return { status: response.statusCode, body: response.json() };
+          },
+        });
+      const q = await api.currentEmailChallenge("new-binding@example.com");
+      await api.bindCurrentEmail(q.id, code);
+      const identities = (
+        await db.pool.query(
+          "SELECT user_id,provider FROM ai_album.auth_identities ORDER BY provider",
+        )
+      ).rows;
+      expect(identities.map((i) => i.provider)).toEqual([
+        "email",
+        "wechat_mini",
+      ]);
+      expect(new Set(identities.map((i) => i.user_id)).size).toBe(1);
+    } finally {
+      await app.close();
+      await db.close();
+    }
+  },
+  60000,
+);

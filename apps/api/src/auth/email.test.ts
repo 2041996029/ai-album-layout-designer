@@ -229,3 +229,66 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
     });
   },
 );
+it.skipIf(!process.env.C3_TEST_DATABASE_URL)(
+  "fresh dual identity binding restores only a revoked identity owned by the same account",
+  async () => {
+    const db = await testDatabase();
+    try {
+      const auth = new AuthService(db.database, {
+          secret: "restore-binding-thirty-two-character-secret",
+          environment: "dev",
+        }),
+        v = {
+          provider: "wechat" as const,
+          appId: "mini",
+          subject: "restore-openid",
+          unionId: null,
+          openPlatformId: null,
+        };
+      const a = await auth.login(
+        {
+          exchange: async () => ({
+            provider: "email",
+            appId: "email",
+            subject: "restore@example.com",
+            unionId: null,
+            openPlatformId: null,
+          }),
+        },
+        "restore-email",
+        "mini",
+      );
+      await auth.bind(a.actor, v);
+      await db.pool.query(
+        "UPDATE ai_album.auth_identities SET revoked_at=now() WHERE provider='wechat_mini'",
+      );
+      await auth.bind(a.actor, v);
+      expect(
+        (
+          await db.pool.query(
+            "SELECT revoked_at FROM ai_album.auth_identities WHERE provider='wechat_mini'",
+          )
+        ).rows[0].revoked_at,
+      ).toBeNull();
+      const b = await auth.login(
+        {
+          exchange: async () => ({
+            provider: "email",
+            appId: "email",
+            subject: "other-restore@example.com",
+            unionId: null,
+            openPlatformId: null,
+          }),
+        },
+        "other-restore-email",
+        "mini",
+      );
+      await db.pool.query(
+        "UPDATE ai_album.auth_identities SET revoked_at=now() WHERE provider='wechat_mini'",
+      );
+      await expect(auth.bind(b.actor, v)).rejects.toThrow("BINDING_CONFLICT");
+    } finally {
+      await db.close();
+    }
+  },
+);
