@@ -15,3 +15,9 @@ artifacts
 **/*.log
 test-results
 playwright-report
+
+backups
+**/backups
+.backups
+**/.backups
+**/album-backup*.sql

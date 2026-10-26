@@ -102,7 +102,7 @@ PostgreSQL **仅在全新空数据卷**执行初始合同、C3 运行表和 002/
 docker compose --env-file deploy/server-test/.env -f deploy/server-test/compose.yaml ps
 docker compose --env-file deploy/server-test/.env -f deploy/server-test/compose.yaml logs --tail=100 api web
 # 数据库备份输出文件须保存在受限、可恢复的位置：
-docker compose --env-file deploy/server-test/.env -f deploy/server-test/compose.yaml exec -T postgres pg_dump -U album album_dev > album-backup.sql
+docker compose --env-file deploy/server-test/.env -f deploy/server-test/compose.yaml exec -T postgres pg_dump -U album album_dev > /受限备份目录/album-backup.sql
 # 正常停止，保留数据卷：
 docker compose --env-file deploy/server-test/.env -f deploy/server-test/compose.yaml stop
 ```
@@ -110,3 +110,5 @@ docker compose --env-file deploy/server-test/.env -f deploy/server-test/compose.
 日志和备份可能含业务数据，分享前脱敏。源码更新前记录提交号并备份数据库/私有配置/对象卷。新版本先在隔离测试库验收；有迁移时按其说明前向升级。代码回退不能删除财务事实或自动执行 down SQL。
 
 测试结束前由你确认保留或清理资源；本说明不自动删除卷、站点或照片。需要改成生产架构时，独立配置身份、最小数据库权限、HTTPS、安全 Cookie、真实对象存储、密钥服务、渲染 worker、限额和备份恢复。
+
+本测试镜像的应用源码由运行用户持有，以兼容来源文件权限；生产容器还需将应用代码改为只读／root 所有，并单独授予对象存储写权限。

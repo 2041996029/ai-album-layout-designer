@@ -192,7 +192,9 @@ export function CommerceConsole(): React.JSX.Element {
                   {m.label}
                   <AdminIcon name={m.icon} />
                 </span>
-                <output aria-label={m.label}>{loaded ? m.value : "—"}</output>
+                <output aria-label={m.label}>
+                  {loaded && !error ? m.value : "—"}
+                </output>
                 <span className="admin-metric-hint">
                   {m.hint}
                   <AdminIcon name="arrow" />

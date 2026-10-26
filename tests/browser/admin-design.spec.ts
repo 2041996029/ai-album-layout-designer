@@ -85,3 +85,19 @@ test("unavailable admin has honest metrics and useful mobile navigation", async 
     ),
   ).toBe(true);
 });
+
+test("failed refresh suppresses previously loaded metric values", async ({
+  page,
+}) => {
+  await openAdmin(page);
+  await expect(page.getByLabel("已加载订单", { exact: true })).toHaveText("2");
+  await page.route("**/v1/**", (route) =>
+    route.fulfill({
+      status: 503,
+      json: { error: { message: "UNCONFIGURED" } },
+    }),
+  );
+  await page.getByRole("button", { name: "刷新数据", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("服务尚未连接");
+  await expect(page.getByLabel("已加载订单", { exact: true })).toHaveText("—");
+});

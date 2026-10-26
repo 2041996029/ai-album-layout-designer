@@ -9,3 +9,6 @@ playwright-report/
 !.env.example
 artifacts/
 .secrets/
+backups/
+.backups/
+album-backup*.sql

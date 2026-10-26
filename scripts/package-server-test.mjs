@@ -25,6 +25,8 @@ const files = execFileSync("git", ["-C", root, "ls-files", "-z"], {
             "node_modules",
             "dist",
             ".secrets",
+            "backups",
+            ".backups",
             "attachments",
             ".superpowers",
             "test-results",
@@ -40,13 +42,17 @@ const files = execFileSync("git", ["-C", root, "ls-files", "-z"], {
     )
       return false;
     if (/(?:\.pem|\.key|\.p12|\.pfx|\.log)$/.test(name)) return false;
-    if (name.startsWith("docs/") && /\.(zip|pdf|docx)$/.test(name))
+    if (
+      name.startsWith("docs/") &&
+      !name.startsWith("docs/export-samples/") &&
+      /\.(zip|pdf|docx)$/.test(name)
+    )
       return false;
     return (
       /^(?:apps|packages|scripts|deploy|tests|tools|\.github|docs)\//.test(
         name,
       ) ||
-      /^(?:package(?:-lock)?\.json|README\.md|tsconfig\.json|[^/]+\.config\.ts|\.gitignore|\.dockerignore)$/.test(
+      /^(?:package(?:-lock)?\.json|README\.md|tsconfig\.json|[^/]+\.config\.ts|\.gitignore|\.dockerignore|\.nvmrc|\.gitattributes)$/.test(
         name,
       )
     );

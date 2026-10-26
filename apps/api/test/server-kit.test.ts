@@ -50,6 +50,11 @@ describe("server upload kit", () => {
       execFileSync("git", ["init", "-q", dir]);
       for (const [name, value] of Object.entries({
         "package.json": '{"name":"fixture"}',
+        ".nvmrc": "24",
+        ".gitattributes": "*.csv -text",
+        "docs/export-samples/program-c1/pdf/album-r12.pdf": "pdf-baseline",
+        "docs/legacy-delivery.pdf": "historical-document",
+        "apps/api/backups/customer.sql": "PRIVATE_BACKUP",
         "apps/api/src/main.ts": 'console.log("api")',
         "deploy/server-test/compose.yaml": "services: {}",
         "deploy/server-test/.env.example": "ALBUM_PORT=8080",
@@ -77,6 +82,22 @@ describe("server upload kit", () => {
       expect(
         entries["HuaNian_SheJi/deploy/server-test/.env.example"],
       ).toBeTruthy();
+      expect({
+        sample:
+          !!entries[
+            "HuaNian_SheJi/docs/export-samples/program-c1/pdf/album-r12.pdf"
+          ],
+        nodeVersion: !!entries["HuaNian_SheJi/.nvmrc"],
+        attributes: !!entries["HuaNian_SheJi/.gitattributes"],
+        backup: !!entries["HuaNian_SheJi/apps/api/backups/customer.sql"],
+        legacy: !!entries["HuaNian_SheJi/docs/legacy-delivery.pdf"],
+      }).toEqual({
+        sample: true,
+        nodeVersion: true,
+        attributes: true,
+        backup: false,
+        legacy: false,
+      });
       expect(
         Object.keys(entries).some(
           (k) =>
