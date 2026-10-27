@@ -20,14 +20,15 @@ export function startCommerceHost(runtime: ApiRuntime, redisUrl?: string) {
     ? new OutboxDispatcher(runtime.db, new BullMqScheduler(queue), s.jobs)
     : undefined;
   const runLayout = async (jobId: string) => {
-    if (!runtime.cloudLayout) return;
+    if (!runtime.cloudLayout && !runtime.ai) return;
     const exists = await runtime.db.transaction(
       async (tx) =>
         (
-          await tx.query("SELECT id FROM jobs WHERE id=$1 AND kind='layout'", [
-            jobId,
-          ])
-        ).rowCount,
+          await tx.query(
+            "SELECT id,kind FROM jobs WHERE id=$1 AND kind IN ('layout','generation')",
+            [jobId],
+          )
+        ).rows[0],
     );
     if (!exists) return;
     let lease = await s.jobs.claimJob(
@@ -49,12 +50,21 @@ export function startCommerceHost(runtime: ApiRuntime, redisUrl?: string) {
     }, 5000);
     timer.unref();
     try {
-      await runtime.cloudLayout.runCloudLayoutJob(lease);
+      if (exists.kind === "generation") {
+        if (!runtime.ai) throw Error("GENERATION_UNCONFIGURED");
+        await runtime.ai.worker.runGenerationJob(
+          lease,
+          new AbortController().signal,
+        );
+      } else await runtime.cloudLayout!.runCloudLayoutJob(lease);
     } catch {
       await s.jobs.failAttempt(lease, {
-        code: "LAYOUT_FAILED",
+        code:
+          exists.kind === "generation"
+            ? "GENERATION_WORKER_FAILED"
+            : "LAYOUT_FAILED",
         retryable: false,
-        definite: true,
+        definite: exists.kind !== "generation",
       });
     } finally {
       clearInterval(timer);
@@ -86,6 +96,7 @@ export function startCommerceHost(runtime: ApiRuntime, redisUrl?: string) {
     await s.refunds.recoverVerifiedReceipts(100);
     await dispatcher?.dispatchOutbox(100);
     await s.exports?.expireArtifacts(100);
+    await runtime.ai?.cleanupStaged?.();
   };
   const tick = () => {
     if (!running)

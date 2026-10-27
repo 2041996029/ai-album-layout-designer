@@ -121,7 +121,11 @@ export async function bindCommerceRuntime(
       fail("JOB_POLICY_UNCONFIGURED", 503);
     return policyFromRelease(
       release,
-      job.kind === "export" ? "export" : "layout",
+      job.kind === "export"
+        ? "export"
+        : job.kind === "generation"
+          ? "generation"
+          : "layout",
       { global: 8, workspace: 2 },
       { global: 8, workspace: maximum },
     );
@@ -129,6 +133,7 @@ export async function bindCommerceRuntime(
   const jobs = new JobRepository(db, policy, async (tx, job, outcome) => {
     await exportTerminalHook(tx, job, outcome);
     await credits.creditTerminalHook(tx, job, outcome);
+    await runtime.ai?.service.terminalHook(tx, job, outcome);
     if (job.kind === "layout")
       await tx.query(
         "UPDATE resource_pins SET released_at=clock_timestamp() WHERE workspace_id=$1 AND job_id=$2 AND released_at IS NULL",

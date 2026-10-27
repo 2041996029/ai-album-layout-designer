@@ -12,6 +12,12 @@ import type { PrivacyExportService } from "../auth/privacy-export";
 import type { LocalObjectStore } from "../assets/object-store";
 import type { BindingService } from "../auth/bindings";
 export interface ApiRuntime {
+  ai?: {
+    cleanupStaged?: () => Promise<void>;
+    service: import("../ai/quotes").GenerationService;
+    output: import("../ai/output").GenerationOutputService;
+    worker: import("../../../ai-worker/src/generate-job").GenerationWorker;
+  };
   cloudLayout?: import("../projects/layout-service").CloudLayoutService;
   commerce?: import("../commerce/runtime").CommerceRuntime;
   operationHandlers?: Record<

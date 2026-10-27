@@ -147,15 +147,20 @@ export class UploadService {
               fail("PROJECT_PHOTO_LIMIT", 409);
           }
           await tx.query(
+            "SELECT pg_advisory_xact_lock(hashtextextended($1,0))",
+            ["storage-quota:" + wid],
+          );
+          await tx.query(
             "INSERT INTO storage_usage_accounts(id,workspace_id,category,limit_bytes) VALUES($1,$2,'original',$3) ON CONFLICT(workspace_id,category) DO NOTHING",
             [id(), wid, policy.limitBytes],
           );
-          const account = (
+          const accounts = (
             await tx.query(
-              "SELECT * FROM storage_usage_accounts WHERE workspace_id=$1 AND category='original' FOR UPDATE",
+              "SELECT * FROM storage_usage_accounts WHERE workspace_id=$1 ORDER BY id FOR UPDATE",
               [wid],
             )
-          ).rows[0];
+          ).rows;
+          const account = accounts.find((a) => a.category === "original")!;
           const expired = (
             await tx.query(
               "UPDATE storage_quota_reservations SET state='expired' WHERE workspace_id=$1 AND usage_account_id=$2 AND state='held' AND expires_at<=now() RETURNING bytes",
@@ -164,7 +169,12 @@ export class UploadService {
           ).rows.reduce((n, r) => n + Number(r.bytes), 0);
           const reserved = Number(account.reserved_bytes) - expired;
           if (
-            Number(account.used_bytes) + reserved + input.bytes >
+            accounts.reduce(
+              (n, a) => n + Number(a.used_bytes) + Number(a.reserved_bytes),
+              0,
+            ) -
+              expired +
+              input.bytes >
             policy.limitBytes
           )
             fail("STORAGE_QUOTA_EXCEEDED", 409);
@@ -463,7 +473,7 @@ export class UploadService {
         height,
       };
     }
-    return {
+    const record: AssetRecord = {
       id: a.id,
       version: Number(a.content_version ?? 1),
       sha256: a.sha256,
@@ -475,6 +485,36 @@ export class UploadService {
       status: "ready",
       variants,
     };
+    if (a.origin === "generated") {
+      const p = (
+        await tx.query(
+          "SELECT p.*,c.reference_asset_id FROM generation_provenance p JOIN generation_consents c ON c.id=p.consent_id WHERE p.workspace_id=$1 AND p.asset_id=$2",
+          [wid, assetId],
+        )
+      ).rows[0];
+      if (!p || !p.label_applied || p.moderation_result !== "approved")
+        fail("AI_PROVENANCE_INVALID", 422);
+      return {
+        ...record,
+        license: { id: p.license_version_id, usable: true },
+        provenance: {
+          version: 1,
+          jobId: p.job_id,
+          modelVersionId: p.model_version_id,
+          presetVersionId: p.preset_version_id,
+          inputHash: p.input_hash,
+          referenceAssetIds: p.reference_asset_id ? [p.reference_asset_id] : [],
+          consentRef: p.consent_id,
+          licenseRef: p.license_version_id,
+          labelPolicyVersion: p.label_policy_ref,
+          moderationPolicyVersion: p.moderation_policy_ref,
+          outputSha256: a.sha256,
+          normalizedSha256: variants.normalized.sha256,
+          labelApplied: true,
+        },
+      };
+    }
+    return record;
   }
   async moveAsset(
     actor: Actor,

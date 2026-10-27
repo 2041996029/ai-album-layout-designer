@@ -18,7 +18,7 @@ services:
       test:
         [
           CMD-SHELL,
-          'pg_isready -U album -d album_dev && psql -U album -d album_dev -Atc "SELECT 1 FROM ai_album.financial_adjustments LIMIT 0"',
+          'pg_isready -U album -d album_dev && psql -U album -d album_dev -Atc "SELECT 1 FROM ai_album.generation_quote_inputs LIMIT 0"',
         ]
       interval: 5s
       timeout: 3s

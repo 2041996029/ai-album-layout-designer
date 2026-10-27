@@ -1323,6 +1323,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/generation-jobs/{jobId}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询审核通过的生成素材 */
+        get: operations["getGenerationResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspaceId}/jobs": {
         parameters: {
             query?: never;
@@ -5670,7 +5687,25 @@ export interface components {
                 }[];
             }[];
         };
+        GenerationProvenance: {
+            /** @constant */
+            version: 1;
+            /** @constant */
+            labelApplied: true;
+            referenceAssetIds: string[];
+            consentRef: string | null;
+            jobId: string;
+            modelVersionId: string;
+            presetVersionId: string;
+            inputHash: string;
+            licenseRef: string;
+            labelPolicyVersion: string;
+            moderationPolicyVersion: string;
+            outputSha256: string;
+            normalizedSha256: string;
+        };
         EditorAssetRecord: {
+            provenance?: components["schemas"]["GenerationProvenance"];
             id: string;
             version: number;
             sha256: string;
@@ -10190,6 +10225,40 @@ export interface operations {
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getGenerationResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 任务结果 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        requestId: string;
+                        data: {
+                            jobId: string;
+                            /** @enum {string} */
+                            state: "queued" | "running" | "packaging" | "retry_wait" | "cancel_requested" | "succeeded" | "failed" | "cancelled";
+                            reasonCode?: string;
+                            asset?: components["schemas"]["Asset"];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             503: components["responses"]["Unavailable"];
         };
     };

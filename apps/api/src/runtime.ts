@@ -1,6 +1,8 @@
-import {CosObjectStore} from './assets/cos';
-import {provisionCosStorage} from './assets/cos-config';
-import {RoutingObjectStore} from './assets/routing-store';
+import { deploymentAi } from "./ai/deployment";
+import { bindAiRuntime } from "./ai/runtime";
+import { CosObjectStore } from "./assets/cos";
+import { provisionCosStorage } from "./assets/cos-config";
+import { RoutingObjectStore } from "./assets/routing-store";
 import { deploymentPayments } from "./payments/deployment";
 import { EmailIdentityService } from "./auth/email";
 import { smtpSender } from "./auth/smtp";
@@ -144,21 +146,56 @@ export async function createRuntime(
     reauth.freshProofVerifier,
   );
   if (env.C3_LOCAL_STORAGE_ROOT || env.COS_BUCKET) {
-    const limit = Number(env.C3_DEV_STORAGE_LIMIT_BYTES??env.ALBUM_STORAGE_LIMIT_BYTES);
-    if (!Number.isSafeInteger(limit) || limit < 1)fail("STORAGE_LIMIT_REQUIRED",503);
-    let local:LocalObjectStore|undefined;
-    if(env.C3_LOCAL_STORAGE_ROOT){
-      if(environment!=="dev"||!env.C3_LOCAL_OBJECT_SECRET)fail("DEV_LOCAL_STORAGE_CONFIGURATION_REQUIRED",503);
-      local=new LocalObjectStore({root:env.C3_LOCAL_STORAGE_ROOT,secret:env.C3_LOCAL_OBJECT_SECRET,environment,baseUrl:env.C3_PUBLIC_API_ORIGIN??"http://127.0.0.1:3001"});
+    const limit = Number(
+      env.C3_DEV_STORAGE_LIMIT_BYTES ?? env.ALBUM_STORAGE_LIMIT_BYTES,
+    );
+    if (!Number.isSafeInteger(limit) || limit < 1)
+      fail("STORAGE_LIMIT_REQUIRED", 503);
+    let local: LocalObjectStore | undefined;
+    if (env.C3_LOCAL_STORAGE_ROOT) {
+      if (environment !== "dev" || !env.C3_LOCAL_OBJECT_SECRET)
+        fail("DEV_LOCAL_STORAGE_CONFIGURATION_REQUIRED", 503);
+      local = new LocalObjectStore({
+        root: env.C3_LOCAL_STORAGE_ROOT,
+        secret: env.C3_LOCAL_OBJECT_SECRET,
+        environment,
+        baseUrl: env.C3_PUBLIC_API_ORIGIN ?? "http://127.0.0.1:3001",
+      });
     }
-    const config=env.COS_BUCKET?await provisionCosStorage(runtime.db,environment,{bucket:env.COS_BUCKET,region:env.COS_REGION??"",basePrefix:env.COS_BASE_PREFIX??"album"}):await provisionDevelopmentStorage(runtime.db,environment);
-    const objects=new RoutingObjectStore();
-    const profiles=await runtime.db.transaction(async tx=>(await tx.query("SELECT * FROM storage_profile_versions WHERE environment=$1",[environment])).rows);
-    for(const profile of profiles){
-      if(profile.provider==="local"&&local)objects.register(profile.profile_id,profile.version,local);
-      if(profile.provider==="cos")objects.register(profile.profile_id,profile.version,new CosObjectStore({bucket:profile.bucket,region:profile.region,secretId:env.COS_SECRET_ID??"",secretKey:env.COS_SECRET_KEY??""}));
+    const config = env.COS_BUCKET
+      ? await provisionCosStorage(runtime.db, environment, {
+          bucket: env.COS_BUCKET,
+          region: env.COS_REGION ?? "",
+          basePrefix: env.COS_BASE_PREFIX ?? "album",
+        })
+      : await provisionDevelopmentStorage(runtime.db, environment);
+    const objects = new RoutingObjectStore();
+    const profiles = await runtime.db.transaction(
+      async (tx) =>
+        (
+          await tx.query(
+            "SELECT * FROM storage_profile_versions WHERE environment=$1",
+            [environment],
+          )
+        ).rows,
+    );
+    for (const profile of profiles) {
+      if (profile.provider === "local" && local)
+        objects.register(profile.profile_id, profile.version, local);
+      if (profile.provider === "cos")
+        objects.register(
+          profile.profile_id,
+          profile.version,
+          new CosObjectStore({
+            bucket: profile.bucket,
+            region: profile.region,
+            secretId: env.COS_SECRET_ID ?? "",
+            secretKey: env.COS_SECRET_KEY ?? "",
+          }),
+        );
     }
-    runtime.objects=objects;runtime.storage=config;
+    runtime.objects = objects;
+    runtime.storage = config;
     if (
       env.C4_EXPORT_TOKEN_SECRET &&
       env.C4_RENDERER_VERSION &&
@@ -226,6 +263,8 @@ export async function createRuntime(
       },
     };
   await bindCommerceRuntime(runtime, reauth, commerceOptions);
+  const aiOptions = deploymentAi(runtime, env, commerceOptions.secrets);
+  if (aiOptions) bindAiRuntime(runtime, aiOptions);
   const host = startCommerceHost(runtime, env.C4_REDIS_URL);
   return {
     runtime,

@@ -1,3 +1,4 @@
+import { ArtStudio } from "../generation/ArtStudio";
 import { AccountBindings } from "../auth/AccountBindings";
 import { useEffect, useState } from "react";
 import { api, setSession, type DTO } from "../cloud/api";
@@ -32,6 +33,7 @@ export function CommerceApp() {
             ["membership", "会员与点数"],
             ["orders", "订单与兑换"],
             ["export", "云端导出"],
+            ["art", "AI 创作"],
             ["tasks", "任务中心"],
             ["account", "账号与绑定"],
           ].map(([r, label]) => (
@@ -53,7 +55,9 @@ export function CommerceApp() {
         {route === "account" ? (
           <AccountBindings />
         ) : workspaceId ? (
-          route.startsWith("orders") ? (
+          route === "art" ? (
+            <ArtStudio workspaceId={workspaceId} />
+          ) : route.startsWith("orders") ? (
             <OrderPage workspaceId={workspaceId} />
           ) : route === "export" ? (
             <CloudExportPage workspaceId={workspaceId} />

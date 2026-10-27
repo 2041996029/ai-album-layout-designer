@@ -5700,6 +5700,44 @@ paths:
               policyConsentVersion: policy_demo
       x-idempotency-scope: workspace resolved from target or request; otherwise authenticated user or pre-auth browser
         challenge
+  /generation-jobs/{jobId}/result:
+    get:
+      operationId: getGenerationResult
+      tags: [Generation]
+      summary: 查询审核通过的生成素材
+      x-module: C5
+      x-required-permission: generation.read
+      security:
+      - WebCookie: []
+      - MiniBearer: []
+      parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema: {type: string, minLength: 1, maxLength: 128}
+      responses:
+        '200':
+          description: 任务结果
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, requestId]
+                properties:
+                  requestId: {type: string}
+                  data:
+                    type: object
+                    required: [jobId, state]
+                    properties:
+                      jobId: {type: string}
+                      state: {type: string, enum: [queued, running, packaging, retry_wait, cancel_requested, succeeded, failed, cancelled]}
+                      reasonCode: {type: string}
+                      asset: {$ref: '#/components/schemas/Asset'}
+                    additionalProperties: false
+                additionalProperties: false
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '503': {$ref: '#/components/responses/Unavailable'}
   /workspaces/{workspaceId}/jobs:
     get:
       operationId: listWorkspaceJobs
@@ -21866,9 +21904,31 @@ components:
         - fonts
       additionalProperties: false
 
+    GenerationProvenance:
+      type: object
+      required: [version, jobId, modelVersionId, presetVersionId, inputHash, referenceAssetIds, consentRef, licenseRef, labelPolicyVersion, moderationPolicyVersion, outputSha256, normalizedSha256, labelApplied]
+      properties:
+        version: {type: integer, const: 1}
+        labelApplied: {type: boolean, const: true}
+        referenceAssetIds:
+          type: array
+          items: {type: string}
+        consentRef: {type: [string, 'null']}
+        jobId: {type: string, minLength: 1}
+        modelVersionId: {type: string, minLength: 1}
+        presetVersionId: {type: string, minLength: 1}
+        inputHash: {type: string, minLength: 1}
+        licenseRef: {type: string, minLength: 1}
+        labelPolicyVersion: {type: string, minLength: 1}
+        moderationPolicyVersion: {type: string, minLength: 1}
+        outputSha256: {type: string, minLength: 1}
+        normalizedSha256: {type: string, minLength: 1}
+      additionalProperties: false
     EditorAssetRecord:
       type: object
       properties:
+        provenance:
+          $ref: '#/components/schemas/GenerationProvenance'
         id:
           type: string
           minLength: 1

@@ -1,0 +1,52 @@
+import type { ProviderCapability } from "@album/providers";
+export type LicenseRecord = {
+  id: string;
+  version: number;
+  source: string;
+  author: string;
+  termsVersion: string;
+  commercialAllowed: boolean;
+  allowReference: boolean;
+  allowModification: boolean;
+  allowRedistribution: boolean;
+  attribution: string | null;
+  expiresAt: string | null;
+  territories: string[];
+};
+export type ModelVersion = {
+  id: string;
+  version: number;
+  connectionVersionId: string;
+  providerModelId: string;
+  providerModelVersion: string;
+  capabilities: ProviderCapability[];
+  parameterSchema: unknown;
+  licenseRef: { id: string; version: number };
+  testReportId: string;
+  state: "unverified" | "ready" | "disabled" | "retired";
+  sizes?: Record<string, { width: number; height: number }>;
+  moderationPolicyVersion: string;
+  labelPolicyVersion: string;
+};
+export type PresetVersion = {
+  id: string;
+  version: number;
+  name: string;
+  category: string;
+  modelVersionIds: string[];
+  parameterTemplate: Record<string, string | number | boolean>;
+  editableParameters: string[];
+  licenseRef: { id: string; version: number };
+  exampleAssetIds: string[];
+  pricingVersionId: string;
+  moderationPolicyVersion: string;
+  labelPolicyVersion: string;
+  state: "draft" | "published" | "retired";
+};
+export type RouteVersion = {
+  id: string;
+  version: number;
+  capability: ProviderCapability;
+  primaryModelVersionId: string;
+  fallbackModelVersionIds: string[];
+};

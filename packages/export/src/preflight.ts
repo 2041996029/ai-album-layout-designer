@@ -1,3 +1,4 @@
+import { generatedProvenanceIssues } from "@album/document";
 import { verifyImportedTemplateProof } from "@album/document";
 import {
   validateDocumentAssignment,
@@ -302,14 +303,16 @@ export async function preflight(
           (asset.source as any).kind === "generated" ||
           (asset as any).provenance != null
         ) {
-          await add(
-            "UNSUPPORTED_PROVENANCE",
-            path,
-            "AI来源与标识要求尚未验证。",
-            { layerId: layer.id },
+          const provenanceIssues = generatedProvenanceIssues(
+            snapshot.doc,
+            asset,
+            layer.id,
           );
-          continue;
+          for (const issue of provenanceIssues)
+            await add(issue.code, path, issue.message, { layerId: layer.id });
+          if (provenanceIssues.length) continue;
         }
+
         try {
           for (const variant of ["original", "normalized"] as const) {
             const bytes = await read(port, asset.id, variant, signal);
@@ -486,10 +489,15 @@ export async function preflight(
           );
           canvas.width = canvas.height = 0;
           if (report.overflow)
-            await add("TEXT_OVERFLOW", path, `「${layer.text.slice(0,36)}」超出文字框，请自动适配或扩大文字框。`, {
-              layerId: layer.id,
-              surfaceId,
-            });
+            await add(
+              "TEXT_OVERFLOW",
+              path,
+              `「${layer.text.slice(0, 36)}」超出文字框，请自动适配或扩大文字框。`,
+              {
+                layerId: layer.id,
+                surfaceId,
+              },
+            );
         } catch (error) {
           signal.throwIfAborted();
           await add(

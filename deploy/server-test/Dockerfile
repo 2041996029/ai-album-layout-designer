@@ -29,4 +29,5 @@ COPY docs/release-v1.0/database/002_order_snapshots.up.sql /docker-entrypoint-in
 COPY docs/release-v1.0/database/003_redemption_batch_policy.up.sql /docker-entrypoint-initdb.d/004-redemption.sql
 COPY docs/release-v1.0/database/004_financial_adjustments.up.sql /docker-entrypoint-initdb.d/005-adjustments.sql
 COPY docs/release-v1.0/database/005_identity_payments.up.sql /docker-entrypoint-initdb.d/006-identity-payments.sql
+COPY docs/release-v1.0/database/006_ai_runtime.up.sql /docker-entrypoint-initdb.d/007-ai-runtime.sql
 RUN chmod 644 /docker-entrypoint-initdb.d/*.sql
