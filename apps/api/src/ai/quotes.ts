@@ -49,7 +49,7 @@ export class GenerationService {
     const queues = Object.values(release.versions)
       .map((v) => v.payload)
       .filter((p) => p.kind === "queue" && p.workerKind === "generation");
-    if (queues.length !== 1 || queues[0].kind !== "queue" || !queues[0].enabled)
+    if (queues.length !== 1 || queues[0].kind !== "queue")
       fail("GENERATION_QUEUE_UNCONFIGURED", 503);
     const generationQueue = queues[0];
     const route = release.versions.aiRoute,
