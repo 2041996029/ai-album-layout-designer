@@ -1,3 +1,4 @@
+import { readActiveProviderLimits } from "./controls";
 import { fail, id, digest } from "@album/server-core";
 import type { PoolClient } from "pg";
 export const shanghaiBudgetDate = (at: string) =>
@@ -14,6 +15,7 @@ export async function reserveProviderBudget(
   estimatedCostFen: number,
   jobId: string,
   at: string,
+  executionProviderVersionId?: string,
 ) {
   if (!Number.isSafeInteger(estimatedCostFen) || estimatedCostFen < 0)
     fail("AI_COST_INVALID", 422);
@@ -33,6 +35,24 @@ export async function reserveProviderBudget(
   ).rows[0];
   if (!c || c.account_state !== "active" || c.connection_state !== "ready")
     fail("AI_CONNECTION_UNAVAILABLE", 503);
+  let connectionLimit = c.daily_budget_fen;
+  if (executionProviderVersionId) {
+    const control = (
+      await tx.query(
+        "SELECT daily_budget_fen FROM ai_provider_versions WHERE id=$1 AND connection_id=$2 AND billing_account_id=$3",
+        [executionProviderVersionId, c.connection_id, c.billing_account_id],
+      )
+    ).rows[0];
+    if (!control) fail("BUDGET_PROVIDER_MISMATCH", 409);
+    connectionLimit = control.daily_budget_fen;
+  }
+  const active = await readActiveProviderLimits(
+    tx,
+    c.connection_id,
+    c.environment,
+  );
+  if (active)
+    connectionLimit = Math.min(Number(connectionLimit), active.dailyBudgetFen);
   const day = shanghaiBudgetDate(at);
   await tx.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
     "ai-budget:" + c.environment + ":" + c.billing_account_id + ":" + day,
@@ -46,7 +66,7 @@ export async function reserveProviderBudget(
   const p = (
     await tx.query(
       "INSERT INTO provider_budget_days(id,connection_id,billing_account_id,budget_day_id,limit_fen) VALUES($1,$2,$3,$4,$5) ON CONFLICT(connection_id,budget_day_id) DO UPDATE SET limit_fen=excluded.limit_fen RETURNING *",
-      [id(), c.connection_id, c.billing_account_id, b.id, c.daily_budget_fen],
+      [id(), c.connection_id, c.billing_account_id, b.id, connectionLimit],
     )
   ).rows[0];
   if (

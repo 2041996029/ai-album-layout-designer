@@ -1,3 +1,4 @@
+import { readActiveProviderLimits } from "../../api/src/ai/controls";
 import { payloadHash } from "../../api/src/config/types";
 import { fail, type Database } from "@album/server-core";
 import type { JobLease, JobRepository } from "@album/jobs";
@@ -16,6 +17,7 @@ export class GenerationWorker {
       registry: ProviderRegistry;
       output: GenerationOutputService;
       makeContext: (manifest: any, lease: JobLease) => Promise<ProviderContext>;
+      assertSubmitAllowed?: () => Promise<void>;
     },
   ) {}
   async runGenerationJob(lease: JobLease, signal: AbortSignal) {
@@ -61,7 +63,11 @@ export class GenerationWorker {
     let result: QueryResult;
     if (r.provider_submission_state === "not_submitted") {
       try {
-        await this.slot(lease, context.providerVersionId);
+        await this.options.assertSubmitAllowed?.();
+        await this.slot(
+          lease,
+          context.executionProviderVersionId ?? context.providerVersionId,
+        );
       } catch {
         await this.options.jobs.failAttempt(lease, {
           code: "PROVIDER_CAPACITY_REACHED",
@@ -231,11 +237,18 @@ export class GenerationWorker {
   private async slot(lease: JobLease, provider: string) {
     await this.options.db.transaction(async (tx) => {
       const p = (
-        await tx.query("SELECT * FROM ai_provider_versions WHERE id=$1", [
-          provider,
-        ])
+        await tx.query(
+          "SELECT p.*,c.state AS connection_state,b.state AS account_state,b.daily_budget_fen AS account_limit FROM ai_provider_versions p JOIN ai_provider_connections c ON c.id=p.connection_id JOIN ai_billing_accounts b ON b.id=p.billing_account_id WHERE p.id=$1",
+          [provider],
+        )
       ).rows[0];
       if (!p) fail("PROVIDER_UNCONFIGURED", 503);
+      if (
+        p.connection_state !== "ready" ||
+        p.account_state !== "active" ||
+        Number(p.account_limit) === 0
+      )
+        fail("PROVIDER_DISABLED", 503);
       await tx.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
         "ai-submit:" + p.billing_account_id,
       ]);
@@ -252,9 +265,22 @@ export class GenerationWorker {
           [p.connection_id],
         )
       ).rows[0];
+      const current = await readActiveProviderLimits(
+        tx,
+        p.connection_id,
+        p.environment,
+      );
       if (
-        counts.active >= p.max_concurrent ||
-        counts.rate >= p.requests_per_minute
+        counts.active >=
+          Math.min(
+            p.max_concurrent,
+            current?.maxConcurrent ?? p.max_concurrent,
+          ) ||
+        counts.rate >=
+          Math.min(
+            p.requests_per_minute,
+            current?.requestsPerMinute ?? p.requests_per_minute,
+          )
       )
         fail("PROVIDER_CAPACITY_REACHED", 429);
       await tx.query(

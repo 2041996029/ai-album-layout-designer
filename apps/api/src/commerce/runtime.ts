@@ -1,3 +1,6 @@
+import { AiFinanceService } from "../ai/finance";
+import { aiCatalogDependencies } from "../ai/dependencies";
+import { materializeAiConfig } from "../ai/materialize";
 import { LicenseService } from "../content/licenses";
 import { assertSecretNotInUse } from "./secret-obligations";
 import type { SecretOptions } from "../config/secrets";
@@ -73,9 +76,16 @@ export async function bindCommerceRuntime(
   runtime.proofAdapter = reauth;
   const config = new ConfigService(db, auth, options.secrets ?? closedSecrets, {
     ...options.config,
+    dependencies: aiCatalogDependencies(options.config?.dependencies),
     environment,
     reauth,
     onPublished: async (tx, release) => {
+      await materializeAiConfig(
+        tx,
+        release,
+        environment,
+        runtime.ai?.service.options.registry,
+      );
       const v = release.versions.sku;
       if (v?.payload.kind === "sku" && v.payload.enabled)
         await actualPublishedSkuMaterializer.materialize(tx, {
@@ -184,7 +194,9 @@ export async function bindCommerceRuntime(
     : undefined;
   const reconciliation = new ReconciliationService(db);
   const licenses = new LicenseService(db, auth);
+  const aiFinance = new AiFinanceService(db, auth, reauth, environment);
   const services = {
+    aiFinance,
     licenses,
     config,
     secrets,
@@ -238,6 +250,7 @@ export async function bindCommerceRuntime(
   };
 }
 export type CommerceRuntime = {
+  aiFinance: AiFinanceService;
   licenses: LicenseService;
   config: ConfigService;
   secrets: SecretService;

@@ -46,6 +46,8 @@ export function bindAiRuntime(runtime: ApiRuntime, options: AiRuntimeOptions) {
     registry: options.registry,
     output,
     makeContext: options.makeContext,
+    assertSubmitAllowed: () =>
+      commerce.config.assertNewRequestsAllowed("generation"),
   });
   runtime.ai = {
     service,

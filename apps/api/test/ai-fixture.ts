@@ -97,7 +97,7 @@ export async function aiFixture() {
     queue: {
       kind: "queue",
       workerKind: "generation",
-      enabled: true,
+      maxWaitingSeconds: 120,
       maxGlobalConcurrency: 4,
       maxWorkspaceConcurrency: 1,
       leaseSeconds: 60,
@@ -176,7 +176,7 @@ export async function aiFixture() {
         ids.connection,
         ids.account,
         ids.secret,
-        { policyVersion: "data-policy@1", training: false, retentionDays: 0 },
+        { policyRef: { id: "data-policy", version: 1 } },
         { textToImage: true },
       ],
     );

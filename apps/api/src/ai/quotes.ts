@@ -64,14 +64,15 @@ export class GenerationService {
       !route.payload.enabled ||
       !pricing.payload.enabled ||
       !connection.payload.enabled ||
+      connection.payload.dailyBudgetFen === 0 ||
       route.payload.capability !== capability ||
       pricing.payload.presetRef.id !== presetId
     )
       fail("GENERATION_UNCONFIGURED", 503);
     const r = (
       await tx.query(
-        "SELECT p.*,b.name,b.category,b.state AS preset_state,m.id AS model_version_id,m.provider_version_id,m.provider_model_id,m.license_version_id AS model_license_id,m.capabilities AS model_capabilities,m.limits_json,m.moderation_policy_ref AS model_moderation,m.label_policy_ref AS model_label,a.state AS model_state,v.adapter_id,v.adapter_version,v.base_url,v.secret_reference_id,v.daily_budget_fen,v.allowed_data_use,v.connection_id,c.state AS connection_state,c.environment,s.state AS secret_state,s.secret_ref,s.secret_version,k.credit_cost,k.estimated_cost_fen,k.max_cost_fen,k.rule_key,k.id AS pricing_id,r.id AS route_version_id,ab.account_billing_id FROM ai_preset_versions p JOIN ai_presets b ON b.id=p.preset_id JOIN ai_preset_models pm ON pm.preset_version_id=p.id JOIN ai_model_versions m ON m.id=pm.model_version_id JOIN ai_models a ON a.id=m.model_id JOIN ai_provider_versions v ON v.id=m.provider_version_id JOIN ai_provider_connections c ON c.id=v.connection_id JOIN ai_billing_accounts ab ON ab.id=v.billing_account_id JOIN secret_references s ON s.id=v.secret_reference_id JOIN cost_rule_versions k ON k.id=p.cost_rule_version_id JOIN ai_route_versions r ON r.primary_model_version_id=m.id WHERE p.id=$1 AND m.id=$2 AND r.id=$3",
-        [presetId, route.payload.primaryModelRef.id, route.id],
+        "SELECT p.*,b.name,b.category,b.state AS preset_state,m.id AS model_version_id,m.provider_version_id,v.id AS execution_provider_version_id,m.provider_model_id,m.license_version_id AS model_license_id,m.capabilities AS model_capabilities,m.limits_json,m.moderation_policy_ref AS model_moderation,m.label_policy_ref AS model_label,a.state AS model_state,v.adapter_id,v.adapter_version,v.base_url,v.secret_reference_id,v.daily_budget_fen,v.allowed_data_use,v.connection_id,c.state AS connection_state,c.environment,s.state AS secret_state,s.secret_ref,s.secret_version,k.credit_cost,k.estimated_cost_fen,k.max_cost_fen,k.rule_key,k.id AS pricing_id,r.id AS route_version_id,ab.account_billing_id,ab.state AS account_state,ab.daily_budget_fen AS account_limit FROM ai_preset_versions p JOIN ai_presets b ON b.id=p.preset_id JOIN ai_preset_models pm ON pm.preset_version_id=p.id JOIN ai_model_versions m ON m.id=pm.model_version_id JOIN ai_models a ON a.id=m.model_id JOIN ai_provider_versions proof ON proof.id=m.provider_version_id JOIN ai_provider_versions v ON v.id=$4 AND v.connection_id=proof.connection_id AND v.adapter_id=proof.adapter_id AND v.adapter_version=proof.adapter_version AND v.base_url=proof.base_url AND v.secret_reference_id=proof.secret_reference_id AND v.allowed_data_use=proof.allowed_data_use JOIN ai_provider_connections c ON c.id=v.connection_id JOIN ai_billing_accounts ab ON ab.id=v.billing_account_id JOIN secret_references s ON s.id=v.secret_reference_id JOIN cost_rule_versions k ON k.id=p.cost_rule_version_id JOIN ai_route_versions r ON r.primary_model_version_id=m.id WHERE p.id=$1 AND m.id=$2 AND r.id=$3",
+        [presetId, route.payload.primaryModelRef.id, route.id, connection.id],
       )
     ).rows[0];
     if (
@@ -81,6 +82,9 @@ export class GenerationService {
       r.model_state !== "ready" ||
       r.connection_state !== "ready" ||
       r.secret_state !== "available" ||
+      r.account_state !== "active" ||
+      Number(r.account_limit) === 0 ||
+      Number(r.daily_budget_fen) === 0 ||
       !r.model_capabilities[capability] ||
       pricing.payload.modelRef.id !== r.model_version_id ||
       (pricing.payload.costRuleId !== r.pricing_id &&
@@ -88,7 +92,7 @@ export class GenerationService {
       pricing.payload.creditsPerImage !== Number(r.credit_cost) ||
       pricing.payload.estimatedProviderCostFen !==
         Number(r.estimated_cost_fen) ||
-      connection.id !== r.provider_version_id
+      connection.id !== r.execution_provider_version_id
     )
       fail("GENERATION_UNCONFIGURED", 503);
     validateLicense(
@@ -313,6 +317,7 @@ export class GenerationService {
           {
             providerInput,
             providerVersionId: r.provider_version_id,
+            executionProviderVersionId: r.execution_provider_version_id,
             accountBillingId: r.account_billing_id,
             adapterId: r.adapter_id,
             adapterVersion: r.adapter_version,
@@ -512,6 +517,7 @@ export class GenerationService {
         Number(r.estimated_cost_fen),
         job.jobId,
         this.now().toISOString(),
+        context.executionProviderVersionId,
       );
       await tx.query(
         "UPDATE generation_quote_inputs SET accepted_job_id=$2 WHERE quote_id=$1",

@@ -1040,6 +1040,30 @@ export function commerceHandlers(
       );
       return release(r, result.releaseId);
     },
+    async listAiBudgets(r) {
+      return s.aiFinance.listBudgets(r.actor, {
+        ...(r.query.cursor ? { cursor: r.query.cursor } : {}),
+        ...(r.query.limit ? { limit: Number(r.query.limit) } : {}),
+      });
+    },
+    async updateAiBudget(r) {
+      return s.aiFinance.updateBudget(
+        r.actor,
+        r.params.accountId,
+        r.body,
+        expected(r),
+        context(r),
+      );
+    },
+    async listAiCostRules(r) {
+      return s.aiFinance.listCostRules(r.actor, {
+        ...(r.query.cursor ? { cursor: r.query.cursor } : {}),
+        ...(r.query.limit ? { limit: Number(r.query.limit) } : {}),
+      });
+    },
+    async createAiCostRule(r) {
+      return s.aiFinance.createCostRule(r.actor, r.body, context(r));
+    },
     async createLicenseRecord(r) {
       return s.licenses.create(r.actor, r.body, key(r));
     },

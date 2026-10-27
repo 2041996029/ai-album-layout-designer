@@ -18,6 +18,8 @@ for (const decision of [
   "cancel_during_review",
   "forbidden_url",
   "commit_ack_lost",
+  "disabled_before_submit",
+  "emergency_before_submit",
 ] as const)
   it.skipIf(!process.env.C3_TEST_DATABASE_URL)(
     `generation ${decision}: fenced output and credits/budget close once`,
@@ -38,6 +40,9 @@ for (const decision of [
           decision === "approved" ||
           decision === "accepted_timeout" ||
           decision === "commit_ack_lost";
+        const blocked =
+          decision === "disabled_before_submit" ||
+          decision === "emergency_before_submit";
         const storage = await provisionDevelopmentStorage(f.database, "dev");
         const service = new GenerationService({
           db: f.database,
@@ -172,6 +177,10 @@ for (const decision of [
           jobs,
           registry,
           output,
+          assertSubmitAllowed: async () => {
+            if (decision === "emergency_before_submit")
+              throw Error("CAPABILITY_DISABLED");
+          },
           makeContext: async (m) => ({
             connectionVersionId: m.providerVersionId,
             secretRef: m.secretRef,
@@ -186,6 +195,10 @@ for (const decision of [
           new Date().toISOString(),
         );
         expect(lease).not.toBeNull();
+        if (decision === "disabled_before_submit")
+          await f.pool.query(
+            "UPDATE ai_album.ai_provider_connections SET state='disabled',revision=revision+1",
+          );
         await worker.runGenerationJob(lease!, new AbortController().signal);
         if (decision === "accepted_timeout") {
           await f.pool.query(
@@ -228,7 +241,7 @@ for (const decision of [
               "SELECT reserved_fen,spent_fen FROM ai_album.budget_days",
             )
           ).rows[0],
-        ).toMatchObject({ reserved_fen: "0", spent_fen: "1" });
+        ).toMatchObject({ reserved_fen: "0", spent_fen: blocked ? "0" : "1" });
         expect(
           (
             await f.pool.query(
@@ -276,7 +289,7 @@ for (const decision of [
           (await f.pool.query("SELECT available FROM ai_album.credit_lots"))
             .rows[0].available,
         ).toBe(approved ? "99" : "100");
-        expect(provider.submissions).toBe(1);
+        expect(provider.submissions).toBe(blocked ? 0 : 1);
         expect(blobs.size).toBe(approved ? 3 : 0);
       } finally {
         await f.close();

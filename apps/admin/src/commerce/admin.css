@@ -1150,3 +1150,35 @@
 .license-form input[type="checkbox"] {
   accent-color: #315c49;
 }
+.ai-budget-edit {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e7df;
+}
+.ai-budget-edit button + button {
+  margin-left: 12px;
+}
+.license-card progress {
+  width: 100%;
+  height: 8px;
+  margin-top: 18px;
+  accent-color: #315c49;
+}
+.license-form > button {
+  margin-top: 18px;
+}
+.admin-table-wrap {
+  overflow-x: auto;
+}
+.admin-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.admin-table-wrap th,
+.admin-table-wrap td {
+  text-align: left;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e6eae3;
+  white-space: nowrap;
+}

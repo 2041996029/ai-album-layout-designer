@@ -148,3 +148,37 @@ it.skipIf(!process.env.C3_TEST_DATABASE_URL)(
   },
   60000,
 );
+it.skipIf(!process.env.C3_TEST_DATABASE_URL)(
+  "zero or stopped procurement accounts do not advertise generation or issue quotes",
+  async () => {
+    const f = await aiFixture();
+    try {
+      const s = new GenerationService({
+        db: f.database,
+        workspaces: f.workspaces,
+        registry: f.registry,
+        loadRelease: async () => f.release,
+        environment: "dev",
+        allowReplay: true,
+      });
+      await f.pool.query(
+        "UPDATE ai_album.ai_billing_accounts SET daily_budget_fen=0,revision=revision+1",
+      );
+      expect(await s.listPresets(f.actor, f.wid)).toEqual([]);
+      await expect(s.createGenerationQuote(f.actor, f.input)).rejects.toThrow(
+        "GENERATION_UNCONFIGURED",
+      );
+      await f.pool.query(
+        "UPDATE ai_album.ai_billing_accounts SET daily_budget_fen=100,state='stopped',revision=revision+1",
+      );
+      expect(await s.listPresets(f.actor, f.wid)).toEqual([]);
+      expect(
+        (await f.pool.query("SELECT count(*) FROM ai_album.generation_quotes"))
+          .rows[0].count,
+      ).toBe("0");
+    } finally {
+      await f.close();
+    }
+  },
+  60000,
+);
