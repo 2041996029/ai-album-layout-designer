@@ -35,6 +35,8 @@ export interface ApiRuntime {
   deletion?: AccountDeletionService;
   privacy?: PrivacyExportService;
   localObjects?: LocalObjectStore;
+  objects?: import("../assets/types").ObjectStore;
+  storage?: import("../assets/types").StorageConfig;
   provisionFonts?: (workspaceId: string) => Promise<void>;
   proofAdapter?: {
     verify(

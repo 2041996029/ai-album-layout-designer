@@ -843,10 +843,8 @@ describe.skipIf(!process.env.C3_TEST_DATABASE_URL)(
           await lease(job.jobId),
           new AbortController().signal,
         );
-        expect(
-          (await rows("SELECT state FROM jobs WHERE id=$1", [job.jobId]))[0]
-            .state,
-        ).toBe("succeeded");
+        const terminal=(await rows("SELECT state,error_code,stage FROM jobs WHERE id=$1",[job.jobId]))[0];
+        expect(terminal.state,JSON.stringify(terminal)).toBe("succeeded");
         const [artifact] = await service.listArtifacts(actor, wid, job.jobId);
         expect(artifact.format).toBe(format);
         const row = (
