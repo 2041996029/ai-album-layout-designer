@@ -1,3 +1,4 @@
+import { LicenseService } from "../content/licenses";
 import { assertSecretNotInUse } from "./secret-obligations";
 import type { SecretOptions } from "../config/secrets";
 import { CloudLayoutService } from "../projects/layout-service";
@@ -182,7 +183,9 @@ export async function bindCommerceRuntime(
       })
     : undefined;
   const reconciliation = new ReconciliationService(db);
+  const licenses = new LicenseService(db, auth);
   const services = {
+    licenses,
     config,
     secrets,
     payments,
@@ -235,6 +238,7 @@ export async function bindCommerceRuntime(
   };
 }
 export type CommerceRuntime = {
+  licenses: LicenseService;
   config: ConfigService;
   secrets: SecretService;
   payments: PaymentAdapters;

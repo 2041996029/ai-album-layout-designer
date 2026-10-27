@@ -1040,6 +1040,15 @@ export function commerceHandlers(
       );
       return release(r, result.releaseId);
     },
+    async createLicenseRecord(r) {
+      return s.licenses.create(r.actor, r.body, key(r));
+    },
+    async listLicenseRecords(r) {
+      return s.licenses.list(r.actor, {
+        ...(r.query.cursor ? { cursor: r.query.cursor } : {}),
+        ...(r.query.limit ? { limit: Number(r.query.limit) } : {}),
+      });
+    },
     async createConfigTest(r) {
       const v = await config(r).getConfigDraft(r.actor, r.params.draftId);
       if (v.payloadHash !== r.body.configHash) fail("CONFIG_TEST_STALE", 409);

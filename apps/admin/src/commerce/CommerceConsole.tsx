@@ -1,3 +1,4 @@
+import { ContentConsole } from "./ContentConsole";
 import {
   adminLabel as adminLabelForRefund,
   AdminShell,
@@ -81,8 +82,8 @@ export function CommerceConsole(): React.JSX.Element {
     }
   }
   useEffect(() => {
-    void refresh();
-  }, []);
+    if (view !== "content") void refresh();
+  }, [view]);
   async function act(
     fn: (headers: Record<string, string>) => Promise<unknown>,
     verify = true,
@@ -99,6 +100,7 @@ export function CommerceConsole(): React.JSX.Element {
       setError(String(e));
     }
   }
+  if (view === "content") return <ContentConsole onView={navigate} />;
   return (
     <AdminShell
       view={view}
