@@ -974,6 +974,9 @@ export class ExportService {
         1,
         Math.min(MAX_ENCODED_BYTES, Math.ceil(p.report.estimatedBytes)),
       );
+      await tx.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+        "storage-quota:" + wid,
+      ]);
       await tx.query(
         "INSERT INTO storage_usage_accounts(id,workspace_id,category,limit_bytes) VALUES($1,$2,'export',$3) ON CONFLICT(workspace_id,category) DO NOTHING",
         [id(), wid, p.entitlements.storageLimitBytes],

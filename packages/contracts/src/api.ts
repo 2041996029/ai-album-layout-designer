@@ -1323,6 +1323,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/generation-jobs/{jobId}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询审核通过的生成素材 */
+        get: operations["getGenerationResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspaceId}/jobs": {
         parameters: {
             query?: never;
@@ -2879,6 +2896,58 @@ export interface paths {
         get: operations["listContentVersions"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/ai/budgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** listAiBudgets */
+        get: operations["listAiBudgets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/ai/budgets/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** updateAiBudget */
+        put: operations["updateAiBudget"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/ai/cost-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** listAiCostRules */
+        get: operations["listAiCostRules"];
+        put?: never;
+        /** createAiCostRule */
+        post: operations["createAiCostRule"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5469,6 +5538,53 @@ export interface components {
             commercialAllowed: boolean;
             reason: string;
         };
+        AiBudget: {
+            id: string;
+            accountBillingId: string;
+            providerName: string;
+            /** @enum {unknown} */
+            environment: "dev" | "staging" | "prod";
+            dailyBudgetFen: number;
+            reservedFen: number;
+            spentFen: number;
+            /** @enum {unknown} */
+            state: "active" | "stopped" | "retired";
+            revision: number;
+            budgetDate: string;
+        };
+        AiBudgetUpdate: {
+            dailyBudgetFen: number;
+            /** @enum {unknown} */
+            state: "active" | "stopped";
+            reason: string;
+        };
+        AiCostRuleCreate: {
+            name: string;
+            creditsPerImage: number;
+            estimatedProviderCostFen: number;
+            maxCostFen: number;
+            reason: string;
+        };
+        AiCostRule: {
+            id: string;
+            name: string;
+            version: number;
+            creditsPerImage: number;
+            estimatedProviderCostFen: number;
+            maxCostFen: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AiBudgetsPage: {
+            items: components["schemas"]["AiBudget"][];
+            nextCursor: string | null;
+            hasMore: boolean;
+        };
+        AiCostRulesPage: {
+            items: components["schemas"]["AiCostRule"][];
+            nextCursor: string | null;
+            hasMore: boolean;
+        };
         LicenseRecord: {
             /** @example prj_demo */
             id: string;
@@ -5670,7 +5786,25 @@ export interface components {
                 }[];
             }[];
         };
+        GenerationProvenance: {
+            /** @constant */
+            version: 1;
+            /** @constant */
+            labelApplied: true;
+            referenceAssetIds: string[];
+            consentRef: string | null;
+            jobId: string;
+            modelVersionId: string;
+            presetVersionId: string;
+            inputHash: string;
+            licenseRef: string;
+            labelPolicyVersion: string;
+            moderationPolicyVersion: string;
+            outputSha256: string;
+            normalizedSha256: string;
+        };
         EditorAssetRecord: {
+            provenance?: components["schemas"]["GenerationProvenance"];
             id: string;
             version: number;
             sha256: string;
@@ -10193,6 +10327,40 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
+    getGenerationResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 任务结果 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        requestId: string;
+                        data: {
+                            jobId: string;
+                            /** @enum {string} */
+                            state: "queued" | "running" | "packaging" | "retry_wait" | "cancel_requested" | "succeeded" | "failed" | "cancelled";
+                            reasonCode?: string;
+                            asset?: components["schemas"]["Asset"];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
     listWorkspaceJobs: {
         parameters: {
             query?: {
@@ -14008,6 +14176,171 @@ export interface operations {
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listAiBudgets: {
+        parameters: {
+            query?: {
+                /** @description Opaque signed cursor binding tenant, sort and filters; invalid/expired cursor returns 400. Never accepts SQL offsets or resource ownership through cursor. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server authoritative result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AiBudgetsPage"];
+                        requestId: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateAiBudget: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Required replay key 16–128 printable ASCII. Workspace scope unique for 7 days across write endpoints; same canonical request/method/path returns original response, different payload returns 409 IDEMPOTENCY_MISMATCH. User scope before workspace selection. Callback dedup uses authenticated provider event ID instead.
+                 * @example demo_key_0000000000000001
+                 */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /**
+                 * @description Fresh purpose-bound server-issued proof; required for privileged secret/financial/ownership/deletion actions; never logged.
+                 * @example demo_key_0000000000000001
+                 */
+                "X-Reauthentication-Proof": components["parameters"]["ReauthenticationProof"];
+                /**
+                 * @description Required CAS header: exactly quoted decimal resource revision, e.g. "12". Missing 428; stale 409 REVISION_CONFLICT. Must not use wildcard or timestamps.
+                 * @example "12"
+                 */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiBudgetUpdate"];
+            };
+        };
+        responses: {
+            /** @description Server authoritative result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AiBudget"];
+                        requestId: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listAiCostRules: {
+        parameters: {
+            query?: {
+                /** @description Opaque signed cursor binding tenant, sort and filters; invalid/expired cursor returns 400. Never accepts SQL offsets or resource ownership through cursor. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server authoritative result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AiCostRulesPage"];
+                        requestId: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createAiCostRule: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Required replay key 16–128 printable ASCII. Workspace scope unique for 7 days across write endpoints; same canonical request/method/path returns original response, different payload returns 409 IDEMPOTENCY_MISMATCH. User scope before workspace selection. Callback dedup uses authenticated provider event ID instead.
+                 * @example demo_key_0000000000000001
+                 */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /**
+                 * @description Fresh purpose-bound server-issued proof; required for privileged secret/financial/ownership/deletion actions; never logged.
+                 * @example demo_key_0000000000000001
+                 */
+                "X-Reauthentication-Proof": components["parameters"]["ReauthenticationProof"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiCostRuleCreate"];
+            };
+        };
+        responses: {
+            /** @description Server authoritative result */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AiCostRule"];
+                        requestId: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
             503: components["responses"]["Unavailable"];
         };
     };

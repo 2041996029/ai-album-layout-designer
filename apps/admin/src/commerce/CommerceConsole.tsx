@@ -1,3 +1,5 @@
+import { AiFinanceConsole } from "./AiFinanceConsole";
+import { ContentConsole } from "./ContentConsole";
 import {
   adminLabel as adminLabelForRefund,
   AdminShell,
@@ -15,22 +17,33 @@ import { PagedMore } from "../../../web/src/commerce/PagedMore";
 import { useEffect, useRef, useState } from "react";
 import { api, id, type DTO, type Page } from "../../../web/src/cloud/api";
 export function CommerceConsole(): React.JSX.Element {
-  const human = useHumanVerification();
   const [view, setView] = useState<AdminView>(() => {
     const hash = location.hash.slice(1);
     return adminViews.some((v) => v.id === hash)
       ? (hash as AdminView)
       : "overview";
   });
+  const navigate = (next: AdminView) => {
+    setView(next);
+    history.replaceState(null, "", "#" + next);
+  };
+  if (view === "content") return <ContentConsole onView={navigate} />;
+  if (view === "aiFinance") return <AiFinanceConsole onView={navigate} />;
+  return <FinanceConsole view={view} navigate={navigate} />;
+}
+function FinanceConsole({
+  view,
+  navigate,
+}: {
+  view: AdminView;
+  navigate: (view: AdminView) => void;
+}): React.JSX.Element {
+  const human = useHumanVerification();
   const [loading, setLoading] = useState(false),
     [loaded, setLoaded] = useState(false),
     [query, setQuery] = useState(""),
     [orderState, setOrderState] = useState("");
   const requestVersion = useRef(0);
-  const navigate = (next: AdminView) => {
-    setView(next);
-    history.replaceState(null, "", "#" + next);
-  };
   const [orders, setOrders] = useState<DTO<"Order">[]>([]),
     [refunds, setRefunds] = useState<DTO<"Refund">[]>([]),
     [audits, setAudits] = useState<DTO<"AuditEvent">[]>([]),
@@ -82,7 +95,10 @@ export function CommerceConsole(): React.JSX.Element {
   }
   useEffect(() => {
     void refresh();
-  }, []);
+    return () => {
+      requestVersion.current++;
+    };
+  }, [view]);
   async function act(
     fn: (headers: Record<string, string>) => Promise<unknown>,
     verify = true,

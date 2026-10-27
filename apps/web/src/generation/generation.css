@@ -1,0 +1,101 @@
+.art-workbench {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(280px, 1fr);
+  gap: 28px;
+  margin-top: 28px;
+}
+.art-controls,
+.art-output {
+  background: #fffdf7;
+  border: 1px solid #e1e6da;
+  border-radius: 18px;
+  padding: 24px;
+}
+.art-controls fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 18px;
+}
+.art-controls legend {
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.art-controls label {
+  display: grid;
+  gap: 8px;
+  color: #344b41;
+}
+.art-controls select,
+.art-controls textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #ccd6c9;
+  border-radius: 9px;
+  background: #fff;
+  font: inherit;
+}
+.art-controls textarea {
+  resize: vertical;
+}
+.art-controls .art-consent {
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.7;
+  font-size: 13px;
+}
+.art-consent input {
+  margin-top: 5px;
+}
+.art-quote {
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 12px;
+  background: #eef3e8;
+}
+.art-output {
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.art-output img {
+  max-width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.art-output p {
+  color: #647367;
+  line-height: 1.8;
+}
+.art-placeholder {
+  font-family: serif;
+  letter-spacing: 0.5em;
+  color: #819b86;
+  font-size: 36px;
+  margin: 28px;
+}
+.art-studio button {
+  cursor: pointer;
+}
+.art-studio button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+@media (max-width: 800px) {
+  .art-workbench {
+    grid-template-columns: 1fr;
+  }
+  .art-controls,
+  .art-output {
+    padding: 18px;
+  }
+  .art-output {
+    min-height: 260px;
+  }
+}

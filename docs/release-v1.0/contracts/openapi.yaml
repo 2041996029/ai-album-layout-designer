@@ -5700,6 +5700,44 @@ paths:
               policyConsentVersion: policy_demo
       x-idempotency-scope: workspace resolved from target or request; otherwise authenticated user or pre-auth browser
         challenge
+  /generation-jobs/{jobId}/result:
+    get:
+      operationId: getGenerationResult
+      tags: [Generation]
+      summary: 查询审核通过的生成素材
+      x-module: C5
+      x-required-permission: generation.read
+      security:
+      - WebCookie: []
+      - MiniBearer: []
+      parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema: {type: string, minLength: 1, maxLength: 128}
+      responses:
+        '200':
+          description: 任务结果
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, requestId]
+                properties:
+                  requestId: {type: string}
+                  data:
+                    type: object
+                    required: [jobId, state]
+                    properties:
+                      jobId: {type: string}
+                      state: {type: string, enum: [queued, running, packaging, retry_wait, cancel_requested, succeeded, failed, cancelled]}
+                      reasonCode: {type: string}
+                      asset: {$ref: '#/components/schemas/Asset'}
+                    additionalProperties: false
+                additionalProperties: false
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '503': {$ref: '#/components/responses/Unavailable'}
   /workspaces/{workspaceId}/jobs:
     get:
       operationId: listWorkspaceJobs
@@ -12327,6 +12365,13 @@ paths:
           $ref: '#/components/responses/Unavailable'
         '500':
           $ref: '#/components/responses/InternalError'
+  /admin/ai/budgets:
+    get: {"operationId": "listAiBudgets", "tags": ["Configuration"], "summary": "listAiBudgets", "x-module": "C5", "x-required-permission": "platform.finance.ai", "security": [{"WebCookie": []}], "parameters": [{"$ref": "#/components/parameters/Cursor"}, {"$ref": "#/components/parameters/Limit"}], "responses": {"200": {"description": "Server authoritative result", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/AiBudgetsPage"}, "requestId": {"type": "string", "minLength": 1, "maxLength": 128}}, "required": ["data", "requestId"], "additionalProperties": false}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/Unprocessable"}, "428": {"$ref": "#/components/responses/PreconditionRequired"}, "503": {"$ref": "#/components/responses/Unavailable"}}}
+  /admin/ai/budgets/{accountId}:
+    put: {"operationId": "updateAiBudget", "tags": ["Configuration"], "summary": "updateAiBudget", "x-module": "C5", "x-required-permission": "platform.finance.ai", "security": [{"WebCookie": [], "CsrfToken": []}], "parameters": [{"name": "accountId", "in": "path", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128}}, {"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/ReauthenticationProof"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"200": {"description": "Server authoritative result", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/AiBudget"}, "requestId": {"type": "string", "minLength": 1, "maxLength": 128}}, "required": ["data", "requestId"], "additionalProperties": false}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/Unprocessable"}, "428": {"$ref": "#/components/responses/PreconditionRequired"}, "503": {"$ref": "#/components/responses/Unavailable"}}, "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AiBudgetUpdate"}}}}}
+  /admin/ai/cost-rules:
+    get: {"operationId": "listAiCostRules", "tags": ["Configuration"], "summary": "listAiCostRules", "x-module": "C5", "x-required-permission": "platform.finance.ai", "security": [{"WebCookie": []}], "parameters": [{"$ref": "#/components/parameters/Cursor"}, {"$ref": "#/components/parameters/Limit"}], "responses": {"200": {"description": "Server authoritative result", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/AiCostRulesPage"}, "requestId": {"type": "string", "minLength": 1, "maxLength": 128}}, "required": ["data", "requestId"], "additionalProperties": false}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/Unprocessable"}, "428": {"$ref": "#/components/responses/PreconditionRequired"}, "503": {"$ref": "#/components/responses/Unavailable"}}}
+    post: {"operationId": "createAiCostRule", "tags": ["Configuration"], "summary": "createAiCostRule", "x-module": "C5", "x-required-permission": "platform.finance.ai", "security": [{"WebCookie": [], "CsrfToken": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/ReauthenticationProof"}], "responses": {"201": {"description": "Server authoritative result", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/AiCostRule"}, "requestId": {"type": "string", "minLength": 1, "maxLength": 128}}, "required": ["data", "requestId"], "additionalProperties": false}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/Unprocessable"}, "428": {"$ref": "#/components/responses/PreconditionRequired"}, "503": {"$ref": "#/components/responses/Unavailable"}}, "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AiCostRuleCreate"}}}}}
   /admin/licenses:
     post:
       operationId: createLicenseRecord
@@ -21179,6 +21224,12 @@ components:
       - commercialAllowed
       - reason
       additionalProperties: false
+    AiBudget: {"type": "object", "properties": {"id": {"type": "string", "minLength": 1, "maxLength": 128}, "accountBillingId": {"type": "string", "minLength": 1, "maxLength": 128}, "providerName": {"type": "string", "minLength": 1, "maxLength": 128}, "environment": {"enum": ["dev", "staging", "prod"]}, "dailyBudgetFen": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "reservedFen": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "spentFen": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "state": {"enum": ["active", "stopped", "retired"]}, "revision": {"type": "integer", "minimum": 1}, "budgetDate": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}}, "required": ["id", "accountBillingId", "providerName", "environment", "dailyBudgetFen", "reservedFen", "spentFen", "state", "revision", "budgetDate"], "additionalProperties": false}
+    AiBudgetUpdate: {"type": "object", "properties": {"dailyBudgetFen": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "state": {"enum": ["active", "stopped"]}, "reason": {"type": "string", "minLength": 1, "maxLength": 500}}, "required": ["dailyBudgetFen", "state", "reason"], "additionalProperties": false}
+    AiCostRuleCreate: {"type": "object", "properties": {"name": {"type": "string", "minLength": 1, "maxLength": 128}, "creditsPerImage": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "estimatedProviderCostFen": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "maxCostFen": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "reason": {"type": "string", "minLength": 1, "maxLength": 500}}, "required": ["name", "creditsPerImage", "estimatedProviderCostFen", "maxCostFen", "reason"], "additionalProperties": false}
+    AiCostRule: {"type": "object", "properties": {"id": {"type": "string", "minLength": 1, "maxLength": 128}, "name": {"type": "string", "minLength": 1, "maxLength": 128}, "version": {"type": "integer", "minimum": 1}, "creditsPerImage": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "estimatedProviderCostFen": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "maxCostFen": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "createdAt": {"type": "string", "format": "date-time"}}, "required": ["id", "name", "version", "creditsPerImage", "estimatedProviderCostFen", "maxCostFen", "createdAt"], "additionalProperties": false}
+    AiBudgetsPage: {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/AiBudget"}}, "nextCursor": {"type": ["string", "null"]}, "hasMore": {"type": "boolean"}}, "required": ["items", "nextCursor", "hasMore"], "additionalProperties": false}
+    AiCostRulesPage: {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/AiCostRule"}}, "nextCursor": {"type": ["string", "null"]}, "hasMore": {"type": "boolean"}}, "required": ["items", "nextCursor", "hasMore"], "additionalProperties": false}
     LicenseRecord:
       type: object
       properties:
@@ -21866,9 +21917,31 @@ components:
         - fonts
       additionalProperties: false
 
+    GenerationProvenance:
+      type: object
+      required: [version, jobId, modelVersionId, presetVersionId, inputHash, referenceAssetIds, consentRef, licenseRef, labelPolicyVersion, moderationPolicyVersion, outputSha256, normalizedSha256, labelApplied]
+      properties:
+        version: {type: integer, const: 1}
+        labelApplied: {type: boolean, const: true}
+        referenceAssetIds:
+          type: array
+          items: {type: string}
+        consentRef: {type: [string, 'null']}
+        jobId: {type: string, minLength: 1}
+        modelVersionId: {type: string, minLength: 1}
+        presetVersionId: {type: string, minLength: 1}
+        inputHash: {type: string, minLength: 1}
+        licenseRef: {type: string, minLength: 1}
+        labelPolicyVersion: {type: string, minLength: 1}
+        moderationPolicyVersion: {type: string, minLength: 1}
+        outputSha256: {type: string, minLength: 1}
+        normalizedSha256: {type: string, minLength: 1}
+      additionalProperties: false
     EditorAssetRecord:
       type: object
       properties:
+        provenance:
+          $ref: '#/components/schemas/GenerationProvenance'
         id:
           type: string
           minLength: 1

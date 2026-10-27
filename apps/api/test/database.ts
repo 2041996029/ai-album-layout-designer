@@ -64,6 +64,7 @@ export async function testDatabase() {
         "utf8",
       ),
     );
+    await db.pool.query(await readFile(new URL("../../../docs/release-v1.0/database/006_ai_runtime.up.sql", import.meta.url), "utf8"));
   } catch (e) {
     await db.close();
     await admin.query(`DROP DATABASE "${name}"`);

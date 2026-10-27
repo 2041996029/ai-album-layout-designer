@@ -139,12 +139,12 @@ test("unavailable backend leaves local editor and recovery usable", async ({
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("已保存至此浏览器");
 });
-test("unconfigured identity does not offer fake SMS or invitations", async ({
+test("unconfigured email identity does not offer fake login or invitations", async ({
   page,
 }) => {
   await mock(page, { authenticated: false });
   await boot(page);
-  await expect(page.getByText("短信登录未开通")).toBeVisible();
+  await expect(page.getByText("邮箱登录暂未开通，本地创作可继续使用。")).toBeVisible();
   await expect(page.getByRole("button", { name: "邀请成员" })).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "微信登录", exact: true }),

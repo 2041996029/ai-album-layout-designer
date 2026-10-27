@@ -1,6 +1,18 @@
 import type { ReactNode } from "react";
 export const adminViews = [
   {
+    id: "aiFinance",
+    label: "AI 预算与定价",
+    icon: "reconciliation",
+    description: "管理供应商采购额度与不可变的点数测算规则。",
+  },
+  {
+    id: "content",
+    label: "内容与授权",
+    icon: "orders",
+    description: "登记授权范围，保留不可变的历史版本。",
+  },
+  {
     id: "overview",
     label: "运营总览",
     icon: "overview",

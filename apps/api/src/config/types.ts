@@ -158,7 +158,6 @@ export const CONFIG_REGISTRY: Readonly<Record<ConfigKind, RegistryRule>> =
           dependency("labelPolicyRef", "labelPolicy"),
           dependency("licensePolicyVersion", "licensePolicy"),
         ],
-        endpointFields: ["allowedOrigins[]"],
       },
     ),
     share: rule(

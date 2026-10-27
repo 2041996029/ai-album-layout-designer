@@ -276,6 +276,11 @@ export function CloudPanel({
                   >
                     导出已保存的云相册 →
                   </a>
+                  <a
+                    href={`./commerce.html?workspace=${encodeURIComponent(workspace)}#art`}
+                  >
+                    AI 创作 →
+                  </a>
                   <WorkspaceTools
                     workspaceId={workspace}
                     onCreate={async (width, height) => {

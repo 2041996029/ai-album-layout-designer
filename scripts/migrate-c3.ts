@@ -34,6 +34,7 @@ try {
     "003_redemption_batch_policy",
     "004_financial_adjustments",
     "005_identity_payments",
+    "006_ai_runtime",
   ]) {
     await pool.query(
       await readFile(

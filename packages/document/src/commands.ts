@@ -225,6 +225,15 @@ function mutate(doc: DocumentModel, c: DocumentCommand): void {
       for (const child of c.commands) mutate(doc, child);
       return;
     case "insert-layer": {
+      if (
+        c.layer.generationCommandId &&
+        surfaceLayers(doc, c.surfaceId).some(
+          (l) =>
+            l.id === c.layer.id &&
+            l.generationCommandId === c.layer.generationCommandId,
+        )
+      )
+        return;
       const surface = surfaceLayers(doc, c.surfaceId);
       const parent = c.parentId
         ? [...walkLayers(surface)].find((l) => l.id === c.parentId)

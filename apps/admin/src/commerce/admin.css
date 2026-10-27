@@ -1082,3 +1082,103 @@
     transition: none !important;
   }
 }
+.license-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.license-card {
+  border: 1px solid var(--admin-line, #e5e8e3);
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 0;
+}
+.license-card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.license-source {
+  overflow-wrap: anywhere;
+  color: #657167;
+  font-size: 13px;
+}
+.license-card dl {
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+}
+.license-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.license-card dt {
+  color: #748176;
+}
+.license-card dd {
+  margin: 0;
+  text-align: right;
+}
+.license-form {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.license-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+.license-rights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin: 20px 0;
+}
+.license-rights label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.license-rights input {
+  width: auto;
+  min-height: 0;
+}
+.license-form button {
+  min-height: 42px;
+}
+.license-form input[type="checkbox"] {
+  accent-color: #315c49;
+}
+.ai-budget-edit {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e7df;
+}
+.ai-budget-edit button + button {
+  margin-left: 12px;
+}
+.license-card progress {
+  width: 100%;
+  height: 8px;
+  margin-top: 18px;
+  accent-color: #315c49;
+}
+.license-form > button {
+  margin-top: 18px;
+}
+.admin-table-wrap {
+  overflow-x: auto;
+}
+.admin-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.admin-table-wrap th,
+.admin-table-wrap td {
+  text-align: left;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e6eae3;
+  white-space: nowrap;
+}

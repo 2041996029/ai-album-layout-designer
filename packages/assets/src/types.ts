@@ -20,6 +20,7 @@ export interface ImageVariant {
   readonly height: number;
 }
 export interface AssetRecord {
+  readonly provenance?: import("@album/document").GenerationProvenance;
   readonly usage?: "photo" | "decoration" | "mask" | "text-raster";
   readonly id: string;
   readonly version: number;

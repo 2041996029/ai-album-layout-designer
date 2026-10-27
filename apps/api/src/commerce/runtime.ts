@@ -1,3 +1,7 @@
+import { AiFinanceService } from "../ai/finance";
+import { aiCatalogDependencies } from "../ai/dependencies";
+import { materializeAiConfig } from "../ai/materialize";
+import { LicenseService } from "../content/licenses";
 import { assertSecretNotInUse } from "./secret-obligations";
 import type { SecretOptions } from "../config/secrets";
 import { CloudLayoutService } from "../projects/layout-service";
@@ -72,9 +76,16 @@ export async function bindCommerceRuntime(
   runtime.proofAdapter = reauth;
   const config = new ConfigService(db, auth, options.secrets ?? closedSecrets, {
     ...options.config,
+    dependencies: aiCatalogDependencies(options.config?.dependencies),
     environment,
     reauth,
     onPublished: async (tx, release) => {
+      await materializeAiConfig(
+        tx,
+        release,
+        environment,
+        runtime.ai?.service.options.registry,
+      );
       const v = release.versions.sku;
       if (v?.payload.kind === "sku" && v.payload.enabled)
         await actualPublishedSkuMaterializer.materialize(tx, {
@@ -121,7 +132,11 @@ export async function bindCommerceRuntime(
       fail("JOB_POLICY_UNCONFIGURED", 503);
     return policyFromRelease(
       release,
-      job.kind === "export" ? "export" : "layout",
+      job.kind === "export"
+        ? "export"
+        : job.kind === "generation"
+          ? "generation"
+          : "layout",
       { global: 8, workspace: 2 },
       { global: 8, workspace: maximum },
     );
@@ -129,6 +144,7 @@ export async function bindCommerceRuntime(
   const jobs = new JobRepository(db, policy, async (tx, job, outcome) => {
     await exportTerminalHook(tx, job, outcome);
     await credits.creditTerminalHook(tx, job, outcome);
+    await runtime.ai?.service.terminalHook(tx, job, outcome);
     if (job.kind === "layout")
       await tx.query(
         "UPDATE resource_pins SET released_at=clock_timestamp() WHERE workspace_id=$1 AND job_id=$2 AND released_at IS NULL",
@@ -177,7 +193,11 @@ export async function bindCommerceRuntime(
       })
     : undefined;
   const reconciliation = new ReconciliationService(db);
+  const licenses = new LicenseService(db, auth);
+  const aiFinance = new AiFinanceService(db, auth, reauth, environment);
   const services = {
+    aiFinance,
+    licenses,
     config,
     secrets,
     payments,
@@ -230,6 +250,8 @@ export async function bindCommerceRuntime(
   };
 }
 export type CommerceRuntime = {
+  aiFinance: AiFinanceService;
+  licenses: LicenseService;
   config: ConfigService;
   secrets: SecretService;
   payments: PaymentAdapters;
